@@ -1,251 +1,585 @@
 'use client';
 
 /**
- * Reports & Export — spec Section 16.
+ * Reports & Export — the two documents a station prints.
  *
- * Every report type is its own card, not one option buried in a dropdown —
- * the dropdown version left six of the seven reports invisible unless
- * someone happened to open it. Generation happens server-side
- * (report_service.py); this page is the picker plus the authenticated-
- * fetch-then-blob download dance GET /reports/{type} needs (see
- * lib/api/reports.ts for why a plain link can't be used here).
+ * Redesigned 2026-09-29 after station testing: of the ten report cards this
+ * page used to hold, the stations only ever print two things — the incident
+ * records for a period, and the narrative reports — and they wanted those
+ * clean and formatted, not a spreadsheet dump. So the page is now two
+ * documents, each with its options on the left and the real document on the
+ * right, exactly as it will print:
+ *
+ *   Incident Records   — letterhead, period, summary, one row per incident,
+ *                        signature block. Print, PDF, or Excel/CSV to work with.
+ *   Narrative Reports  — pick reports from the period; they print as one PDF,
+ *                        a cover page listing them, then each Incident Record Form.
+ *
+ * Both documents are built server-side (printable_reports.py) and scoped by
+ * the same queries as Incident Records and Narrative Reports, so a printout
+ * never shows what the screen would not.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BarChart3, Building2, CalendarRange, ClipboardCheck, Download, Eye,
-  FileDown, Flag, Gauge, Map, MapPin, PieChart, ShieldCheck, Users,
+  AlertCircle, AlertOctagon, AlertTriangle, Check, CheckCircle2, Download, FileSpreadsheet, FileText,
+  Info, Loader2, NotebookText, Printer, RefreshCw, Search,
 } from 'lucide-react';
 import { signOut, useAuth } from '@/lib/hooks/useAuth';
 import { ApiError } from '@/lib/api/client';
 import {
-  AGENCY_ADMIN_REPORT_TYPES, downloadReport, REPORT_TYPES,
-  type ReportDateRange, type ReportFormat, type ReportType,
+  fetchIncidentRecords, fetchNarrativeBundle, printPdf, saveFile,
+  type RecordsFormat, type RecordsSeverity, type RecordsStatus, type ReportFile,
 } from '@/lib/api/reports';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/efferd/ui/button';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/efferd/ui/select';
-import {
-  Card, CardContent, CardDescription, CardHeader, CardTitle,
-} from '@/components/efferd/ui/card';
+import { fetchNarrativeReports, type NarrativeListItem } from '@/lib/api/dispatch';
+import { CATEGORY_LABELS } from '@/lib/charts/queue-series';
+import { SEV_COLOR } from '@/components/incidents/incident-vocabulary';
 import { PeriodPicker } from '@/components/ui/period-picker';
-import { phToday, resolvePeriod, type Range } from '@/components/ui/period';
-import { ReportPreviewModal } from '@/components/reports/report-preview-modal';
+import { phToday, periodWords, resolvePeriod, type Range } from '@/components/ui/period';
+import { cn } from '@/lib/utils';
 
-const FORMATS: { value: ReportFormat; label: string }[] = [
-  { value: 'csv', label: 'CSV' },
-  { value: 'xlsx', label: 'Excel (.xlsx)' },
-  { value: 'pdf', label: 'PDF' },
-];
+type Doc = 'records' | 'narratives';
 
-/**
- * One glance says what a card is before anyone reads its title, and the
- * colour groups the seven into the three things they actually answer —
- * incident data, agency/crew performance, or resident adoption — without
- * restructuring the grid into literal sections. Colour never stands alone:
- * every card still prints its category as a word, right above the title.
- */
-const REPORT_META: Record<ReportType, { icon: typeof BarChart3; color: string; category: string }> = {
-  monthly_incidents:      { icon: BarChart3,      color: 'var(--color-system-info, #0ea5e9)',  category: 'Incident' },
-  municipality_incidents: { icon: Map,            color: 'var(--color-system-info, #0ea5e9)',  category: 'Incident' },
-  barangay_incidents:     { icon: MapPin,         color: 'var(--color-system-info, #0ea5e9)',  category: 'Incident' },
-  incident_resolution:    { icon: ClipboardCheck, color: 'var(--color-system-info, #0ea5e9)',  category: 'Incident' },
-  severity_breakdown:     { icon: PieChart,       color: 'var(--color-system-info, #0ea5e9)',  category: 'Incident' },
-  agency_performance:     { icon: Building2,      color: 'var(--color-brand)',                 category: 'Operational' },
-  responders:             { icon: ShieldCheck,    color: 'var(--color-brand)',                 category: 'Operational' },
-  sla_compliance:         { icon: Gauge,          color: 'var(--color-brand)',                 category: 'Operational' },
-  resident_registrations: { icon: Users,          color: 'var(--color-system-success)',        category: 'Registration' },
-  flagged_reports:        { icon: Flag,           color: 'var(--color-system-warning)',         category: 'Accountability' },
-};
+function useErrorText() {
+  return (e: unknown, fallback: string): string | null => {
+    if (e instanceof ApiError && e.status === 401) { signOut(); return null; }
+    return e instanceof Error ? e.message : fallback;
+  };
+}
 
 export default function ReportsPage() {
-  const { token, isAgencyAdmin } = useAuth();
-  const reportTypes = useMemo(
-    () => isAgencyAdmin
-      ? REPORT_TYPES.filter(r => (AGENCY_ADMIN_REPORT_TYPES as string[]).includes(r.value))
-      : REPORT_TYPES,
-    [isAgencyAdmin],
-  );
-  const [formats, setFormats] = useState<Record<ReportType, ReportFormat>>(
-    () => Object.fromEntries(REPORT_TYPES.map(r => [r.value, 'csv'])) as Record<ReportType, ReportFormat>,
-  );
-  const [generating, setGenerating] = useState<ReportType | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  // Which card's Preview is open — null closes the dialog. Format rides
-  // along so the preview reflects whatever format is currently picked on
-  // that card, not whatever it was when the dialog first opened.
-  const [previewing, setPreviewing] = useState<ReportType | null>(null);
-  // One shared period for every card, not a picker per report — a period
-  // like "August 2026" is something a person sets once for the whole session
-  // of pulling reports, not a fact that changes report to report. Same
-  // segmented pills + Custom dialog as every other date-range filter in the
-  // dashboard; /reports only ever understood exact dates, not a rolling
-  // "last N days" window, so a chosen preset is resolved to concrete dates
-  // right here rather than sent as `days`.
-  const [days, setDays] = useState(0);
-  const [customRange, setCustomRange] = useState<Range | null>(null);
+  const { token, isProvincialAdmin } = useAuth();
+  const [doc, setDoc] = useState<Doc>('records');
   const [today] = useState(() => phToday());
-  const resolved = resolvePeriod(days, customRange, today);
-  const range: ReportDateRange = {
-    startDate: resolved?.from,
-    endDate: resolved?.to,
-  };
+  // One period for both documents — "September" is set once for a sitting of
+  // printing, not per document.
+  const [days, setDays] = useState(30);
+  const [range, setRange] = useState<Range | null>(null);
+  const resolved = resolvePeriod(days, range, today);
+  const period = { startDate: resolved?.from, endDate: resolved?.to };
+  const periodText = periodWords(days, range);
 
-  async function generate(type: ReportType) {
-    if (!token) return;
-    setGenerating(type);
+  return (
+    <div className="flex flex-col gap-5 px-4 py-5 md:px-7">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2" role="tablist" aria-label="Document to print">
+        <DocTab
+          active={doc === 'records'}
+          description="Every incident in a period as one formatted table — with a summary and a signature block."
+          formats="PDF · Excel · CSV"
+          icon={FileText}
+          onClick={() => setDoc('records')}
+          title="Incident Records"
+        />
+        <DocTab
+          active={doc === 'narratives'}
+          description="Incident Record Forms, printed together with a cover page that lists them."
+          formats="PDF"
+          icon={NotebookText}
+          onClick={() => setDoc('narratives')}
+          title="Narrative Reports"
+        />
+      </div>
+
+      {token && (
+        doc === 'records' ? (
+          <RecordsWorkspace
+            days={days} isProvincialAdmin={isProvincialAdmin} period={period} periodText={periodText}
+            range={range} setDays={d => { setDays(d); setRange(null); }} setRange={setRange} today={today} token={token}
+          />
+        ) : (
+          <NarrativesWorkspace
+            days={days} period={period} periodText={periodText}
+            range={range} setDays={d => { setDays(d); setRange(null); }} setRange={setRange} today={today} token={token}
+          />
+        )
+      )}
+    </div>
+  );
+}
+
+// ── Shared pieces ────────────────────────────────────────────────────────────
+
+function DocTab({
+  active, title, description, formats, icon: Icon, onClick,
+}: {
+  active: boolean; title: string; description: string; formats: string; icon: typeof FileText; onClick: () => void;
+}) {
+  return (
+    <button
+      aria-selected={active}
+      className={cn(
+        'group flex items-start gap-4 rounded-[var(--radius-card)] border p-4 text-left transition-[border-color,background-color,box-shadow]',
+        active
+          ? 'border-[var(--color-brand)] bg-[var(--color-brand-subtle)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-brand)_14%,transparent)]'
+          : 'border-[var(--color-surface-border)] bg-[var(--color-surface-card)] hover:border-[color-mix(in_srgb,var(--color-brand)_40%,var(--color-surface-border))]',
+      )}
+      onClick={onClick}
+      role="tab"
+      type="button"
+    >
+      <span
+        className={cn(
+          'flex size-12 shrink-0 items-center justify-center rounded-xl transition-colors',
+          active ? 'bg-[var(--color-brand)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]',
+        )}
+      >
+        <Icon aria-hidden="true" className="size-6" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-[16px] font-bold text-foreground">{title}</span>
+          <span className="rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">{formats}</span>
+        </span>
+        <span className="mt-1 block text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{description}</span>
+      </span>
+    </button>
+  );
+}
+
+function OptionBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function Segmented<T extends string | null>({
+  value, onChange, options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string; icon?: typeof Info; color?: string }[];
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(o => {
+        const on = o.value === value;
+        return (
+          <button
+            aria-pressed={on}
+            className={cn(
+              'inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[12.5px] font-semibold transition-colors',
+              on
+                ? 'border-[var(--color-brand)] bg-[var(--color-brand-subtle)] text-foreground'
+                : 'border-[var(--color-surface-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]',
+            )}
+            key={String(o.value)}
+            onClick={() => onChange(o.value)}
+            type="button"
+          >
+            {o.icon && <o.icon aria-hidden="true" className="size-3.5" style={{ color: o.color }} />}
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ActionButton({
+  onClick, disabled, busy, icon: Icon, children, variant = 'outline',
+}: {
+  onClick: () => void; disabled?: boolean; busy?: boolean; icon: typeof Printer; children: React.ReactNode;
+  variant?: 'primary' | 'outline';
+}) {
+  return (
+    <button
+      className={cn(
+        'flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-[13.5px] font-bold transition-[filter,background-color] disabled:cursor-not-allowed disabled:opacity-50',
+        variant === 'primary'
+          ? 'bg-[var(--color-brand)] text-white shadow-[0_6px_16px_-8px_color-mix(in_srgb,var(--color-brand)_80%,transparent)] hover:brightness-110'
+          : 'border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] text-foreground hover:bg-[var(--color-surface-hover)]',
+      )}
+      disabled={disabled || busy}
+      onClick={onClick}
+      type="button"
+    >
+      {busy ? <Loader2 aria-hidden="true" className="size-4 animate-spin" /> : <Icon aria-hidden="true" className="size-4" />}
+      {children}
+    </button>
+  );
+}
+
+/** The document itself, in the browser's PDF viewer, exactly as it prints. */
+function Preview({
+  file, loading, error, empty, onRetry, title,
+}: {
+  file: ReportFile | null; loading: boolean; error: string | null; empty?: string; onRetry?: () => void; title: string;
+}) {
+  const url = useMemo(() => (file ? URL.createObjectURL(file.blob) : null), [file]);
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+
+  return (
+    <section className="flex min-h-[560px] flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
+      <div className="flex items-center gap-2 border-b border-[var(--color-surface-border)] px-4 py-3">
+        <span className="text-[13px] font-bold text-foreground">Preview</span>
+        <span className="text-[12px] text-muted-foreground">· {title} — exactly as it prints</span>
+        {loading && <Loader2 aria-label="Updating" className="ml-auto size-4 animate-spin text-muted-foreground" />}
+      </div>
+      <div className="relative flex-1 bg-[var(--color-surface-raised)]">
+        {error ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+            <AlertCircle aria-hidden="true" className="size-8 text-[var(--color-system-error)]" />
+            <p className="max-w-[360px] text-[13px] text-foreground">{error}</p>
+            {onRetry && (
+              <button className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--color-brand)] hover:underline" onClick={onRetry} type="button">
+                <RefreshCw aria-hidden="true" className="size-3.5" /> Try again
+              </button>
+            )}
+          </div>
+        ) : url ? (
+          <iframe className="absolute inset-0 size-full" src={`${url}#toolbar=0&navpanes=0&view=FitH`} title={`${title} preview`} />
+        ) : loading ? (
+          <div className="flex h-full items-center justify-center gap-2 text-[13px] text-muted-foreground">
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Building the document from live data…
+          </div>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+            <FileText aria-hidden="true" className="size-9 text-muted-foreground" />
+            <p className="max-w-[340px] text-[13px] text-muted-foreground">{empty}</p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+interface PeriodProps {
+  token: string;
+  today: string;
+  days: number;
+  range: Range | null;
+  setDays: (d: number) => void;
+  setRange: (r: Range) => void;
+  period: { startDate?: string; endDate?: string };
+  periodText: string;
+}
+
+// ── Incident Records ────────────────────────────────────────────────────────
+
+const STATUS_OPTIONS: { value: RecordsStatus | null; label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'open', label: 'Still open' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+const SEVERITY_OPTIONS: { value: RecordsSeverity | null; label: string; icon?: typeof Info; color?: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'critical', label: 'Critical', icon: AlertOctagon, color: SEV_COLOR.critical },
+  { value: 'high', label: 'High', icon: AlertTriangle, color: SEV_COLOR.high },
+  { value: 'medium', label: 'Medium', icon: AlertCircle, color: SEV_COLOR.medium },
+  { value: 'low', label: 'Low', icon: Info, color: SEV_COLOR.low },
+];
+
+function RecordsWorkspace({ token, today, days, range, setDays, setRange, period, periodText, isProvincialAdmin }: PeriodProps & { isProvincialAdmin: boolean }) {
+  const [status, setStatus] = useState<RecordsStatus | null>(null);
+  const [severity, setSeverity] = useState<RecordsSeverity | null>(null);
+  const [file, setFile] = useState<ReportFile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<RecordsFormat | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const ticket = useRef(0);
+  const errorText = useErrorText();
+
+  const filter = { ...period, status, severity };
+  const key = JSON.stringify(filter);
+
+  // The preview follows the options, a beat after the last change.
+  useEffect(() => {
+    const mine = ++ticket.current;
+    setLoading(true);
     setError(null);
+    const t = window.setTimeout(() => {
+      fetchIncidentRecords(token, 'pdf', JSON.parse(key))
+        .then(f => { if (mine === ticket.current) setFile(f); })
+        .catch(e => { if (mine === ticket.current) { setFile(null); setError(errorText(e, 'Could not build the report.')); } })
+        .finally(() => { if (mine === ticket.current) setLoading(false); });
+    }, 350);
+    return () => window.clearTimeout(t);
+    // errorText is recreated each render and only formats; the key is the input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, key, nonce]);
+
+  async function exportAs(format: RecordsFormat) {
+    setActionError(null);
+    setExporting(format);
     try {
-      await downloadReport(token, type, formats[type], range);
+      saveFile(await fetchIncidentRecords(token, format, filter));
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) { signOut(); return; }
-      setError(e instanceof Error ? e.message : 'Failed to generate report.');
+      setActionError(errorText(e, 'Could not download the file.'));
     } finally {
-      setGenerating(null);
+      setExporting(null);
     }
   }
 
   return (
-    <div className="flex flex-col gap-4 px-6 py-5 md:px-7">
-      {error && <Alert variant="error" message={error} />}
-
-      <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-4 py-3">
-        <span
-          className="flex size-7 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: 'var(--color-brand-subtle)', color: 'var(--color-brand)' }}
-        >
-          <FileDown aria-hidden="true" size={14} />
-        </span>
-        <p className="text-meta pt-0.5 leading-relaxed text-[var(--color-text-secondary)]">
-          <span className="font-semibold text-foreground">Always live. </span>
-          Every report below is built from live data at the moment you download it —
-          there is no cached or scheduled version, and nothing is emailed.
-          {isAgencyAdmin && ' Figures are scoped to your own agency only.'}
-        </p>
-      </div>
-
-      {/* One period for every card below, not a picker per report — see this
-          state's own comment. All time is the default, unchanged from before
-          this control existed, so nothing about the page's prior behaviour
-          changes until someone actually picks something else. */}
-      <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3">
-        <span className="flex shrink-0 items-center gap-2 text-[13px] font-semibold text-foreground">
-          <CalendarRange aria-hidden="true" size={15} className="text-muted-foreground" />
-          Reporting period
-        </span>
-        {/* Grows to fill the room the label leaves, capped so the pills don't stretch
-            absurdly wide on an ultra-wide screen — same idea as Operational Area's
-            filter row, just a single field rather than several sharing it. */}
-        <div className="min-w-[380px] max-w-[560px] flex-1">
-          <PeriodPicker days={days} onDays={setDays} onRange={setCustomRange} range={customRange} size="sm" today={today} />
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
+      <aside className="flex flex-col gap-5 self-start rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-5">
+        <div>
+          <h2 className="text-[15px] font-bold text-foreground">Incident Records Report</h2>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+            {isProvincialAdmin ? 'Every station of your agency in Biliran.' : 'Your station’s incidents only.'} Choose what it covers — the preview updates as you go.
+          </p>
         </div>
-      </div>
+        <OptionBlock label="Period">
+          <PeriodPicker days={days} onDays={setDays} onRange={setRange} range={range} size="sm" today={today} />
+          <span className="text-[12px] text-muted-foreground">Covers {periodText}.</span>
+        </OptionBlock>
+        <OptionBlock label="Status">
+          <Segmented onChange={setStatus} options={STATUS_OPTIONS} value={status} />
+        </OptionBlock>
+        <OptionBlock label="Severity">
+          <Segmented onChange={setSeverity} options={SEVERITY_OPTIONS} value={severity} />
+        </OptionBlock>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {reportTypes.map(r => {
-          const meta = REPORT_META[r.value];
-          const Icon = meta.icon;
-          return (
-            <Card className="flex flex-col" key={r.value}>
-              <CardHeader className="gap-1">
-                {/* Icon + category + title as one unit, not title alone.
-                    Seven cards read as a list of near-identical sentences at
-                    this density ("X Report", "Y Report") — the icon is what
-                    a scanning eye locks onto first, and the category word
-                    above the title is what lets "these three are about
-                    incidents, that one's about residents" register without
-                    the page being split into literal sections. */}
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-md)]"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${meta.color} 14%, transparent)`,
-                      color: meta.color,
-                    }}
-                  >
-                    <Icon aria-hidden="true" size={16} strokeWidth={2} />
-                  </span>
-                  <div className="min-w-0">
-                    <span
-                      className="block text-[10px] font-bold uppercase tracking-wide"
-                      style={{ color: meta.color }}
-                    >
-                      {meta.category}
-                    </span>
-                    <CardTitle className="text-[14.5px] leading-tight">{r.label}</CardTitle>
-                  </div>
-                </div>
-                <CardDescription className="leading-relaxed">{r.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="mt-auto flex flex-col gap-3">
-                {/* One line, not a row of wrapping pills. The pills cost
-                    two or three lines per card and said nothing a plain
-                    "Columns: A · B · C" doesn't say faster — the wrapping
-                    was competing with the actions below for the card's
-                    height, which is what made three controls in one row
-                    feel forced into no room. */}
-                <p className="text-[11.5px] leading-relaxed text-muted-foreground">
-                  <span className="font-semibold text-[var(--color-text-secondary)]">Columns </span>
-                  {r.columns.join(' · ')}
-                </p>
+        <div className="flex flex-col gap-2 border-t border-[var(--color-surface-border)] pt-4">
+          <ActionButton disabled={!file || loading} icon={Printer} onClick={() => file && printPdf(file.blob)} variant="primary">
+            Print report
+          </ActionButton>
+          <ActionButton disabled={!file || loading} icon={Download} onClick={() => file && saveFile(file)}>
+            Download PDF
+          </ActionButton>
+          <div className="grid grid-cols-2 gap-2">
+            <ActionButton busy={exporting === 'xlsx'} icon={FileSpreadsheet} onClick={() => void exportAs('xlsx')}>Excel</ActionButton>
+            <ActionButton busy={exporting === 'csv'} icon={FileSpreadsheet} onClick={() => void exportAs('csv')}>CSV</ActionButton>
+          </div>
+          {actionError && <p className="text-[12.5px] font-medium text-[var(--color-system-error)]">{actionError}</p>}
+          <p className="flex items-start gap-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+            <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+            Built from live data each time. Excel and CSV hold the same rows for spreadsheets.
+          </p>
+        </div>
+      </aside>
 
-                {/* A rule, then the whole action area gets its own block —
-                    format above, Preview/Download below as a real
-                    two-button row instead of three controls sharing one. */}
-                <div className="flex flex-col gap-2 border-t border-[var(--color-surface-border)] pt-3">
-                  <div className="flex items-center gap-2">
-                    <span className="shrink-0 text-[11.5px] font-semibold text-muted-foreground">
-                      Format
-                    </span>
-                    <Select
-                      onValueChange={v => setFormats(f => ({ ...f, [r.value]: v as ReportFormat }))}
-                      value={formats[r.value]}
-                    >
-                      <SelectTrigger className="h-7 flex-1" size="sm"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {FORMATS.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={() => setPreviewing(r.value)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Eye data-icon="inline-start" />
-                      Preview
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      disabled={generating === r.value}
-                      onClick={() => generate(r.value)}
-                      size="sm"
-                    >
-                      <Download data-icon="inline-start" />
-                      {generating === r.value ? 'Generating…' : 'Download'}
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <Preview
+        error={error}
+        file={file}
+        loading={loading}
+        onRetry={() => setNonce(n => n + 1)}
+        title="Incident Records Report"
+      />
+    </div>
+  );
+}
 
-      {previewing && token && (
-        <ReportPreviewModal
-          format={formats[previewing]}
-          label={reportTypes.find(r => r.value === previewing)?.label ?? 'Report'}
-          onClose={() => setPreviewing(null)}
-          range={range}
-          token={token}
-          type={previewing}
-        />
-      )}
+// ── Narrative Reports ───────────────────────────────────────────────────────
+
+const NARRATIVE_CATEGORIES = [...Object.keys(CATEGORY_LABELS), 'other'];
+
+function NarrativesWorkspace({ token, today, days, range, setDays, setRange, period, periodText }: PeriodProps) {
+  const [reportStatus, setReportStatus] = useState<'finalized' | 'draft' | null>('finalized');
+  const [category, setCategory] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState<NarrativeListItem[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [listError, setListError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [file, setFile] = useState<ReportFile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const ticket = useRef(0);
+  const errorText = useErrorText();
+
+  const listKey = JSON.stringify({ ...period, reportStatus, category });
+  useEffect(() => {
+    let live = true;
+    setItems(null);
+    setListError(null);
+    const q = JSON.parse(listKey) as { startDate?: string; endDate?: string; reportStatus: 'finalized' | 'draft' | null; category: string | null };
+    fetchNarrativeReports(token, {
+      days: 0, date_from: q.startDate, date_to: q.endDate,
+      status: q.reportStatus ?? undefined, category: q.category ?? undefined, limit: 50,
+    })
+      .then(lib => {
+        if (!live) return;
+        setItems(lib.items);
+        setTotal(lib.total);
+        // Everything in view is picked by default — the usual job is "print
+        // this month's reports", not hand-picking one by one.
+        setPicked(new Set(lib.items.map(i => i.incident_id)));
+      })
+      .catch(e => { if (live) { setItems([]); setListError(errorText(e, 'Could not load the narrative reports.')); } });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, listKey]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (items ?? []).filter(i => !q || [
+      i.reference_no, i.record_number, i.offense, i.place_of_incident, i.reporting_person_name,
+      CATEGORY_LABELS[i.incident_category],
+    ].some(v => v?.toLowerCase().includes(q)));
+  }, [items, query]);
+
+  // The preview follows the selection, in list order.
+  const pickedIds = (items ?? []).filter(i => picked.has(i.incident_id)).map(i => i.incident_id);
+  const pickKey = pickedIds.join(',');
+  useEffect(() => {
+    const mine = ++ticket.current;
+    if (!pickKey) { setFile(null); setLoading(false); setError(null); return; }
+    setLoading(true);
+    setError(null);
+    const t = window.setTimeout(() => {
+      fetchNarrativeBundle(token, pickKey.split(','))
+        .then(f => { if (mine === ticket.current) setFile(f); })
+        .catch(e => { if (mine === ticket.current) { setFile(null); setError(errorText(e, 'Could not build the document.')); } })
+        .finally(() => { if (mine === ticket.current) setLoading(false); });
+    }, 450);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, pickKey, nonce]);
+
+  const allVisiblePicked = visible.length > 0 && visible.every(i => picked.has(i.incident_id));
+  function toggleAll() {
+    setPicked(prev => {
+      const next = new Set(prev);
+      for (const i of visible) {
+        if (allVisiblePicked) next.delete(i.incident_id); else next.add(i.incident_id);
+      }
+      return next;
+    });
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[420px_1fr]">
+      <aside className="flex min-h-0 flex-col gap-5 self-start rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-5">
+        <div>
+          <h2 className="text-[15px] font-bold text-foreground">Narrative Reports</h2>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
+            Pick the reports to print. They come out as one document: a cover page listing them, then each Incident Record Form.
+          </p>
+        </div>
+        <OptionBlock label="Period">
+          <PeriodPicker days={days} onDays={setDays} onRange={setRange} range={range} size="sm" today={today} />
+          <span className="text-[12px] text-muted-foreground">Reports written or updated in {periodText}.</span>
+        </OptionBlock>
+        <OptionBlock label="Report status">
+          <Segmented
+            onChange={setReportStatus}
+            options={[
+              { value: 'finalized', label: 'Finalized', icon: CheckCircle2 },
+              { value: 'draft', label: 'Drafts' },
+              { value: null, label: 'All' },
+            ]}
+            value={reportStatus}
+          />
+        </OptionBlock>
+        <OptionBlock label="Type of incident">
+          <Segmented
+            onChange={setCategory}
+            options={[{ value: null, label: 'All' }, ...NARRATIVE_CATEGORIES.map(c => ({ value: c, label: CATEGORY_LABELS[c] ?? 'Other' }))]}
+            value={category}
+          />
+        </OptionBlock>
+
+        <OptionBlock label={`Reports${items ? ` · ${picked.size} of ${items.length} selected` : ''}`}>
+          <div className="flex items-center gap-2">
+            <label className="relative flex-1">
+              <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                className="h-9 w-full rounded-lg border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] pl-8 pr-2 text-[12.5px] focus:border-[var(--color-brand)] focus:outline-none"
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search IRF no., record no., place"
+                type="search"
+                value={query}
+              />
+            </label>
+            <button
+              className="h-9 shrink-0 rounded-lg border border-[var(--color-surface-border)] px-3 text-[12px] font-semibold text-foreground hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
+              disabled={!visible.length}
+              onClick={toggleAll}
+              type="button"
+            >
+              {allVisiblePicked ? 'Clear' : 'Select all'}
+            </button>
+          </div>
+          <div className="max-h-[340px] overflow-y-auto rounded-xl border border-[var(--color-surface-border)]">
+            {items === null ? (
+              <p className="flex items-center gap-2 p-4 text-[12.5px] text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</p>
+            ) : listError ? (
+              <p className="p-4 text-[12.5px] text-[var(--color-system-error)]">{listError}</p>
+            ) : visible.length === 0 ? (
+              <p className="p-4 text-[12.5px] text-muted-foreground">
+                {items.length ? 'Nothing matches that search.' : `No narrative report in ${periodText} with these filters.`}
+              </p>
+            ) : (
+              <ul className="divide-y divide-[var(--color-surface-border)]">
+                {visible.map(i => {
+                  const on = picked.has(i.incident_id);
+                  return (
+                    <li key={i.id}>
+                      <button
+                        aria-checked={on}
+                        className={cn('flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors', on ? 'bg-[var(--color-brand-subtle)]' : 'hover:bg-[var(--color-surface-hover)]')}
+                        onClick={() => setPicked(prev => {
+                          const next = new Set(prev);
+                          if (next.has(i.incident_id)) next.delete(i.incident_id); else next.add(i.incident_id);
+                          return next;
+                        })}
+                        role="checkbox"
+                        type="button"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'mt-0.5 flex size-[18px] shrink-0 items-center justify-center rounded-md border-2 text-white',
+                            on ? 'border-[var(--color-brand)] bg-[var(--color-brand)]' : 'border-[var(--color-surface-border)]',
+                          )}
+                        >
+                          {on && <Check className="size-3" strokeWidth={3.5} />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-[13px] font-bold text-foreground">{i.reference_no || i.record_number || 'Untitled report'}</span>
+                            <span className={cn('ml-auto shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold uppercase',
+                              i.status === 'finalized' ? 'bg-[var(--color-system-success-bg)] text-[var(--color-system-success)]' : 'bg-[var(--color-surface-raised)] text-muted-foreground')}
+                            >
+                              {i.status === 'finalized' ? 'Final' : 'Draft'}
+                            </span>
+                          </span>
+                          <span className="block truncate text-[12px] text-[var(--color-text-secondary)]">
+                            {i.offense || CATEGORY_LABELS[i.incident_category] || 'Incident'}
+                            {i.place_of_incident ? ` · ${i.place_of_incident}` : ''}
+                          </span>
+                          <span className="block text-[11px] text-muted-foreground">
+                            {i.record_number ?? ''}{i.incident_created_at ? ` · ${new Date(i.incident_created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          {items && total > items.length && (
+            <span className="text-[11.5px] text-muted-foreground">Showing the newest {items.length} of {total}. Narrow the period to reach the rest.</span>
+          )}
+        </OptionBlock>
+
+        <div className="flex flex-col gap-2 border-t border-[var(--color-surface-border)] pt-4">
+          <ActionButton disabled={!file || loading} icon={Printer} onClick={() => file && printPdf(file.blob)} variant="primary">
+            {pickedIds.length > 1 ? `Print ${pickedIds.length} reports` : 'Print report'}
+          </ActionButton>
+          <ActionButton disabled={!file || loading} icon={Download} onClick={() => file && saveFile(file)}>
+            Download PDF
+          </ActionButton>
+        </div>
+      </aside>
+
+      <Preview
+        empty="Select at least one narrative report to see it here."
+        error={error}
+        file={file}
+        loading={loading}
+        onRetry={() => setNonce(n => n + 1)}
+        title="Narrative Reports"
+      />
     </div>
   );
 }

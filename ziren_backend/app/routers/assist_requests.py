@@ -49,8 +49,12 @@ def create(payload: CreateAssistRequestBody, current_user: dict = Depends(_agenc
 
 
 @router.get("")
-def list_mine(scope: str | None = Query(None), current_user: dict = Depends(require_admin)):
-    return assist_request_service.list_for_agency(current_user, scope)
+def list_mine(
+    scope: str | None = Query(None),
+    incident_id: str | None = Query(None),
+    current_user: dict = Depends(require_admin),
+):
+    return assist_request_service.list_for_agency(current_user, scope, incident_id=incident_id)
 
 
 @router.get("/{request_id}")

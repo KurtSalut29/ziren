@@ -1,30 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { Building2, Handshake, Mail, MapPin, Phone, ShieldAlert } from 'lucide-react';
-import { ApiError } from '@/lib/api/client';
-import { signOut, useAuth } from '@/lib/hooks/useAuth';
+import { ArrowRight, Building2, Handshake, Mail, MapPin, Phone, ShieldAlert } from 'lucide-react';
 import type { AgencyPresence, AreaFilters, OperationalArea } from '@/lib/api/operational-area';
-import { listAssistRequests, type AssistRequestSummary } from '@/lib/api/assist-requests';
-import { AssistThreadPanel } from '@/components/incidents/assist-thread-panel';
+import { useAssistInboxContext } from '@/components/assist/assist-context';
 import { AG_COLOR } from '@/components/incidents/incident-vocabulary';
 import { periodLong } from './period';
 import { AgencyChip, BarList, Empty, Note, Panel, SIGNAL_LABEL, fmtInt } from './kit';
 
-// AgenciesTab fetches this one small, independent list itself rather than
-// threading it through OperationalArea's payload/useOperationalArea hook:
-// assist requests aren't filtered by this screen's period/municipality the
-// way everything else in that payload is, and this keeps the much larger
-// operational-area.ts/geographic.py contract untouched for an unrelated
-// feature — see the design spec.
-export function AgenciesTab({ data, token }: { data: OperationalArea; token: string }) {
+// `token` is still passed by the page but no longer read here: the assist
+// requests this tab used to fetch come from the layout's shared inbox now.
+export function AgenciesTab({ data }: { data: OperationalArea; token: string }) {
   const signals = Object.entries(data.mix.multi_agency_signals).sort(([, a], [, b]) => b - a);
   const others = data.agencies.filter(a => !a.is_own && a.is_active);
 
   return (
     <div className="flex flex-col gap-4">
-      <AssistRequestsPanel token={token} />
+      <AssistRequestsLink />
 
       <Panel
         description={`Every agency with a presence in ${data.area.municipality}. When a report needs more than one of you, this is who to call.`}
@@ -130,88 +122,31 @@ function AgencyCard({ agency: a, filters }: { agency: AgencyPresence; filters: A
   );
 }
 
-function AssistRequestsPanel({ token }: { token: string }) {
-  const { isProvincialAdmin } = useAuth();
-  const [received, setReceived] = useState<AssistRequestSummary[] | null>(null);
-  const [sent, setSent] = useState<AssistRequestSummary[] | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  function onFail(e: unknown) {
-    if (e instanceof ApiError && e.status === 401) { signOut(); return; }
-    setError(e instanceof Error ? e.message : 'Could not load assist requests.');
-  }
-
-  function reload() {
-    setError(null);
-    // provincial_admin has no agency_id of its own to scope "sent" vs
-    // "received" by — the server ignores scope for that role and returns
-    // both directions for their own agency_type instead (migration 037).
-    if (isProvincialAdmin) {
-      setSent([]);
-      void listAssistRequests(null, token).then(setReceived).catch(onFail);
-    } else {
-      void listAssistRequests('received', token).then(setReceived).catch(onFail);
-      void listAssistRequests('sent', token).then(setSent).catch(onFail);
-    }
-  }
-
-  useEffect(reload, [token, isProvincialAdmin]);
-
-  const pendingIncoming = (received ?? []).filter(r => r.status === 'pending');
-  const rest = [...(received ?? []).filter(r => r.status !== 'pending'), ...(sent ?? [])]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-
+/**
+ * Assist requests used to live in a panel here. They have their own page now
+ * (see app/(dashboard)/assist-requests) — this card only points there, since
+ * this is still where a station looks when it thinks "who else is around".
+ */
+function AssistRequestsLink() {
+  const inbox = useAssistInboxContext();
+  const waiting = inbox?.pendingIncoming ?? 0;
   return (
-    <Panel description="Requests for help between agencies, tied to a specific incident." title="Assist requests">
-      {error ? (
-        <p className="text-[13px] text-[var(--color-system-error)]">{error}</p>
-      ) : received === null || sent === null ? (
-        <p className="text-[13px] text-muted-foreground">Loading…</p>
-      ) : pendingIncoming.length === 0 && rest.length === 0 ? (
-        <Empty icon={Handshake} title="No assist requests yet">
-          {isProvincialAdmin
-            ? 'No station under your agency has asked for or been asked for help yet.'
-            : "Ask another agency for help from any incident's detail view, or requests asking for YOUR help will show up here."}
-        </Empty>
-      ) : (
-        <div className="flex flex-col divide-y divide-[var(--color-surface-border)]">
-          {[...pendingIncoming, ...rest].map(r => (
-            <AssistRequestRow key={r.id} onOpen={() => setOpenId(r.id)} request={r} />
-          ))}
-        </div>
-      )}
-
-      {openId && (
-        <div className="mt-3 overflow-hidden rounded-xl border border-[var(--color-surface-border)]">
-          <AssistThreadPanel
-            className="h-[420px]"
-            onStatusChange={reload}
-            readOnly={isProvincialAdmin}
-            requestId={openId}
-            token={token}
-          />
-        </div>
-      )}
-    </Panel>
-  );
-}
-
-function AssistRequestRow({ request, onOpen }: { request: AssistRequestSummary; onOpen: () => void }) {
-  const STATUS_WORD: Record<string, string> = { pending: 'Pending', acknowledged: 'Responding', declined: 'Declined' };
-  return (
-    <button
-      className="flex w-full items-center justify-between gap-3 py-3 text-left first:pt-0 last:pb-0 hover:bg-[var(--color-surface-hover)]"
-      onClick={onOpen}
-      type="button"
+    <Link
+      className="group flex items-center gap-4 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-5 py-4 transition-colors hover:border-[var(--color-brand)]"
+      href="/assist-requests"
     >
-      <span className="min-w-0">
-        <span className="block truncate text-[13.5px] font-medium text-foreground">
-          {request.requesting_agency_name} → {request.requested_agency_name}
-        </span>
-        <span className="block truncate text-[12px] text-muted-foreground">{request.location_address ?? 'Location not on file'}</span>
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-system-info-bg)] text-[var(--color-system-info)]">
+        <Handshake aria-hidden="true" className="size-5" />
       </span>
-      <span className="shrink-0 text-[12px] font-semibold text-muted-foreground">{STATUS_WORD[request.status]}</span>
-    </button>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-bold text-foreground">Assist Requests</span>
+        <span className="block text-[12.5px] text-muted-foreground">
+          {waiting > 0
+            ? `${waiting} station${waiting === 1 ? ' is' : 's are'} waiting for your answer.`
+            : 'Ask any station in Biliran for help, and talk it through with them.'}
+        </span>
+      </span>
+      <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
   );
 }

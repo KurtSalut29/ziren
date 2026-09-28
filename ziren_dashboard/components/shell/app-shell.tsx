@@ -92,6 +92,8 @@ interface AppShellProps {
   /** For the notification bell — null while the session hasn't hydrated yet. */
   token: string | null;
   alerts?: ShellAlerts;
+  /** Count badges for sidebar rows, keyed by href. Zero hides the badge. */
+  badges?: Record<string, number>;
   children: React.ReactNode;
 }
 
@@ -103,6 +105,7 @@ export function AppShell({
   section,
   token,
   alerts,
+  badges,
   children,
 }: AppShellProps) {
 
@@ -116,7 +119,7 @@ export function AppShell({
           Skip to main content
         </a>
         <SidebarProvider className="relative h-svh">
-          <ZirenSidebar pathname={pathname} role={role} user={user} />
+          <ZirenSidebar badges={badges} pathname={pathname} role={role} user={user} />
           {/* The frame interior, not --background. The inset variant's whole
               point is a panel floating on the sidebar's ground, and in light
               both were #FAFAFA — the panel existed but was the same colour as

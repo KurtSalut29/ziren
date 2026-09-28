@@ -100,6 +100,13 @@ export default function OperationalAreaPage() {
   // and a flash of figures nobody asked for.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    // Assist requests moved to their own page. Bell entries written before
+    // the move still point here (?tab=agencies&assist=<id>) — send them on.
+    const assist = params.get('assist');
+    if (assist) {
+      window.location.replace(`/assist-requests?id=${encodeURIComponent(assist)}`);
+      return;
+    }
     setDays(readSavedDays());
     const wanted = params.get('tab');
     if (wanted && (TAB_KEYS as string[]).includes(wanted)) setTab(wanted as TabKey);

@@ -36,6 +36,7 @@ import {
   Building2,
   FileDown,
   Globe2,
+  Handshake,
   History,
   MapPinned,
   Megaphone,
@@ -132,6 +133,13 @@ const NAV: NavGroup[] = [
       // Label is "Incident Records"; the path keeps its old name so existing
       // links and bookmarks still resolve.
       { href: '/incident-history', label: 'Incident Records', icon: History },
+      // Help between stations: requests this station sent, requests asking it
+      // for help, and the conversation behind each. Its own entry (not a panel
+      // on Operational Area, where it used to be) because stations testing it
+      // could not find it there. Both roles — a Provincial Admin reads their
+      // agency type's requests for oversight. Badged by the layout while a
+      // request waits for an answer or holds an unread reply.
+      { href: '/assist-requests', label: 'Assist Requests', icon: Handshake },
       // The filing cabinet for narrative reports - every one an agency has
       // written, organised by kind of incident. Both roles: an Agency Admin
       // writes them, a Provincial Admin reads the ones filed under their agency
@@ -194,10 +202,9 @@ const NAV: NavGroup[] = [
         icon: Megaphone,
       },
       {
-        // Agency Admin's Agency Reports (spec Section 14) reuse this same
-        // page — REPORT_TYPES is filtered client-side to the four types
-        // that have a per-agency cut, and every download is scoped
-        // server-side to their own agency.
+        // The two printable documents — Incident Records and Narrative
+        // Reports — for both roles, each scoped server-side to the caller's
+        // own station (Agency Admin) or agency type (Provincial Admin).
         href: '/reports',
         label: 'Reports & Export',
         icon: FileDown,

@@ -77,6 +77,7 @@ import {
   CancelModal, DispatchModal, FlagSosModal, RejectReportModal,
 } from '@/components/incidents/dispatch-action-modals';
 import { AssistRequestDialog } from '@/components/incidents/assist-request-dialog';
+import { IncidentAssistList } from '@/components/assist/incident-assist-list';
 import { IncidentChatModal } from '@/components/incidents/incident-chat-modal';
 import { ChatButtonBadge } from '@/components/incidents/chat-button-badge';
 import { useIncidentThread } from '@/lib/hooks/useIncidentThread';
@@ -190,6 +191,8 @@ export function IncidentDetailModal({
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showAssistDialog, setShowAssistDialog] = useState(false);
+  // Bumped after a request goes out so the "stations we asked" list re-reads.
+  const [assistVersion, setAssistVersion] = useState(0);
   const assistTriggerRef = useRef<HTMLButtonElement>(null);
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false);
   const [showResolveConfirm, setShowResolveConfirm] = useState(false);
@@ -486,16 +489,22 @@ export function IncidentDetailModal({
                     )}
                     {!isProvincialAdmin && (
                       <Row icon={Handshake} label="Coordination">
-                        <button
-                          className="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold transition-all hover:brightness-105"
-                          onClick={() => setShowAssistDialog(true)}
-                          ref={assistTriggerRef}
-                          style={tintedOutline('var(--color-brand)')}
-                          type="button"
-                        >
-                          <Handshake size={14} />
-                          Request assist
-                        </button>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                          <button
+                            className="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold transition-all hover:brightness-105"
+                            onClick={() => setShowAssistDialog(true)}
+                            ref={assistTriggerRef}
+                            style={tintedOutline('var(--color-brand)')}
+                            type="button"
+                          >
+                            <Handshake size={14} />
+                            Request help from another station
+                          </button>
+                          <span className="text-[12px] text-muted-foreground">
+                            Any station in Biliran. They are alerted; this report stays with you.
+                          </span>
+                        </div>
+                        {token && <IncidentAssistList incidentId={detail.id} token={token} version={assistVersion} />}
                       </Row>
                     )}
                     {view.showWizardAnswers && <Answers items={facets.what} />}
@@ -1098,7 +1107,7 @@ export function IncidentDetailModal({
           incidentId={detail.id}
           onClose={() => setShowAssistDialog(false)}
           onError={setActionError}
-          onSuccess={() => { setShowAssistDialog(false); setSuccessMsg('Assist request sent.'); }}
+          onSuccess={n => { setAssistVersion(v => v + 1); setSuccessMsg(n > 1 ? `Help requested from ${n} stations.` : 'Help requested. The station has been alerted.'); }}
           overlapFlags={detail.overlap_agencies ?? []}
           token={token}
           triggerRef={assistTriggerRef}

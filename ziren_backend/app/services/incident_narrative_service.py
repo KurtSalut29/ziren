@@ -518,6 +518,17 @@ def render_narrative_report_pdf(incident_id: str, actor: dict) -> bytes:
     """The document itself — see _build_pdf for the layout. 404s if nobody
     has written a report yet; there is nothing to print."""
     db: Client = get_supabase()
+    incident, report = load_for_print(db, incident_id, actor)
+    return _build_pdf(incident, report)
+
+
+def load_for_print(db: Client, incident_id: str, actor: dict) -> tuple[dict, dict]:
+    """(incident, report) for printing one narrative report, scope-checked.
+
+    Shared by the single-report PDF above and the Reports & Export bundle
+    (printable_reports.build_narrative_bundle), so both print exactly the
+    same document from exactly the same data.
+    """
     _load_incident_for_scope(db, incident_id, actor)
 
     # Pull the same incident context the dashboard's detail view already
@@ -553,7 +564,7 @@ def render_narrative_report_pdf(incident_id: str, actor: dict) -> bytes:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No narrative report has been written for this incident yet.",
         )
-    return _build_pdf(incident, report_result.data)
+    return incident, report_result.data
 
 
 def _ph(value) -> datetime | None:
@@ -585,6 +596,23 @@ def _person_age(dob: str, on: datetime | None) -> str:
 
 
 def _build_pdf(incident: dict, report: dict) -> bytes:
+    """One Incident Record Form as a PDF — see irf_flowables for the layout."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=letter,
+        topMargin=0.5 * inch, bottomMargin=0.55 * inch,
+        leftMargin=0.5 * inch, rightMargin=0.5 * inch,
+        title="Incident Record Form",
+    )
+    doc.build(irf_flowables(incident, report))
+    return buf.getvalue()
+
+
+def irf_flowables(incident: dict, report: dict) -> list:
     """The Incident Record Form, printed.
 
     Laid out the way the paper form is - boxed cells with the caption above the
@@ -594,11 +622,10 @@ def _build_pdf(incident: dict, report: dict) -> bytes:
     """
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
-    from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import inch
     from reportlab.platypus import (
-        CondPageBreak, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
+        CondPageBreak, KeepTogether, Paragraph, Spacer, Table, TableStyle,
     )
     from xml.sax.saxutils import escape
 
@@ -892,12 +919,4 @@ def _build_pdf(incident: dict, report: dict) -> bytes:
         f"Status: {status_label}  |  Record {esc(incident.get('record_number') or '')}  |  "
         f"Generated {datetime.now(PH_TZ).strftime('%Y-%m-%d %H:%M')} PHT by Ziren", foot))
 
-    buf = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buf, pagesize=letter,
-        topMargin=0.5 * inch, bottomMargin=0.55 * inch,
-        leftMargin=0.5 * inch, rightMargin=0.5 * inch,
-        title="Incident Record Form",
-    )
-    doc.build(els)
-    return buf.getvalue()
+    return els

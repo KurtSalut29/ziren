@@ -39,6 +39,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/queue':      { title: 'Incidents',            subtitle: 'Open work and full history' },
   '/incidents':  { title: 'Incidents',            subtitle: 'Open work and full history', section: 'Monitoring' },
   '/map':        { title: 'Incident Map',         subtitle: 'Live geospatial view',            section: 'Monitoring' },
+  '/assist-requests': { title: 'Assist Requests', subtitle: 'Help between stations', section: 'Monitoring' },
   '/narrative-reports': { title: 'Narrative Reports', subtitle: 'Every report your agency has written, by type of incident', section: 'Monitoring' },
 
   '/accounts':   { title: 'Accounts',             subtitle: 'Cross-agency user directory',     section: 'Management' },
@@ -55,7 +56,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/system-status':     { title: 'System Status',         subtitle: 'Service health',            section: 'Governance' },
 
   '/announcements': { title: 'Announcements',     subtitle: 'System-wide broadcasts',          section: 'Communication' },
-  '/reports':       { title: 'Reports & Export',  subtitle: 'Generate and download reports',   section: 'Communication' },
+  '/reports':       { title: 'Reports & Export',  subtitle: 'Print incident records and narrative reports', section: 'Communication' },
 
   '/settings':   { title: 'Settings',             subtitle: 'Profile & preferences' },
 };

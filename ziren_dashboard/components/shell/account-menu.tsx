@@ -27,10 +27,10 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/efferd/ui/alert-dialog';
+import { ZirenLogo } from '@/components/brand/ziren-logo';
 import { useTheme, type ThemePreference } from '@/lib/theme/use-theme';
 import type { SidebarUser } from './app-shell';
 
@@ -92,17 +92,50 @@ export function AccountMenu({
               Sign out
             </DropdownMenuItem>
           </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogMedia tone="neutral"><LogOut /></AlertDialogMedia>
-              <AlertDialogTitle>Sign Out?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to sign out of your Ziren account?
+          {/* Redesigned 2026-09-29: the product owner asked for bigger, more
+              professional choices and the Ziren mark on it. Brand band with
+              the logo, who is signing out, what stops when they do, then two
+              full-width 48px buttons — Cancel as a quiet outline, Sign out as
+              the one filled action. Orange, not red: signing out is a
+              deliberate everyday action, and red is reserved for critical
+              severity (globals.css). */}
+          <AlertDialogContent className="max-w-[calc(100vw-2rem)]! gap-0 overflow-hidden p-0 sm:max-w-[420px]!">
+            <div className="relative flex flex-col items-center gap-3 bg-[linear-gradient(180deg,var(--color-brand-subtle),transparent)] px-6 pb-2 pt-7">
+              <span className="flex size-[72px] items-center justify-center rounded-2xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-md)]">
+                <ZirenLogo alt="Ziren" size={52} />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Ziren</span>
+            </div>
+            <AlertDialogHeader className="place-items-center! px-6 pt-2 text-center!">
+              <AlertDialogTitle className="text-[20px] font-bold tracking-tight">Sign out of Ziren?</AlertDialogTitle>
+              <AlertDialogDescription className="text-[13.5px] leading-relaxed">
+                This screen will stop receiving new-report and assist alerts until you sign in again.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={user.onSignOut}>Sign Out</AlertDialogAction>
+            <div className="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-3.5 py-3">
+              <span
+                aria-hidden="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+                style={{ backgroundColor: 'var(--color-brand)', color: 'var(--color-text-inverse)' }}
+              >
+                {user.initials}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-semibold text-foreground">{user.name}</span>
+                <span className="block truncate text-[12px] text-muted-foreground">{user.agencyName ?? user.roleLabel}</span>
+              </span>
+            </div>
+            <AlertDialogFooter className="grid! grid-cols-2 gap-3 px-6 pb-6 pt-5">
+              <AlertDialogCancel className="h-12! rounded-xl! text-[14px]! font-semibold">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="h-12! gap-2 rounded-xl! bg-[var(--color-brand)]! text-[14px]! font-bold text-white shadow-[0_6px_16px_-6px_color-mix(in_srgb,var(--color-brand)_70%,transparent)] hover:bg-[var(--color-brand)] hover:brightness-110"
+                onClick={user.onSignOut}
+              >
+                <LogOut aria-hidden="true" className="size-[18px]" />
+                Sign out
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

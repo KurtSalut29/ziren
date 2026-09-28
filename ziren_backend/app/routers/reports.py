@@ -12,7 +12,7 @@ the three that don't).
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 
 from app.core.dependencies import require_admin
-from app.services import report_service
+from app.services import printable_reports, report_service
 
 router = APIRouter()
 
@@ -25,6 +25,47 @@ def list_report_types(current_user: dict = Depends(require_admin)):
         else report_service.REPORT_TYPES
     )
     return {"report_types": list(types), "formats": list(report_service.FORMATS)}
+
+
+# ── The two printable documents Reports & Export offers ──────────────────
+# Registered BEFORE /{report_type} so neither name is swallowed as a report
+# type. See app/services/printable_reports.py.
+
+@router.get("/incident_records")
+def incident_records(
+    format: str = Query("pdf", description="pdf, csv or xlsx"),
+    start_date: str | None = Query(None, description="Bare date (YYYY-MM-DD). Omitted means all-time."),
+    end_date: str | None = Query(None, description="Bare date (YYYY-MM-DD), inclusive. Omitted means all-time."),
+    status_filter: str | None = Query(None, alias="status", description="open, resolved or cancelled"),
+    severity: str | None = Query(None, description="critical, high, medium or low"),
+    current_user: dict = Depends(require_admin),
+):
+    """The Incident Records Report — scoped exactly like Incident Records."""
+    content, filename, media_type = printable_reports.build_incident_records(
+        current_user, format,
+        start_date=start_date, end_date=end_date, status_filter=status_filter, severity=severity,
+    )
+    return _file(content, filename, media_type)
+
+
+@router.get("/narrative_reports")
+def narrative_reports(
+    ids: str = Query(..., description="Comma-separated incident ids, at most 50."),
+    current_user: dict = Depends(require_admin),
+):
+    """Selected narrative reports as one printable PDF with a cover page."""
+    content, filename, media_type = printable_reports.build_narrative_bundle(current_user, ids.split(","))
+    return _file(content, filename, media_type)
+
+
+def _file(content: bytes, filename: str, media_type: str) -> Response:
+    # inline, not attachment: the dashboard previews and prints these in the
+    # browser; its download button names the file itself.
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.get("/{report_type}")

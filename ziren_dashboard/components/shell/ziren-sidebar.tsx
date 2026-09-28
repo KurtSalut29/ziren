@@ -5,26 +5,38 @@
  * @efferd/dashboard-3 sidebar structure the product owner adopted.
  *
  * Structure taken from the reference, verbatim in shape:
- *   header (mark + wordmark) → primary action + search → labelled nav groups
- *   with collapsible sub-trees → quiet footer links → user.
+ *   header (mark + wordmark) → labelled nav groups with collapsible
+ *   sub-trees → user.
  *
  * Content is Ziren's. The nav comes from lib/nav/nav-config.ts, which is still
  * the single place role gating is expressed — this file renders whatever
  * getNavGroups() returns and performs no permission checks of its own.
  *
- * One departure from the reference: its "New Conversation" primary button
- * and the search control beside it are dropped rather than re-pointed. Both
- * duplicated something already on screen — Live Queue is a nav row two
- * items below, and the button only focused the header's search field — and
- * a primary action that repeats a nav item spends the loudest colour on the
- * sidebar saying nothing new.
+ * THE ACTIVE ROW
  *
- * The reference's footer marketing card is gone; the connectivity state it
- * used to carry lives as a dot on the account avatar instead (see
- * ConnectivityDot) — still operational information, not chrome, but it no
- * longer needs a permanent slot to say so. What DOES take that slot now is
- * the reference's own "user" row (SidebarUserFooter): avatar, name, email,
- * a chevron that opens the same account menu the top nav's avatar does.
+ * Redesigned 2026-09-29 at the product owner's request ("pagandahin pa, lalo
+ * na ang active state"). The earlier row was a pale tint, an orange icon and a
+ * thin left rail — three quiet signals that together still read as "hovered".
+ * Now the ICON sits in a solid brand-orange chip with a soft orange glow, on a
+ * tinted row with a hairline orange ring, and the label turns bold. The label
+ * stays in the primary text colour rather than white-on-orange: brand orange
+ * under white small text measures 3.0:1, and a nav label is read at a glance
+ * all shift long. The chip carries the colour; the text carries the words.
+ * Brand orange here is within the colour rules (globals.css): CTAs and the
+ * active nav item are exactly what it is reserved for.
+ *
+ * THE COLLAPSED RAIL
+ *
+ * Collapsed, the rail used to be 3rem, which left a 16px box for a 32px logo:
+ * the mark was cut in half. The rail is 3.5rem now (see SIDEBAR_WIDTH_ICON)
+ * and the header button drops its padding when collapsed, so the whole mark
+ * shows, centred, at the same size as the icon chips beneath it.
+ *
+ * BADGES
+ *
+ * `badges` maps an href to a count (the layout sets one for Assist Requests).
+ * Expanded, it is a pill at the row's end; collapsed, a dot on the icon, so
+ * the rail still says "something here needs you".
  */
 
 import Link from 'next/link';
@@ -52,96 +64,126 @@ import {
   isItemActive,
   isItemExpanded,
   type NavRole,
+  type ResolvedNavItem,
 } from '@/lib/nav/nav-config';
 import { ZirenLogo } from '@/components/brand/ziren-logo';
+import { cn } from '@/lib/utils';
 import { SidebarUserFooter } from './sidebar-user';
 import type { SidebarUser } from './app-shell';
+
+/**
+ * Row geometry and states, layered over the efferd base. The base's own
+ * `data-active:bg-sidebar-accent` is kept (it IS the tint); what is added is
+ * the ring, the weight and the collapsed centring.
+ */
+const ROW = cn(
+  'h-10 gap-3 rounded-xl px-2 text-[13.5px] font-medium text-[var(--color-text-secondary)]',
+  'transition-[background-color,color,box-shadow] duration-150',
+  'hover:bg-[var(--color-surface-hover)] hover:text-foreground',
+  'data-active:font-semibold data-active:text-[var(--color-text-primary)]',
+  'data-active:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--color-brand)_22%,transparent)]',
+  'data-active:hover:bg-sidebar-accent',
+  'group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!',
+);
+
+function IconChip({ item, active, badge }: { item: ResolvedNavItem; active: boolean; badge: number }) {
+  const Icon = item.icon;
+  return (
+    <span
+      className={cn(
+        'relative flex size-7 shrink-0 items-center justify-center rounded-lg transition-[background-color,color,box-shadow] duration-150',
+        active
+          ? 'bg-[var(--color-brand)] text-white shadow-[0_4px_12px_-3px_color-mix(in_srgb,var(--color-brand)_65%,transparent)]'
+          : 'text-[var(--color-text-tertiary)] group-hover/menu-button:bg-[var(--color-surface-raised)] group-hover/menu-button:text-foreground',
+      )}
+    >
+      <Icon strokeWidth={active ? 2.4 : 2} />
+      {badge > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute -right-1 -top-1 hidden size-2.5 rounded-full border-2 border-[var(--color-sidebar)] bg-[var(--color-brand)] group-data-[collapsible=icon]:block"
+        />
+      )}
+    </span>
+  );
+}
+
+function CountPill({ count, active }: { count: number; active: boolean }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={cn(
+        'ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums group-data-[collapsible=icon]:hidden',
+        active ? 'bg-[var(--color-surface-card)] text-[var(--color-brand)]' : 'bg-[var(--color-brand)] text-white',
+      )}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 export function ZirenSidebar({
   role,
   pathname,
   user,
+  badges,
 }: {
   role: NavRole;
   pathname: string;
   user: SidebarUser;
+  badges?: Record<string, number>;
 }) {
   const groups = getNavGroups(role);
 
   return (
     <Sidebar collapsible="icon" variant="inset">
-      <SidebarHeader className="h-16 justify-center">
-        <SidebarMenuButton asChild>
+      <SidebarHeader className="h-16 justify-center group-data-[collapsible=icon]:items-center">
+        <SidebarMenuButton
+          asChild
+          className="h-11 gap-2.5 rounded-xl px-1.5 hover:bg-transparent group-data-[collapsible=icon]:size-10! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1!"
+          tooltip="Ziren — Dashboard"
+        >
           <Link href="/overview">
             {/* ZirenLogo carries both the object-contain (the mark is not
                 square inside its box, and `fill` would crop it) and the
-                per-theme asset swap that replaced the old
-                `dark:brightness-0 dark:invert` — that pair works by discarding
-                colour, and the logo now has brand orange in it.
-                size=32 (up from 24): the spec calls the previous mark too
-                small for "sufficient visual identity" in the sidebar. Header
-                bumped to h-16 alongside it so the larger mark doesn't crowd
-                the wordmark next to it or the collapse toggle above. */}
+                per-theme asset swap. 32px: the same box as the collapsed
+                button's content area, so collapsing never crops it. */}
             <ZirenLogo priority size={32} />
-            {/* Set as a logotype, not as a word. Wide tracking on a short
-                uppercase string is what separates a wordmark from a heading —
-                at the default tracking it read as body copy that happened to
-                be capitalised. */}
-            <span className="text-[15px] font-bold leading-none tracking-[0.2em]">
-              ZIREN
+            {/* Set as a logotype, not as a word — wide tracking on a short
+                uppercase string is what separates a wordmark from a heading. */}
+            <span className="flex flex-col leading-none group-data-[collapsible=icon]:hidden">
+              <span className="text-[15px] font-bold tracking-[0.2em] text-foreground">ZIREN</span>
+              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Dispatch console</span>
             </span>
           </Link>
         </SidebarMenuButton>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="scroll-slim">
         {groups.map(group => (
-          <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarMenu className="gap-1.5">
+          <SidebarGroup className="py-1.5" key={group.label}>
+            <SidebarGroupLabel className="h-7 px-2.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
+              {group.label}
+            </SidebarGroupLabel>
+            <SidebarMenu className="gap-1">
               {group.items.map(item => {
                 const active = isItemActive(item, pathname);
-                const Icon = item.icon;
-
-                // The efferd base gives an active row only a background tint
-                // plus bold text — both close enough to the hover/default
-                // look that "you are here" reads as "your cursor was near
-                // here". The pre-efferd sidebar (components/shell/sidebar.tsx,
-                // no longer rendered) put the actual identifying colour on the
-                // ICON instead, precisely because brand orange as label text
-                // on its own tint measures 4.1:1 — under the floor for text,
-                // fine for an icon. That treatment never carried over when
-                // this file replaced it; restoring it here, not inventing it.
-                const iconStyle = active
-                  ? { color: 'var(--color-nav-active-icon)' }
-                  : undefined;
-
-                // A left rail, on top of the tint + icon colour above rather
-                // than instead of them — the rail is the shape a glance
-                // catches first (it doesn't need to be read as colour at
-                // all), the icon confirms it. SidebarMenuItem is already
-                // `relative` (see sidebar.tsx), so this only needs to be
-                // absolutely positioned, not given its own stacking context.
-                const activeRail = active && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full"
-                    style={{ backgroundColor: 'var(--color-nav-active-icon)' }}
-                  />
-                );
+                const badge = badges?.[item.href] ?? 0;
+                const tooltip = badge > 0 ? `${item.label} · ${badge} need${badge === 1 ? 's' : ''} attention` : item.label;
 
                 if (!item.children?.length) {
                   return (
                     <SidebarMenuItem key={item.href + item.label}>
-                      {activeRail}
                       <SidebarMenuButton
                         asChild
+                        className={ROW}
                         isActive={active}
-                        tooltip={item.label}
+                        tooltip={tooltip}
                       >
-                        <Link href={item.href}>
-                          <Icon strokeWidth={active ? 2.25 : 2} style={iconStyle} />
-                          <span>{item.label}</span>
+                        <Link aria-current={active ? 'page' : undefined} href={item.href}>
+                          <IconChip active={active} badge={badge} item={item} />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                          <CountPill active={active} count={badge} />
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -156,12 +198,11 @@ export function ZirenSidebar({
                     key={item.href + item.label}
                   >
                     <SidebarMenuItem>
-                      {activeRail}
                       <CollapsibleTrigger asChild>
-                        <SidebarMenuButton isActive={active} tooltip={item.label}>
-                          <Icon strokeWidth={active ? 2.25 : 2} style={iconStyle} />
-                          <span>{item.label}</span>
-                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        <SidebarMenuButton className={ROW} isActive={active} tooltip={item.label}>
+                          <IconChip active={active} badge={0} item={item} />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                          <ChevronRight className="ml-auto group-data-[collapsible=icon]:hidden transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>

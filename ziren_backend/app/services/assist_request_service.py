@@ -2,9 +2,16 @@
 assist_request_service — cross-agency "please help on this incident"
 requests: agency_admin to agency_admin, one incident at a time.
 
-The receiving agency never gets access to the incident row itself — every
-function here returns a narrow, live-projected snapshot (category, severity,
-location text), never the full incidents row. See
+Any active station in the province can be asked, not only the ones in the
+incident's own municipality. Stations testing the first version asked for
+this: a fire in Naval can need the MDRRMO ambulance from Caibiran, and the
+municipality rule hid exactly the station they wanted to call.
+
+The report itself never moves. It stays with the station that asked
+(assigned_agency_id is never touched here); the station that was asked gets
+an alert and a read-only situation snapshot — what happened, how bad, where,
+when, and the reporter's own words — never the full incidents row and never
+the reporter's identity. See
 docs/superpowers/specs/2026-09-20-cross-agency-assist-requests-design.md.
 """
 
@@ -15,9 +22,19 @@ from supabase import Client
 
 from app.core.dependencies import assert_agency_scope
 from app.db.supabase_client import get_supabase
+from app.services.incident_service import _coords_of
 from app.services.notification_service import create_for_agency_role
 
 _INCIDENT_COLS = "id, assigned_agency_id, status, incident_category, severity, location_address"
+
+#: The situation a requested station is shown. Deliberately no reporter
+#: columns: the other station needs to know what is happening and where, not
+#: who called it in.
+_SNAPSHOT_COLS = (
+    "id, record_number, report_text, incident_category, severity, "
+    "location_address, location, status, created_at"
+)
+_AGENCY_COLS = "id, name, agency_type, municipality, contact_number"
 
 
 def _assert_owns_incident(db: Client, incident_id: str, actor: dict) -> dict:
@@ -42,9 +59,11 @@ def _assert_owns_incident(db: Client, incident_id: str, actor: dict) -> dict:
 
 
 def list_candidate_agencies(incident_id: str, actor: dict) -> list[dict]:
-    """Other active agencies in the SAME municipality as this incident's own
-    agency — never every agency platform-wide, so a request can't be aimed
-    at a station nowhere near the incident."""
+    """Every other active station in the province, nearest-first by
+    municipality: the incident's own municipality at the top, then the rest
+    alphabetically. `same_municipality` lets the picker label the local ones,
+    and `existing_status` marks a station this incident already asked, so
+    the picker can say "already asked" instead of failing on send."""
     db: Client = get_supabase()
     incident = _assert_owns_incident(db, incident_id, actor)
 
@@ -57,22 +76,112 @@ def list_candidate_agencies(incident_id: str, actor: dict) -> list[dict]:
     )
     if own is None or not own.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This incident's agency could not be found.")
+    home = own.data.get("municipality")
 
     result = (
         db.table("agencies")
-        .select("id, name, agency_type, contact_number, email")
-        .eq("municipality", own.data["municipality"])
+        .select("id, name, agency_type, municipality, contact_number, email")
         .eq("is_active", True)
         .neq("id", incident["assigned_agency_id"])
         .execute()
     )
-    return result.data or []
+    agencies = result.data or []
+
+    asked = (
+        db.table("incident_assist_requests")
+        .select("requested_agency_id, status, created_at")
+        .eq("incident_id", incident_id)
+        .execute()
+    )
+    latest: dict[str, dict] = {}
+    for r in sorted(asked.data or [], key=lambda r: r.get("created_at") or ""):
+        latest[r["requested_agency_id"]] = r
+
+    out = [
+        {
+            **a,
+            "same_municipality": bool(home) and a.get("municipality") == home,
+            "existing_status": (latest.get(a["id"]) or {}).get("status"),
+        }
+        for a in agencies
+    ]
+    out.sort(key=lambda a: (
+        not a["same_municipality"],
+        a.get("municipality") or "~",
+        a.get("agency_type") or "",
+        a.get("name") or "",
+    ))
+    return out
+
+
+def _snapshot(inc: dict) -> dict:
+    """The incident fields a request row carries — see _SNAPSHOT_COLS."""
+    lat, lng = _coords_of(inc) if inc else (None, None)
+    return {
+        "incident_category": inc.get("incident_category"),
+        "severity": inc.get("severity"),
+        "location_address": inc.get("location_address"),
+        "incident_status": inc.get("status"),
+        "record_number": inc.get("record_number"),
+        "report_text": inc.get("report_text"),
+        "incident_created_at": inc.get("created_at"),
+        "latitude": lat,
+        "longitude": lng,
+    }
+
+
+def _agency_fields(prefix: str, agency: dict) -> dict:
+    return {
+        f"{prefix}_agency_name": agency.get("name"),
+        f"{prefix}_agency_type": agency.get("agency_type"),
+        f"{prefix}_municipality": agency.get("municipality"),
+        f"{prefix}_contact_number": agency.get("contact_number"),
+    }
+
+
+def _direction(row: dict, my_agency_id: str) -> str:
+    """incoming / outgoing from the viewer's side; 'oversight' for a
+    provincial_admin, who is neither party."""
+    if my_agency_id and my_agency_id == row["requested_agency_id"]:
+        return "incoming"
+    if my_agency_id and my_agency_id == row["requesting_agency_id"]:
+        return "outgoing"
+    return "oversight"
+
+
+def _last_messages(db: Client, request_ids: list[str]) -> dict[str, dict]:
+    """The newest message of each request plus its message count, for the
+    inbox preview and the unread marker. One query for the whole list,
+    newest first, so the first row seen per request is its latest."""
+    if not request_ids:
+        return {}
+    rows = (
+        db.table("incident_assist_messages")
+        .select("request_id, sender_agency_id, body, created_at")
+        .in_("request_id", request_ids)
+        .order("created_at", desc=True)
+        .execute()
+    ).data
+    last: dict[str, dict] = {}
+    counts: dict[str, int] = {}
+    for m in rows if isinstance(rows, list) else []:
+        counts[m["request_id"]] = counts.get(m["request_id"], 0) + 1
+        last.setdefault(m["request_id"], m)
+    return {
+        rid: {
+            "last_message_at": m.get("created_at"),
+            "last_message_preview": (m.get("body") or "")[:140],
+            "last_sender_agency_id": m.get("sender_agency_id"),
+            "message_count": counts[rid],
+        }
+        for rid, m in last.items()
+    }
 
 
 def _hydrate_request(db: Client, row: dict, actor: dict, requested_agency: dict | None = None) -> dict:
     """
     Attach display fields a raw incident_assist_requests row doesn't carry:
-    both agencies' names, a narrow incident snapshot (never the full
+    both agencies' names and numbers, the situation snapshot (never the full
     incidents row — see this module's docstring), and can_respond, computed
     here rather than left for the frontend because the dashboard's own
     session storage has no agency id to compare against client-side (see
@@ -81,27 +190,25 @@ def _hydrate_request(db: Client, row: dict, actor: dict, requested_agency: dict 
     agencies: dict[str, dict] = {requested_agency["id"]: requested_agency} if requested_agency else {}
     missing = {row["requesting_agency_id"], row["requested_agency_id"]} - agencies.keys()
     if missing:
-        fetched = db.table("agencies").select("id, name").in_("id", list(missing)).execute()
+        fetched = db.table("agencies").select(_AGENCY_COLS).in_("id", list(missing)).execute()
         agencies.update({a["id"]: a for a in (fetched.data or [])})
 
     incident = (
         db.table("incidents")
-        .select("incident_category, severity, location_address, status")
+        .select(_SNAPSHOT_COLS)
         .eq("id", row["incident_id"])
         .maybe_single()
         .execute()
     )
-    inc = incident.data if incident and incident.data else {}
+    inc = incident.data if incident and isinstance(incident.data, dict) else {}
     my_agency_id = str(actor.get("agency_id") or "")
 
     return {
         **row,
-        "requesting_agency_name": agencies.get(row["requesting_agency_id"], {}).get("name"),
-        "requested_agency_name": agencies.get(row["requested_agency_id"], {}).get("name"),
-        "incident_category": inc.get("incident_category"),
-        "severity": inc.get("severity"),
-        "location_address": inc.get("location_address"),
-        "incident_status": inc.get("status"),
+        **_agency_fields("requesting", agencies.get(row["requesting_agency_id"], {})),
+        **_agency_fields("requested", agencies.get(row["requested_agency_id"], {})),
+        **_snapshot(inc),
+        "direction": _direction(row, my_agency_id),
         "can_respond": my_agency_id == row["requested_agency_id"] and row["status"] == "pending",
     }
 
@@ -125,7 +232,7 @@ def create_request(
 
     target = (
         db.table("agencies")
-        .select("id, name, agency_type, municipality, is_active")
+        .select("id, name, agency_type, municipality, contact_number, is_active")
         .eq("id", requested_agency_id)
         .maybe_single()
         .execute()
@@ -164,26 +271,32 @@ def create_request(
         "body": message.strip(),
     }).execute()
 
+    hydrated = _hydrate_request(db, request_row, actor, target.data)
+    # Named after the STATION asking, not the person — the station is who the
+    # other side knows and calls back.
+    from_name = hydrated.get("requesting_agency_name") or actor.get("full_name") or "Another station"
     create_for_agency_role(
         requested_agency_id, "agency_admin",
         type_="assist_request",
-        title=f"Assist requested by {actor.get('full_name') or 'another agency'}",
+        title=f"{from_name} is asking for your help",
         body=message.strip(),
-        link=f"/geographic?tab=agencies&assist={request_row['id']}",
+        link=f"/assist-requests?id={request_row['id']}",
         is_important=True,
     )
+    return hydrated
 
-    return _hydrate_request(db, request_row, actor, target.data)
 
-
-def list_for_agency(actor: dict, scope: str | None) -> list[dict]:
+def list_for_agency(actor: dict, scope: str | None, incident_id: str | None = None) -> list[dict]:
     """
     scope='sent' -> requests my agency raised. scope='received' -> requests
-    asking my agency for help. Ignored for provincial_admin, who has no
-    single agency_id of their own (migration 034) and instead sees every
-    request touching either side, scoped to their own agency_type — the
-    same oversight shape incidents/dispatch_log already give that role
-    (see migration 037).
+    asking my agency for help. scope='all' -> both. Ignored for
+    provincial_admin, who has no single agency_id of their own (migration
+    034) and instead sees every request touching either side, scoped to
+    their own agency_type — the same oversight shape incidents/dispatch_log
+    already give that role (see migration 037).
+
+    incident_id narrows the list to one incident — the incident detail
+    view's own "stations we asked" section.
     """
     db: Client = get_supabase()
 
@@ -196,52 +309,60 @@ def list_for_agency(actor: dict, scope: str | None) -> list[dict]:
         if not agency_ids:
             return []
         ids_csv = ",".join(agency_ids)
-        result = (
+        query = (
             db.table("incident_assist_requests")
             .select("*")
             .or_(f"requesting_agency_id.in.({ids_csv}),requested_agency_id.in.({ids_csv})")
-            .order("created_at", desc=True)
-            .execute()
         )
         my_agency_id = ""  # never matches a real agency id -> can_respond always False, correct for a read-only overseer
     else:
-        if scope not in ("sent", "received"):
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="scope must be 'sent' or 'received'.")
+        if scope not in ("sent", "received", "all"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="scope must be 'sent', 'received' or 'all'.",
+            )
         my_agency_id = str(actor.get("agency_id") or "")
-        column = "requesting_agency_id" if scope == "sent" else "requested_agency_id"
-        result = (
-            db.table("incident_assist_requests")
-            .select("*")
-            .eq(column, my_agency_id)
-            .order("created_at", desc=True)
-            .execute()
-        )
+        if scope == "all":
+            query = (
+                db.table("incident_assist_requests")
+                .select("*")
+                .or_(f"requesting_agency_id.eq.{my_agency_id},requested_agency_id.eq.{my_agency_id}")
+            )
+        else:
+            column = "requesting_agency_id" if scope == "sent" else "requested_agency_id"
+            query = db.table("incident_assist_requests").select("*").eq(column, my_agency_id)
 
-    rows = result.data or []
+    if incident_id:
+        query = query.eq("incident_id", incident_id)
+    rows = query.order("created_at", desc=True).execute().data or []
     if not rows:
         return []
 
     agency_ids = {r["requesting_agency_id"] for r in rows} | {r["requested_agency_id"] for r in rows}
     incident_ids = {r["incident_id"] for r in rows}
-    agencies = {a["id"]: a for a in (db.table("agencies").select("id, name").in_("id", list(agency_ids)).execute().data or [])}
+    agencies = {
+        a["id"]: a for a in (
+            db.table("agencies").select(_AGENCY_COLS).in_("id", list(agency_ids)).execute().data or []
+        )
+    }
     incidents = {
         i["id"]: i for i in (
             db.table("incidents")
-            .select("id, incident_category, severity, location_address, status")
+            .select(_SNAPSHOT_COLS)
             .in_("id", list(incident_ids))
             .execute().data or []
         )
     }
+    last = _last_messages(db, [r["id"] for r in rows])
 
     return [
         {
             **r,
-            "requesting_agency_name": agencies.get(r["requesting_agency_id"], {}).get("name"),
-            "requested_agency_name": agencies.get(r["requested_agency_id"], {}).get("name"),
-            "incident_category": incidents.get(r["incident_id"], {}).get("incident_category"),
-            "severity": incidents.get(r["incident_id"], {}).get("severity"),
-            "location_address": incidents.get(r["incident_id"], {}).get("location_address"),
-            "incident_status": incidents.get(r["incident_id"], {}).get("status"),
+            **_agency_fields("requesting", agencies.get(r["requesting_agency_id"], {})),
+            **_agency_fields("requested", agencies.get(r["requested_agency_id"], {})),
+            **_snapshot(incidents.get(r["incident_id"], {})),
+            **last.get(r["id"], {}),
+            "direction": _direction(r, my_agency_id),
             "can_respond": my_agency_id == r["requested_agency_id"] and r["status"] == "pending",
         }
         for r in rows
@@ -335,10 +456,11 @@ def post_message(request_id: str, body: str, actor: dict) -> dict:
     }).execute()
     row = inserted.data[0]
 
-    # No notification here — only the OPENING message notifies (see
+    # No bell entry here — only the OPENING message notifies (see
     # create_request). A bell entry per reply would spam the feed during an
-    # active exchange; an open thread panel's own polling is how replies
-    # are seen, same as any chat you have open.
+    # active exchange. Replies reach the other station through the dashboard's
+    # assist-alert poll instead, which reads last_message_at off the list
+    # (see _last_messages) and chimes once for a reply from the other side.
     return {**row, "sender_name": actor.get("full_name"), "mine": True}
 
 
@@ -367,12 +489,18 @@ def set_status(request_id: str, new_status: str, actor: dict) -> dict:
     )
     row = updated.data[0]
 
+    hydrated = _hydrate_request(db, row, actor)
+    by = hydrated.get("requested_agency_name") or actor.get("full_name") or "The other station"
     create_for_agency_role(
         row["requesting_agency_id"], "agency_admin",
         type_="assist_response",
-        title=f"Assist request {new_status}",
-        body=f"Your request was {new_status} by {actor.get('full_name') or 'the other agency'}.",
-        link=f"/geographic?tab=agencies&assist={row['id']}",
+        title=f"{by} is responding" if new_status == "acknowledged" else f"{by} can't assist",
+        body=(
+            "They accepted your request for help."
+            if new_status == "acknowledged"
+            else "They declined your request. You can ask another station from the incident."
+        ),
+        link=f"/assist-requests?id={row['id']}",
         is_important=True,
     )
-    return _hydrate_request(db, row, actor)
+    return hydrated

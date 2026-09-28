@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth, signOut } from '@/lib/hooks/useAuth';
 import { DistressBanner } from '@/components/incidents/distress-banner';
@@ -12,6 +12,9 @@ import { IncidentInterrupt } from '@/components/ui/incident-interrupt';
 import { AlertDemoTrigger } from '@/components/ui/alert-demo-trigger';
 import { IncidentDetailModal } from '@/components/incidents/incident-detail-modal';
 import { useIncidentAlerts } from '@/lib/hooks/useIncidentAlerts';
+import { useAssistInbox } from '@/lib/hooks/useAssistInbox';
+import { AssistInboxProvider } from '@/components/assist/assist-context';
+import { AssistAlerts } from '@/components/assist/assist-alerts';
 import { getRouteMeta } from '@/lib/utils/route-meta';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -89,6 +92,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     viewingIncidentId: viewingIncidentId,
   });
 
+  // Cross-agency assist requests: one poll for the whole console, shared by
+  // the Assist Requests page, the sidebar badge and the alert card below. A
+  // station that is asked for help is alerted on whatever page it is on —
+  // the report itself stays with the station that asked. Provincial Admins
+  // read the same list for oversight but are never alerted: they answer
+  // nothing. Called before the early return for the same hook-order reason
+  // as the incident alerts above.
+  const assistInbox = useAssistInbox({
+    token,
+    enabled: Boolean(token && isAdmin && hydrated),
+    isProvincialAdmin,
+    alerting: Boolean(token && isAgencyAdmin && hydrated),
+  });
+
+  // The alert's detail dialog lives here, above every page, so a link inside
+  // it (an assist request, "Open Assist Requests") changes the page UNDER a
+  // dialog that stays open. Leaving the page closes it — and, as closing it
+  // any other way does, acknowledges that report's alert.
+  const lastPath = useRef(pathname);
+  useEffect(() => {
+    if (lastPath.current === pathname) return;
+    lastPath.current = pathname;
+    if (openAlertId) {
+      acknowledgeAlert(openAlertId);
+      setOpenAlertId(null);
+    }
+    // Only a change of page should close it, not the dialog opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   if (!mounted || !hydrated) return <_LoadingSkeleton />;
   if (!token || !isAdmin)    return null;
 
@@ -113,7 +146,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           settings hook that used to own it. */}
       <PrefsApplier />
 
+      <AssistInboxProvider value={assistInbox}>
       <AppShell
+        badges={{ '/assist-requests': assistInbox.attention }}
         // Settings needs these to tell the operator whether the browser will
         // actually deliver the alerts its toggles promise.
         alerts={{ permission: notifPermission, requestPermission: enableNotifications, audioReady }}
@@ -152,6 +187,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {children}
       </AppShell>
+      </AssistInboxProvider>
+
+      {/* Bottom-right, on every page — see assist-alerts.tsx for why it does
+          not share the incident alert's corner. Outside the shell frame for
+          the same clipping reason as the incident alerts below. */}
+      {isAgencyAdmin && (
+        <AssistAlerts
+          alerts={pathname === '/assist-requests'
+            // Already on the page: only a request card for something not
+            // currently open still needs to break through.
+            ? assistInbox.alerts.filter(a => a.kind === 'request')
+            : assistInbox.alerts}
+          onDismiss={assistInbox.dismissAlert}
+          onOpen={assistInbox.markRead}
+        />
+      )}
 
       {/* Live incident alerts — driven by the agency's notification_rules.
           Deliberately OUTSIDE the shell frame: these are viewport-fixed

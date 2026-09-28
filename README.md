@@ -41,7 +41,7 @@ uvicorn app.main:app --reload --host 0.0.0.0
 Verify before moving on:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest -q     # expect: 1527 passed, 3 skipped
+.venv\Scripts\python.exe -m pytest -q     # expect: 1549 passed, 3 skipped
 curl http://127.0.0.1:8000/health         # expect: "model_loaded": true
 ```
 
@@ -136,9 +136,9 @@ and the mobile tests never reach a server.
 
 | App | Command (from the app folder) | Result |
 |---|---|---|
-| Backend | `.venv\Scripts\python.exe -m pytest -q` | 1527 passed, 3 skipped |
+| Backend | `.venv\Scripts\python.exe -m pytest -q` | 1549 passed, 3 skipped |
 | Backend coverage | `.venv\Scripts\python.exe -m pytest -q --cov=app --cov-branch --cov-report=term-missing` | 77% of statements and branches |
-| Dashboard | `npx tsc --noEmit` / `npx eslint .` / `npx next build` | 0 errors / 0 warnings / 34 pages built |
+| Dashboard | `npx tsc --noEmit` / `npx eslint .` / `npx next build` | 0 errors / 0 warnings / 35 pages built |
 | Mobile | `flutter analyze` / `flutter test` | no issues / 755 passed |
 
 **The 3 skipped tests are intentional.** They are field scenarios in
@@ -163,6 +163,8 @@ Where the logic lives, for reading the code:
 | Nearby responders | `app/services/proximity.py`, `app/core/geo.py` | `tests/test_proximity.py`, `tests/test_nearby_integration.py` |
 | Authentication and roles | `app/core/dependencies.py` (Supabase Auth) | `tests/test_auth*.py` |
 | New-report alert (dashboard) | `ziren_dashboard/lib/hooks/useIncidentAlerts.ts` | none (browser behaviour, checked by hand) |
+| Help between stations (assist requests) | `ziren_backend/app/services/assist_request_service.py`; dashboard `lib/hooks/useAssistInbox.ts` (alert) | `tests/test_assist_requests*.py` |
+| Printable reports (Incident Records, Narrative Reports) | `ziren_backend/app/services/printable_reports.py` | `tests/test_printable_reports.py` |
 | Registration (mobile) | `ziren_mobile/lib/features/registration/` | `ziren_mobile/test/registration_*_test.dart` |
 
 ---

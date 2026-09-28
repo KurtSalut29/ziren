@@ -79,15 +79,73 @@ def test_owns_incident_404_when_incident_missing():
     assert exc.value.status_code == 404
 
 
-def test_list_candidate_agencies_excludes_self_and_scopes_to_municipality():
-    db = _mock_db(
-        incident_row=_incident_row(),
+def _mock_db_for_candidates(own_agency_row, candidates_rows, asked_rows):
+    """The candidate lookup is province-wide now: agencies filtered only by
+    is_active and "not me", plus one read of this incident's earlier requests."""
+    db = MagicMock()
+    calls: dict[str, MagicMock] = {}
+
+    def table(name):
+        m = MagicMock()
+        if name == "incidents":
+            result = MagicMock()
+            result.data = _incident_row()
+            m.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = result
+        elif name == "agencies":
+            own_result = MagicMock()
+            own_result.data = own_agency_row
+            m.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = own_result
+            cand_result = MagicMock()
+            cand_result.data = candidates_rows
+            m.select.return_value.eq.return_value.neq.return_value.execute.return_value = cand_result
+        elif name == "incident_assist_requests":
+            asked_result = MagicMock()
+            asked_result.data = asked_rows
+            m.select.return_value.eq.return_value.execute.return_value = asked_result
+        calls[name] = m
+        return m
+
+    db.table.side_effect = table
+    db.calls = calls
+    return db
+
+
+def test_list_candidate_agencies_is_province_wide_with_home_municipality_first():
+    naval_mdrrmo = {"id": OTHER_AGENCY_ID, "name": "MDRRMO Naval", "agency_type": "MDRRMO", "municipality": "Naval", "contact_number": "0917", "email": None}
+    caibiran_pnp = {"id": THIRD_AGENCY_ID, "name": "PNP Caibiran", "agency_type": "PNP", "municipality": "Caibiran", "contact_number": None, "email": None}
+    almeria_bfp = {"id": "b0000004-0000-0000-0000-000000000004", "name": "BFP Almeria", "agency_type": "BFP", "municipality": "Almeria", "contact_number": None, "email": None}
+    db = _mock_db_for_candidates(
         own_agency_row={"id": AGENCY_ID, "municipality": "Naval"},
-        candidates_rows=[{"id": OTHER_AGENCY_ID, "name": "MDRRMO Naval", "agency_type": "MDRRMO", "contact_number": "0917", "email": "m@naval.gov.ph"}],
+        candidates_rows=[caibiran_pnp, almeria_bfp, naval_mdrrmo],
+        asked_rows=[],
     )
     with patch("app.services.assist_request_service.get_supabase", return_value=db):
         result = assist_request_service.list_candidate_agencies(INCIDENT_ID, AGENCY_ADMIN)
-    assert result == [{"id": OTHER_AGENCY_ID, "name": "MDRRMO Naval", "agency_type": "MDRRMO", "contact_number": "0917", "email": "m@naval.gov.ph"}]
+
+    # Every other municipality is offered, not only Naval.
+    assert [a["id"] for a in result] == [OTHER_AGENCY_ID, almeria_bfp["id"], THIRD_AGENCY_ID]
+    assert [a["same_municipality"] for a in result] == [True, False, False]
+    # The query itself must not be narrowed to one municipality any more.
+    agencies_select = db.calls["agencies"].select.return_value
+    assert not any(c.args[0] == "municipality" for c in agencies_select.eq.call_args_list)
+
+
+def test_list_candidate_agencies_marks_stations_already_asked():
+    other = {"id": OTHER_AGENCY_ID, "name": "MDRRMO Naval", "agency_type": "MDRRMO", "municipality": "Naval", "contact_number": None, "email": None}
+    third = {"id": THIRD_AGENCY_ID, "name": "PNP Caibiran", "agency_type": "PNP", "municipality": "Caibiran", "contact_number": None, "email": None}
+    db = _mock_db_for_candidates(
+        own_agency_row={"id": AGENCY_ID, "municipality": "Naval"},
+        candidates_rows=[other, third],
+        asked_rows=[
+            {"requested_agency_id": OTHER_AGENCY_ID, "status": "declined", "created_at": "2026-09-20T00:00:00Z"},
+            {"requested_agency_id": OTHER_AGENCY_ID, "status": "pending", "created_at": "2026-09-21T00:00:00Z"},
+        ],
+    )
+    with patch("app.services.assist_request_service.get_supabase", return_value=db):
+        result = assist_request_service.list_candidate_agencies(INCIDENT_ID, AGENCY_ADMIN)
+    by_id = {a["id"]: a for a in result}
+    assert by_id[OTHER_AGENCY_ID]["existing_status"] == "pending"   # the LATEST request wins
+    assert by_id[THIRD_AGENCY_ID]["existing_status"] is None
 
 
 def test_list_candidate_agencies_forbidden_for_a_different_agency():
@@ -512,3 +570,98 @@ def test_get_thread_forbidden_for_provincial_admin_of_a_different_agency_type():
         with pytest.raises(HTTPException) as exc:
             assist_request_service.get_thread("h1", other_type_admin)
     assert exc.value.status_code == 403
+
+
+# ── situation snapshot, direction and last message (the redesigned inbox) ──
+
+def test_list_for_agency_carries_the_situation_snapshot_and_last_message():
+    row = _request_row()
+    db = MagicMock()
+
+    def table(name):
+        m = MagicMock()
+        if name == "incident_assist_requests":
+            m.select.return_value.eq.return_value.order.return_value.execute.return_value = MagicMock(data=[row])
+        elif name == "agencies":
+            m.select.return_value.in_.return_value.execute.return_value = MagicMock(data=[
+                {"id": AGENCY_ID, "name": "BFP Naval", "agency_type": "BFP", "municipality": "Naval", "contact_number": "0911"},
+                {"id": OTHER_AGENCY_ID, "name": "MDRRMO Caibiran", "agency_type": "MDRRMO", "municipality": "Caibiran", "contact_number": None},
+            ])
+        elif name == "incidents":
+            m.select.return_value.in_.return_value.execute.return_value = MagicMock(data=[{
+                "id": INCIDENT_ID, "record_number": "BFP-2026-0001", "report_text": "Sunog sa palengke",
+                "incident_category": "fire", "severity": "high", "location_address": "Brgy 1, Naval",
+                "status": "dispatched", "created_at": "2026-09-20T00:00:00Z",
+                "location": {"type": "Point", "coordinates": [124.40, 11.56]},
+            }])
+        elif name == "incident_assist_messages":
+            m.select.return_value.in_.return_value.order.return_value.execute.return_value = MagicMock(data=[
+                {"request_id": row["id"], "sender_agency_id": OTHER_AGENCY_ID, "body": "On our way", "created_at": "2026-09-20T00:05:00Z"},
+                {"request_id": row["id"], "sender_agency_id": AGENCY_ID, "body": "Need an ambulance", "created_at": "2026-09-20T00:01:00Z"},
+            ])
+        return m
+
+    db.table.side_effect = table
+    with patch("app.services.assist_request_service.get_supabase", return_value=db):
+        [item] = assist_request_service.list_for_agency(OTHER_AGENCY_ADMIN, "received")
+
+    assert item["direction"] == "incoming"
+    assert item["requesting_agency_name"] == "BFP Naval"
+    assert item["requesting_contact_number"] == "0911"
+    assert item["requested_municipality"] == "Caibiran"
+    assert item["report_text"] == "Sunog sa palengke"
+    assert item["record_number"] == "BFP-2026-0001"
+    # GeoJSON is [lng, lat]; the snapshot must hand back lat/lng the right way round.
+    assert (item["latitude"], item["longitude"]) == (11.56, 124.40)
+    assert item["last_message_preview"] == "On our way"
+    assert item["last_sender_agency_id"] == OTHER_AGENCY_ID
+    assert item["message_count"] == 2
+
+
+def test_list_for_agency_all_scope_reads_both_directions():
+    db = MagicMock()
+    requests_table = MagicMock()
+    requests_table.select.return_value.or_.return_value.order.return_value.execute.return_value = MagicMock(data=[])
+    db.table.side_effect = lambda name: requests_table if name == "incident_assist_requests" else MagicMock()
+    with patch("app.services.assist_request_service.get_supabase", return_value=db):
+        assert assist_request_service.list_for_agency(AGENCY_ADMIN, "all") == []
+    or_filter = requests_table.select.return_value.or_.call_args.args[0]
+    assert f"requesting_agency_id.eq.{AGENCY_ID}" in or_filter
+    assert f"requested_agency_id.eq.{AGENCY_ID}" in or_filter
+
+
+def test_list_for_agency_incident_filter_narrows_to_one_incident():
+    db = MagicMock()
+    requests_table = MagicMock()
+    chain = requests_table.select.return_value.eq.return_value
+    chain.eq.return_value.order.return_value.execute.return_value = MagicMock(data=[])
+    db.table.side_effect = lambda name: requests_table if name == "incident_assist_requests" else MagicMock()
+    with patch("app.services.assist_request_service.get_supabase", return_value=db):
+        assist_request_service.list_for_agency(AGENCY_ADMIN, "sent", incident_id=INCIDENT_ID)
+    chain.eq.assert_called_once_with("incident_id", INCIDENT_ID)
+
+
+def test_create_request_alert_names_the_requesting_station_and_links_to_the_inbox():
+    request_row = {
+        "id": "f0000006-0000-0000-0000-000000000006", "incident_id": INCIDENT_ID,
+        "requesting_agency_id": AGENCY_ID, "requested_agency_id": THIRD_AGENCY_ID,
+        "overlap_flag": None, "status": "pending", "requested_by": AGENCY_ADMIN["id"],
+        "responded_by": None, "created_at": "2026-09-20T00:00:00Z", "responded_at": None,
+    }
+    db = _mock_db_for_create(
+        incident_row=_incident_row(),
+        own_agency_row=None,
+        # A different municipality — allowed now.
+        target_agency_row={"id": THIRD_AGENCY_ID, "name": "PNP Caibiran", "agency_type": "PNP", "municipality": "Caibiran", "is_active": True},
+        dup_rows=[],
+        inserted_request=request_row,
+        inserted_message={"id": "g1"},
+    )
+    with patch("app.services.assist_request_service.get_supabase", return_value=db), \
+         patch("app.services.assist_request_service.create_for_agency_role") as mock_notify:
+        result = assist_request_service.create_request(INCIDENT_ID, THIRD_AGENCY_ID, "Need traffic control", None, AGENCY_ADMIN)
+
+    assert result["direction"] == "outgoing"
+    assert mock_notify.call_args.args[0] == THIRD_AGENCY_ID
+    assert mock_notify.call_args.kwargs["title"] == "Requesting Agency is asking for your help"
+    assert mock_notify.call_args.kwargs["link"] == f"/assist-requests?id={request_row['id']}"
