@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/map/domain/geo_circle.dart';
+import 'package:ziren/features/map/domain/geo_circle.dart';
 
 /// The accuracy circle has to mean metres. MapLibre's own circle layer sizes
 /// its radius in screen pixels, which would make it grow and shrink with zoom

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/responder/domain/responder_incident_model.dart';
-import 'package:Ziren/features/responder/domain/responder_trends.dart';
+import 'package:ziren/features/responder/domain/responder_incident_model.dart';
+import 'package:ziren/features/responder/domain/responder_trends.dart';
 
 /// The arithmetic behind the responder's Home charts.
 ///

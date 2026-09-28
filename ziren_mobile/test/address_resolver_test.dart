@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/auth/data/barangay_repository.dart';
-import 'package:Ziren/features/registration/domain/address_resolver.dart';
+import 'package:ziren/features/auth/data/barangay_repository.dart';
+import 'package:ziren/features/registration/domain/address_resolver.dart';
 
 /// "Use my location" on the address step: a municipality AND a barangay.
 ///

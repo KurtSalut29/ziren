@@ -37,6 +37,16 @@ def _forget_who_was_recorded():
     px.clear_memory()
 
 
+@pytest.fixture(autouse=True)
+def _clock_at_now():
+    # world() stamps every GPS fix relative to the fixed NOW. These tests reach
+    # proximity through endpoints that cannot pass `now`, so without pinning the
+    # clock every fix ages past fix_max_age_s a few minutes after NOW and the
+    # whole file starts failing on its own, with no code change at all.
+    with patch("app.services.proximity._now", return_value=NOW):
+        yield
+
+
 # =============================================================================
 # A new report reaches the responders too
 # =============================================================================

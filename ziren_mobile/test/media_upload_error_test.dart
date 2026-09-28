@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:Ziren/features/incident_report/data/media_upload_service.dart';
+import 'package:ziren/features/incident_report/data/media_upload_service.dart';
 
 /// A photo the network could not carry must not be reported as a photo the
 /// server refused. The provider stops a report for the second and sends the

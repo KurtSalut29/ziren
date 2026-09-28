@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:Ziren/features/responder/domain/responder_notification_provider.dart';
+import 'package:ziren/features/responder/domain/responder_notification_provider.dart';
 
 /// A responder is told what happens TO them - a call, being stood down, a change
 /// of priority - and nothing about what they did themselves.

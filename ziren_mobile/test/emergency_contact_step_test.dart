@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:Ziren/features/registration/domain/registration_draft.dart';
-import 'package:Ziren/features/registration/presentation/step_contact_screen.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
+import 'package:ziren/features/registration/domain/registration_draft.dart';
+import 'package:ziren/features/registration/presentation/step_contact_screen.dart';
+import 'package:ziren/l10n/app_localizations.dart';
 
 /// The emergency-contact block on registration step 4.
 ///

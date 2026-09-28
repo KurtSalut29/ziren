@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/notifications/domain/notification_provider.dart';
-import 'package:Ziren/features/notifications/presentation/notice_view.dart';
-import 'package:Ziren/features/notifications/presentation/widgets/status_update_sheet.dart';
-import 'package:Ziren/features/settings/presentation/about_ziren_dialog.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/shared/widgets/ziren_dialogs.dart';
-import 'package:Ziren/shared/widgets/ziren_photo_sheet.dart';
+import 'package:ziren/features/notifications/domain/notification_provider.dart';
+import 'package:ziren/features/notifications/presentation/notice_view.dart';
+import 'package:ziren/features/notifications/presentation/widgets/status_update_sheet.dart';
+import 'package:ziren/features/settings/presentation/about_ziren_dialog.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/shared/widgets/ziren_dialogs.dart';
+import 'package:ziren/shared/widgets/ziren_photo_sheet.dart';
 
 /// "I can't tell if these are clickable" - the About Ziren dialog's Terms of Use,
 /// Data Privacy Notice and Cancel were bare words in a row.

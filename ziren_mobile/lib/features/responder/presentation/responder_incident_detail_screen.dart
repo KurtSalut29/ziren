@@ -93,7 +93,7 @@ class _ResponderIncidentDetailScreenState
       incident.nextActionLabel ?? AppLocalizations.of(context).respUpdateStatus,
       newStatus,
     );
-    if (!confirmed) return;
+    if (!confirmed || !context.mounted) return;
 
     final ok = await context.read<ResponderProvider>().advanceStatus(
       incident.id,
@@ -1363,7 +1363,7 @@ class _InlineMapState extends State<_InlineMap> {
       borderRadius: BorderRadius.circular(ZirenTokens.radius8),
       child: SizedBox(
         height: 160,
-        child: MaplibreMap(
+        child: MapLibreMap(
           styleString: _styleJson!,
           initialCameraPosition: CameraPosition(
             target: LatLng(widget.lat, widget.lng),

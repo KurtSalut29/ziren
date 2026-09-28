@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/shared/widgets/ziren_spine.dart';
+import 'package:ziren/shared/widgets/ziren_spine.dart';
 
 /// The rail under a report: what has happened, what has not, and - for a report
 /// that was cancelled or not accepted - where it stopped.

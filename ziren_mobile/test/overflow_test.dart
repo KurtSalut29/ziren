@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/incident_report/presentation/my_reports_screen.dart';
-import 'package:Ziren/features/registration/domain/id_photo_check.dart';
-import 'package:Ziren/features/registration/presentation/id_check_notice.dart';
-import 'package:Ziren/features/registration/presentation/password_requirements.dart';
-import 'package:Ziren/features/registration/presentation/registration_shell.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/shared/widgets/ziren_button.dart';
+import 'package:ziren/features/incident_report/presentation/my_reports_screen.dart';
+import 'package:ziren/features/registration/domain/id_photo_check.dart';
+import 'package:ziren/features/registration/presentation/id_check_notice.dart';
+import 'package:ziren/features/registration/presentation/password_requirements.dart';
+import 'package:ziren/features/registration/presentation/registration_shell.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/shared/widgets/ziren_button.dart';
 
 /// "RIGHT OVERFLOWED BY 14 PIXELS" - the yellow-and-black stripe testers saw
 /// across the My Reports filter chips on their phones.

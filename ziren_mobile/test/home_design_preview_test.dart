@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/shared/theme/app_tokens.dart';
-import 'package:Ziren/shared/widgets/home_kit.dart';
-import 'package:Ziren/shared/widgets/home_surface.dart';
-import 'package:Ziren/features/responder/domain/responder_incident_model.dart';
-import 'package:Ziren/features/responder/domain/responder_trends.dart';
-import 'package:Ziren/features/responder/presentation/responder_home_screen.dart';
-import 'package:Ziren/features/responder/presentation/responder_reports_screen.dart';
-import 'package:Ziren/features/responder/presentation/widgets/responder_charts.dart';
-import 'package:Ziren/features/responder/presentation/widgets/incoming_report_sheet.dart';
-import 'package:Ziren/features/responder/presentation/widgets/responder_kit.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/shared/theme/app_tokens.dart';
+import 'package:ziren/shared/widgets/home_kit.dart';
+import 'package:ziren/shared/widgets/home_surface.dart';
+import 'package:ziren/features/responder/domain/responder_incident_model.dart';
+import 'package:ziren/features/responder/domain/responder_trends.dart';
+import 'package:ziren/features/responder/presentation/responder_home_screen.dart';
+import 'package:ziren/features/responder/presentation/responder_reports_screen.dart';
+import 'package:ziren/features/responder/presentation/widgets/responder_charts.dart';
+import 'package:ziren/features/responder/presentation/widgets/incoming_report_sheet.dart';
+import 'package:ziren/features/responder/presentation/widgets/responder_kit.dart';
 
 /// Renders the home kit with representative content and writes a golden.
 ///

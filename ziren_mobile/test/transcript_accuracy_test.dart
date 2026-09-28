@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/incident_report/domain/transcript_accuracy.dart';
+import 'package:ziren/features/incident_report/domain/transcript_accuracy.dart';
 
 /// Word Error Rate, checked against the sample recorded on a real handset so
 /// the number in the Results chapter can be traced back to something.

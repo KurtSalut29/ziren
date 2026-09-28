@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/core/utils/validators.dart';
+import 'package:ziren/core/utils/validators.dart';
 
 /// The password rule here must stay in step with the server's
 /// `RegisterRequest.password_strength` in

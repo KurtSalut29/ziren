@@ -260,35 +260,8 @@ def test_valid_id_type_validator_rejects_unknown():
         UpdateProfileRequest(valid_id_type="library_card")
 
 
-# ── Accessibility is resident-only ────────────────────────────────────────────
-
-def test_responder_registration_omits_accessibility_fields():
-    """
-    The accessibility profile describes how a crew should assist the person
-    reporting; it does not apply to the crew themselves. The registration
-    screen must not send it for a responder.
-    """
-    screen = (
-        Path(__file__).resolve().parents[2]
-        / "ziren_mobile" / "lib" / "features" / "auth" / "presentation"
-        / "register_screen.dart"
-    )
-    if not screen.exists():
-        pytest.skip("ziren_mobile not present in this checkout")
-
-    src = screen.read_text(encoding="utf-8")
-
-    # Registration is a stepped flow, and the optional ID/accessibility step
-    # is the last one. Responders get a shorter flow that never reaches it.
-    assert "_isResponder ? 2 : 3" in src, (
-        "Responders must skip the optional resident step entirely."
-    )
-    # And the submitted values are neutralised for a responder regardless of
-    # any state left behind by toggling the role selector before switching.
-    assert "isPwd: _isResponder ? false : _isPwd" in src, (
-        "A responder must never submit is_pwd=true, even if the resident form "
-        "was filled in before switching roles."
-    )
+# Accessibility being resident-only is tested where it is enforced, in the
+# mobile suite: ziren_mobile/test/registration_accessibility_test.dart.
 
 
 # ── Responder agency resolution ───────────────────────────────────────────────

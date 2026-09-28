@@ -1050,8 +1050,8 @@ body {
       .shadcn-scope below instead, so registry components get their expected
       defaults only where one is actually mounted.
 
-   3. init wrote all of this into t.css, an orphan file nothing imports.
-      components.json now points at THIS file; see the note in the summary.
+   3. init wrote all of this into a separate t.css that nothing imported
+      (since deleted). components.json now points at THIS file.
    ============================================================ */
 
 @theme inline {

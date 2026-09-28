@@ -10,10 +10,10 @@ ziren_backend/
 │   ├── main.py              # FastAPI app entry point, startup checks, /health
 │   ├── core/
 │   │   ├── config.py        # Environment-based settings (pydantic-settings)
-│   │   ├── security.py      # JWT validation, password hashing
 │   │   ├── rate_limit.py    # The shared limiter — never construct a second one
-│   │   └── dependencies.py  # Shared FastAPI dependencies (get_current_user, etc.)
-│   ├── routers/
+│   │   ├── geo.py           # Geodesic distance, PostGIS point parsing
+│   │   └── dependencies.py  # Auth (Supabase token -> profile), role checks
+│   ├── routers/             # one module per URL prefix; the main ones:
 │   │   ├── auth.py          # /auth/*
 │   │   ├── incidents.py     # /incidents/*      (mobile app)
 │   │   ├── dispatch.py      # /dispatch/*       (dashboard)
@@ -22,11 +22,12 @@ ziren_backend/
 │   │   ├── stations.py      # /stations/*
 │   │   ├── users.py         # /users/*
 │   │   └── map.py           # /map/*
-│   ├── services/
+│   ├── services/            # business logic behind the routers; the main ones:
 │   │   ├── auth_service.py
 │   │   ├── incident_service.py     # submit/fetch; calls triage_service inline
 │   │   ├── triage_service.py       # Phase 4 — the trained model
 │   │   ├── dispatch_service.py
+│   │   ├── proximity.py            # responders near an incident
 │   │   ├── responder_service.py
 │   │   ├── rubric_service.py       # rule engine behind /rubric/evaluate
 │   │   ├── rubric_traceability.py  # provenance checks, audit helpers
@@ -34,8 +35,7 @@ ziren_backend/
 │   ├── models/
 │   │   ├── user.py
 │   │   ├── incident.py      # IncidentCategory, SeverityLevel, TriageSignals
-│   │   ├── rubric.py
-│   │   └── agency.py
+│   │   └── rubric.py
 │   ├── rubric_configs/      # Per-agency seed rules (BFP/PNP/MDRRMO)
 │   ├── ml/                  # The triage model — see below
 │   └── db/
@@ -81,7 +81,7 @@ that answers perfectly in a browser here.
 Do this on any new machine before you rely on it:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest -q          # expect: 394 passed, 3 skipped
+.venv\Scripts\python.exe -m pytest -q          # expect: 1527 passed, 3 skipped
 # start the server, then:
 curl http://127.0.0.1:8000/health
 ```

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/core/config/locale_provider.dart';
-import 'package:Ziren/features/incident_report/domain/incident_provider.dart';
-import 'package:Ziren/features/incident_report/presentation/incident_labels.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
+import 'package:ziren/core/config/locale_provider.dart';
+import 'package:ziren/features/incident_report/domain/incident_provider.dart';
+import 'package:ziren/features/incident_report/presentation/incident_labels.dart';
+import 'package:ziren/l10n/app_localizations.dart';
 
 /// The language picker was a dead control for the whole of this project's
 /// life: it offered four languages, wrote the choice to the backend, and no

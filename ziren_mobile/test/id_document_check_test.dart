@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/registration/domain/id_document_check.dart';
+import 'package:ziren/features/registration/domain/id_document_check.dart';
 
 /// Is the photo an ID, and the ID that was chosen?
 ///

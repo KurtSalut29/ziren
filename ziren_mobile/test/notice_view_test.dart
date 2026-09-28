@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/incident_report/domain/incident_model.dart';
-import 'package:Ziren/features/incident_report/presentation/incident_labels.dart';
-import 'package:Ziren/features/notifications/domain/notification_provider.dart';
-import 'package:Ziren/features/notifications/presentation/notice_view.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/l10n/app_localizations_en.dart';
-import 'package:Ziren/l10n/app_localizations_fil.dart';
+import 'package:ziren/features/incident_report/domain/incident_model.dart';
+import 'package:ziren/features/incident_report/presentation/incident_labels.dart';
+import 'package:ziren/features/notifications/domain/notification_provider.dart';
+import 'package:ziren/features/notifications/presentation/notice_view.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/l10n/app_localizations_en.dart';
+import 'package:ziren/l10n/app_localizations_fil.dart';
 
 /// Every notice says the thing that actually happened, in the resident's language,
 /// and offers the one thing worth doing about it.

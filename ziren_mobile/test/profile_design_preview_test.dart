@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/shared/theme/app_tokens.dart';
-import 'package:Ziren/shared/widgets/profile_kit.dart';
+import 'package:ziren/shared/theme/app_tokens.dart';
+import 'package:ziren/shared/widgets/profile_kit.dart';
 
 /// Renders both profiles from the shared kit and writes goldens.
 ///

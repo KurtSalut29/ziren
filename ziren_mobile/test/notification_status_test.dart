@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:Ziren/features/notifications/domain/notification_provider.dart';
+import 'package:ziren/features/notifications/domain/notification_provider.dart';
 
 /// Realtime tells the app that a row of the resident's reports changed - but
 /// not WHICH column. For this table the old row in the event is only its id, so

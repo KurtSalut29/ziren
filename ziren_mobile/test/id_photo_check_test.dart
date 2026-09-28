@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/registration/domain/id_document_check.dart';
-import 'package:Ziren/features/registration/domain/id_photo_check.dart';
+import 'package:ziren/features/registration/domain/id_document_check.dart';
+import 'package:ziren/features/registration/domain/id_photo_check.dart';
 
 /// The rule that decides whether a photographed ID can be accepted. It is
 /// applied on two screens (registration, and "Finish verifying your account"),

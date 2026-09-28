@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:Ziren/features/sos/domain/sos_provider.dart';
-import 'package:Ziren/features/sos/domain/sos_result.dart';
-import 'package:Ziren/core/errors/failures.dart';
+import 'package:ziren/features/sos/domain/sos_provider.dart';
+import 'package:ziren/features/sos/domain/sos_result.dart';
+import 'package:ziren/core/errors/failures.dart';
 
 import 'support/fake_sos_repository.dart';
 

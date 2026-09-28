@@ -5,9 +5,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:Ziren/core/errors/failures.dart';
-import 'package:Ziren/features/incident_report/data/incident_repository.dart';
-import 'package:Ziren/features/incident_report/domain/incident_model.dart';
+import 'package:ziren/core/errors/failures.dart';
+import 'package:ziren/features/incident_report/data/incident_repository.dart';
+import 'package:ziren/features/incident_report/domain/incident_model.dart';
 
 /// Whether a failed submit is a NetworkFailure (nothing answered: a text
 /// message is worth trying) or a ServerFailure (our backend answered and said

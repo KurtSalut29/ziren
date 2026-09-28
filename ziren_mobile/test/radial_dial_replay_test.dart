@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/shared/theme/app_tokens.dart';
-import 'package:Ziren/shared/widgets/home_kit.dart';
+import 'package:ziren/shared/theme/app_tokens.dart';
+import 'package:ziren/shared/widgets/home_kit.dart';
 
 /// Guards the fix for the entrance that only ever played once.
 ///

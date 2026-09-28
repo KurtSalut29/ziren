@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:Ziren/features/notifications/domain/notification_provider.dart';
+import 'package:ziren/features/notifications/domain/notification_provider.dart';
 
 /// What the resident is told, and - as important - what they are NOT told.
 ///

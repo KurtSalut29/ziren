@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/auth/presentation/widgets/auth_legal_note.dart';
-import 'package:Ziren/features/auth/presentation/widgets/auth_shell.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/shared/theme/app_tokens.dart';
-import 'package:Ziren/shared/widgets/ziren_button.dart';
-import 'package:Ziren/shared/widgets/ziren_text_field.dart';
+import 'package:ziren/features/auth/presentation/widgets/auth_legal_note.dart';
+import 'package:ziren/features/auth/presentation/widgets/auth_shell.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/shared/theme/app_tokens.dart';
+import 'package:ziren/shared/widgets/ziren_button.dart';
+import 'package:ziren/shared/widgets/ziren_text_field.dart';
 
 /// Renders the auth card with representative content and writes goldens.
 ///

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/core/utils/validators.dart';
-import 'package:Ziren/features/registration/presentation/password_requirements.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
+import 'package:ziren/core/utils/validators.dart';
+import 'package:ziren/features/registration/presentation/password_requirements.dart';
+import 'package:ziren/l10n/app_localizations.dart';
 
 /// Testers were not told what a password needed until Continue refused it. The
 /// requirements are now a panel that is always on screen and ticks each rule

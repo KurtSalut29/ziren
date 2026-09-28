@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speech_to_text/speech_to_text.dart' show LocaleName;
 
-import 'package:Ziren/features/incident_report/domain/speech_locale_resolver.dart';
+import 'package:ziren/features/incident_report/domain/speech_locale_resolver.dart';
 
 /// The app listened in `en_PH` while residents report mostly in Waray and
 /// Bisaya. These tests pin the replacement, including the part that is a

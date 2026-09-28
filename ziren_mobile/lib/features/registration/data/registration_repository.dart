@@ -125,8 +125,7 @@ class RegistrationRepository {
       'municipality_address': d.municipality,
       'purok_sitio': _orNull(d.purokSitio),
       'street_address': _orNull(d.streetAddress),
-      'is_pwd': d.isPwd,
-      'disability_types': d.disabilities.toList(),
+      ...accessibilityFields(d),
       'preferred_contact_mode': d.contactMode,
       // The language chosen during onboarding, carried onto the account.
       // Leaving this null is what let Settings later "resolve" the absence to
@@ -142,12 +141,6 @@ class RegistrationRepository {
     }
     if (_orNull(d.emergencyContactNumber) != null) {
       core['emergency_contact_number'] = d.emergencyContactNumber.trim();
-    }
-    if (d.isPwd && _orNull(d.pwdIdNumber) != null) {
-      core['pwd_id_number'] = d.pwdIdNumber.trim();
-    }
-    if (_orNull(d.accessibilityNotes) != null) {
-      core['accessibility_notes'] = d.accessibilityNotes.trim();
     }
     if (d.isResponder) {
       core['agency_id'] = agencyId;
@@ -248,6 +241,28 @@ class RegistrationRepository {
   }
 
   static String? _orNull(String s) => s.trim().isEmpty ? null : s.trim();
+
+  /// The accessibility profile: how a crew should assist the person REPORTING.
+  ///
+  /// A responder never has one. The contact step hides these fields for a
+  /// responder, but the draft keeps whatever was entered before the role was
+  /// switched (resident, tick PWD, back to the role step, pick Responder), and
+  /// sending it created responder accounts flagged as PWD. Decided here, the
+  /// one place every submit passes through, so no screen state can leak it.
+  @visibleForTesting
+  static Map<String, dynamic> accessibilityFields(RegistrationDraft d) {
+    if (d.isResponder) {
+      return {'is_pwd': false, 'disability_types': <String>[]};
+    }
+    return {
+      'is_pwd': d.isPwd,
+      'disability_types': d.disabilities.toList(),
+      if (d.isPwd && _orNull(d.pwdIdNumber) != null)
+        'pwd_id_number': d.pwdIdNumber.trim(),
+      if (_orNull(d.accessibilityNotes) != null)
+        'accessibility_notes': d.accessibilityNotes.trim(),
+    };
+  }
 
   Future<String?> _resolveAgencyId(
     String agencyType,

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/incident_report/domain/biliran_places.dart';
+import 'package:ziren/features/incident_report/domain/biliran_places.dart';
 
 /// The failure this table was built for: standing in barangay Talustusan, the
 /// app reported "Padre Sergio Eamiguel" — a different barangay 1.66 km away —

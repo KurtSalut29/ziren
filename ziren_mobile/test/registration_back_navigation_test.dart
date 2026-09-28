@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:Ziren/features/registration/domain/registration_draft.dart';
-import 'package:Ziren/features/registration/presentation/registration_shell.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
+import 'package:ziren/features/registration/domain/registration_draft.dart';
+import 'package:ziren/features/registration/presentation/registration_shell.dart';
+import 'package:ziren/l10n/app_localizations.dart';
 
 /// Where the back arrow on step one of registration goes.
 ///

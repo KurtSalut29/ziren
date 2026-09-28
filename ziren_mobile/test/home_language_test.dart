@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/l10n/app_localizations_en.dart';
-import 'package:Ziren/shared/theme/app_tokens.dart';
-import 'package:Ziren/shared/widgets/home_kit.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/l10n/app_localizations_en.dart';
+import 'package:ziren/shared/theme/app_tokens.dart';
+import 'package:ziren/shared/widgets/home_kit.dart';
 
 /// Guards against mixed-language output on Home.
 ///

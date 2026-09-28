@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:Ziren/core/network/backend_health.dart';
+import 'package:ziren/core/network/backend_health.dart';
 
 /// "Online" on Home means OUR backend answered. The check used to treat any
 /// status below 500 as online, so ngrok's own "this account has reached its

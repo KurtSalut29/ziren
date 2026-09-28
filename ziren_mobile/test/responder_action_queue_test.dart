@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:Ziren/features/responder/data/responder_action_queue.dart';
-import 'package:Ziren/features/responder/domain/responder_ack.dart';
-import 'package:Ziren/l10n/app_localizations.dart';
-import 'package:Ziren/l10n/app_localizations_en.dart';
-import 'package:Ziren/l10n/app_localizations_fil.dart';
-import 'package:Ziren/features/responder/domain/responder_incident_model.dart';
+import 'package:ziren/features/responder/data/responder_action_queue.dart';
+import 'package:ziren/features/responder/domain/responder_ack.dart';
+import 'package:ziren/l10n/app_localizations.dart';
+import 'package:ziren/l10n/app_localizations_en.dart';
+import 'package:ziren/l10n/app_localizations_fil.dart';
+import 'package:ziren/features/responder/domain/responder_incident_model.dart';
 
 /// The offline queue and the acceptance verdict.
 ///

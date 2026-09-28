@@ -36,7 +36,7 @@ uvicorn app.main:app --reload --host 0.0.0.0
 Verify before moving on:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest -q     # expect: 394 passed, 3 skipped
+.venv\Scripts\python.exe -m pytest -q     # expect: 1527 passed, 3 skipped
 curl http://127.0.0.1:8000/health         # expect: "model_loaded": true
 ```
 
@@ -122,6 +122,46 @@ them does nothing to a running app: stop it and run again.
 
 ---
 
+## Testing
+
+Every suite runs offline. None of them needs a `.env`, a Supabase project or a
+running backend: the backend tests replace Supabase with an in-memory fake
+([`ziren_backend/tests/fake_db.py`](ziren_backend/tests/fake_db.py)) or mocks,
+and the mobile tests never reach a server.
+
+| App | Command (from the app folder) | Result |
+|---|---|---|
+| Backend | `.venv\Scripts\python.exe -m pytest -q` | 1527 passed, 3 skipped |
+| Backend coverage | `.venv\Scripts\python.exe -m pytest -q --cov=app --cov-branch --cov-report=term-missing` | 77% of statements and branches |
+| Dashboard | `npx tsc --noEmit` / `npx eslint .` / `npx next build` | 0 errors / 0 warnings / 34 pages built |
+| Mobile | `flutter analyze` / `flutter test` | no issues / 755 passed |
+
+**The 3 skipped tests are intentional.** They are field scenarios in
+`tests/test_rubric_engine.py` (one each for BFP, PNP and MDRRMO). Each one
+waits for a real dispatch case from a field interview; its expected severity
+cannot be invented, so it skips until one is filled in.
+
+**The dashboard has no unit tests.** Every rule it shows (who sees which
+incident, what severity a report gets, who may dispatch) is enforced and
+tested in the backend. The dashboard checks are the type check, lint and
+production build above.
+
+Where the logic lives, for reading the code:
+
+| Concern | Code | Tests |
+|---|---|---|
+| Severity scoring (triage model) | `ziren_backend/app/services/triage_service.py`, `app/ml/` | `tests/test_triage*.py`, `tests/test_transcript_eval.py` |
+| Severity rules (rubric engine) | `app/services/rubric_service.py`, `app/rubric_configs/*.json` | `tests/test_rubric_engine.py` |
+| Report submission and routing | `app/services/incident_service.py` | `tests/test_incidents.py` |
+| Dispatch queue and scoping | `app/services/dispatch_service.py` | `tests/test_queue_ordering.py`, `tests/test_incident_review.py`, `tests/test_incident_records.py` |
+| Resident verification scoping | `app/services/user_service.py` | `tests/test_verification_scope.py` |
+| Nearby responders | `app/services/proximity.py`, `app/core/geo.py` | `tests/test_proximity.py`, `tests/test_nearby_integration.py` |
+| Authentication and roles | `app/core/dependencies.py` (Supabase Auth) | `tests/test_auth*.py` |
+| New-report alert (dashboard) | `ziren_dashboard/lib/hooks/useIncidentAlerts.ts` | none (browser behaviour, checked by hand) |
+| Registration (mobile) | `ziren_mobile/lib/features/registration/` | `ziren_mobile/test/registration_*_test.dart` |
+
+---
+
 ## What the cold-start test found
 
 The repo was tested by building a clean copy from what git would actually
@@ -154,8 +194,7 @@ every dashboard route returned 500 with
 `Module not found: Can't resolve 'framer-motion'`. It is now declared in
 `ziren_dashboard/package.json` and in that lockfile.
 
-*Leftover:* the root `package.json` / `package-lock.json` contain only that
-stray dependency. They are now inert and can be deleted.
+The stray root `package.json` / `package-lock.json` have since been deleted.
 
 **4 · The first push would have been rejected outright.** `data/` held 1.4 GB
 of Planetiler downloads, including single files of 886 MB and 414 MB — GitHub
@@ -171,9 +210,7 @@ The commit is 330 files and about 4 MB.
 
 ## Known issues
 
-- **`next@15.3.3` has a published security vulnerability** (CVE-2025-66478).
-  npm warns on install. Not addressed yet — upgrading Next is a change worth
-  making deliberately, not the week of a defense.
-- **33 rubric rules still carry `TODO` provenance.** The backend logs one
-  warning per rule at startup. These need real field-interview citations
-  before the defense; see the `rubric-change` guidance. Never invent one.
+- **37 rubric rules still carry `TODO` provenance** (BFP 10, PNP 12,
+  MDRRMO 15). The backend logs one warning per rule at startup. Each needs a
+  real field-interview citation; never invent one.
+- Next.js was upgraded from 15.3.3 to 15.5.26 to close CVE-2025-66478.

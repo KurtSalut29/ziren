@@ -1,6 +1,6 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:Ziren/features/sos/data/sos_repository.dart';
-import 'package:Ziren/features/sos/domain/sos_result.dart';
+import 'package:ziren/features/sos/data/sos_repository.dart';
+import 'package:ziren/features/sos/domain/sos_result.dart';
 
 /// An SOS backend that answers however the test says. Counts its calls so a
 /// test can also assert that it was NOT asked.

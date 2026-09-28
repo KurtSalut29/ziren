@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/core/errors/failures.dart';
-import 'package:Ziren/features/responder/data/responder_repository.dart';
-import 'package:Ziren/features/responder/domain/nearby_incident.dart';
-import 'package:Ziren/features/responder/domain/responder_provider.dart';
+import 'package:ziren/core/errors/failures.dart';
+import 'package:ziren/features/responder/data/responder_repository.dart';
+import 'package:ziren/features/responder/domain/nearby_incident.dart';
+import 'package:ziren/features/responder/domain/responder_provider.dart';
 
 /// Undispatched incidents near an on-duty responder — an invitation to help,
 /// never a command. Before this, a responder heard about an incident only once

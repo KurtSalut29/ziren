@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:Ziren/features/responder/domain/responder_vocabulary.dart';
+import 'package:ziren/features/responder/domain/responder_vocabulary.dart';
 
 /// The shared reading of an incident.
 ///

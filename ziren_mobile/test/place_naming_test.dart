@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/incident_report/domain/biliran_places.dart';
-import 'package:Ziren/features/incident_report/domain/place_naming.dart';
+import 'package:ziren/features/incident_report/domain/biliran_places.dart';
+import 'package:ziren/features/incident_report/domain/place_naming.dart';
 
 /// Regression tests for the address a dispatcher reads.
 ///

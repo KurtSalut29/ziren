@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/core/geo/geodesic.dart';
+import 'package:ziren/core/geo/geodesic.dart';
 
 /// The phone, the console and the server must quote the same distance for the same
 /// two points. The reference values are Karney's algorithm (geographiclib) - the

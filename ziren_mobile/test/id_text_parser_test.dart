@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Ziren/features/registration/data/id_text_parser.dart';
+import 'package:ziren/features/registration/data/id_text_parser.dart';
 
 /// Reading a Philippine ID card, rule by rule.
 ///
