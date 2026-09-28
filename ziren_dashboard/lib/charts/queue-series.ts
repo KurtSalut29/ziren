@@ -412,25 +412,6 @@ export function dispatchLatency(
 }
 
 /**
- * Incidents open at each day's end that no station had been matched to.
- *
- * A null agency_type means the routing rules found no station for the report,
- * so nobody has been told about it. It is the worst state an incident can hold
- * — worse than critical-and-waiting, because at least a critical incident is
- * on somebody's screen — and until now nothing on the console counted it.
- *
- * Same open-at-instant rule as activeSeries, so this is always a true subset
- * of it and the share it reports is honest.
- */
-export function unassignedSeries(
-  incidents: ActivityIncident[],
-  days = 14,
-): DayPoint[] {
-  return seriesOf(incidents, days, open =>
-    open.filter(inc => !inc.agency_type).length);
-}
-
-/**
  * Responders on an agency's roster at the end of each day, by join date.
  *
  * The one roster figure with a history to draw — every account carries a

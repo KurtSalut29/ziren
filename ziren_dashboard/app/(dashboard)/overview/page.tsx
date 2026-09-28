@@ -21,10 +21,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowUpRight, CheckCircle, ChevronRight, ClipboardList, Inbox, LandPlot,
-  MapPinOff, Radar, RefreshCw, ShieldAlert, ShieldCheck, TriangleAlert, UserPlus, Users, Building2,
+  Files, Radar, RefreshCw, ShieldAlert, ShieldCheck, TriangleAlert, UserPlus, Users, Building2,
 } from 'lucide-react';
 import {
-  fetchQueue, fetchActivity,
+  fetchQueue, fetchActivity, fetchHistory,
   type QueueIncident, type SeverityLevel, type ActivityIncident,
 } from '@/lib/api/dispatch';
 import { ApiError } from '@/lib/api/client';
@@ -36,7 +36,6 @@ import {
   activeSeries,
   severitySeries,
   awaitingSeries,
-  unassignedSeries,
   rosterSeries,
   standingSeries,
   stationsReportingSeries,
@@ -200,6 +199,13 @@ export default function OverviewPage() {
    * available cannot be reading a number from twenty minutes ago.
    */
   const [roster, setRoster] = useState<RosterCounts | null>(null);
+
+  /**
+   * Every report this agency has ever received, and how many were resolved —
+   * Agency Admin only. All time, where the first tile is the last 14 days.
+   * One row is fetched: only the server's `total` and `counts` are read.
+   */
+  const [allTime, setAllTime] = useState<{ total: number; resolved: number } | null>(null);
   // When each roster account joined — the only history the roster has, and
   // what the Responders tile's trend line is built from.
   const [rosterJoined, setRosterJoined] = useState<string[]>([]);
@@ -229,6 +235,12 @@ export default function OverviewPage() {
           // incident figures a dispatcher is working from.
           setRoster(null);
           setRosterJoined([]);
+        }
+        try {
+          const page = await fetchHistory(token, { days: 0, limit: 1 });
+          setAllTime({ total: page.total, resolved: page.counts.resolved });
+        } catch {
+          setAllTime(null);
         }
       }
     } catch (err: unknown) {
@@ -295,9 +307,6 @@ export default function OverviewPage() {
   // see lib/charts/queue-series.ts.
   const hasTrend = activity.length > 0;
 
-  // A null station means the routing rules found no agency for the report.
-  const unassigned = incidents.filter(i => !i.stations?.agencies?.agency_type).length;
-
   // "Total Incidents" — every incident that touched the last 14 days,
   // any status, from the same `activity` feed the chart deck reads. This
   // can differ from `total` above: that is every incident open RIGHT NOW
@@ -328,7 +337,6 @@ export default function OverviewPage() {
   const activeSeriesRows     = hasTrend ? activeSeries(activity, TREND_DAYS) : [];
   const criticalSeriesRows   = hasTrend ? severitySeries(activity, 'critical', TREND_DAYS) : [];
   const awaitingSeriesRows   = hasTrend ? awaitingSeries(activity, TREND_DAYS) : [];
-  const unassignedSeriesRows = hasTrend ? unassignedSeries(activity, TREND_DAYS) : [];
   // The roster's own series comes from account join dates, not from
   // `activity` — see rosterSeries in queue-series.ts for what it can and
   // cannot say.
@@ -468,26 +476,24 @@ export default function OverviewPage() {
             that does not exist. */}
         {isAgencyAdmin && roster && (
           <StatStrip>
-            {/* Replaces "Longest wait". This is the state nothing on the
-                console counted: a null station means the routing rules
-                matched no agency, so nobody has been told. It is worse than
-                critical-and-waiting, because a critical incident is at least
-                on somebody's screen. Sits with the roster strip rather than
-                the incident strip above purely to keep both strips at four
-                cards apiece — its data doesn't depend on the roster. */}
+            {/* All time, where "Total incidents" above is the last 14 days.
+                Sits with the roster strip purely to keep both strips at four
+                cards apiece. No trend line: the tile has no day-by-day series
+                of its own, and an invented shape would be worse than none. */}
             <StatCell
-              icon={<MapPinOff size={12} strokeWidth={2} />}
-              label="Unassigned"
-              value={unassigned}
+              icon={<Files size={12} strokeWidth={2} />}
+              label="Total reports"
+              // A failed fetch shows a dash, never a 0 that reads as "no reports".
+              value={allTime?.total ?? '—'}
               trend={
-                unassigned > 0
-                  ? 'No station matched yet'
-                  : 'Every incident has a station'
+                !allTime
+                  ? 'All time · could not load'
+                  : allTime.total === 0
+                    ? 'No reports received yet'
+                    : `All time · ${allTime.resolved} resolved`
               }
-              color="var(--color-system-warning)"
-              bg="var(--color-system-warning-bg)"
-              spark={sparkOf(unassignedSeriesRows)}
-              delta={deltaOf(unassignedSeriesRows)}
+              color="var(--color-brand)"
+              bg="var(--color-brand-subtle)"
             />
             {/* The only roster tile with a history to draw: every account has
                 a join date. "On duty" is a live toggle and an approval leaves
@@ -575,8 +581,8 @@ export default function OverviewPage() {
                 the busiest, so a province of twenty-odd stations is readable at
                 a glance. A report no station was matched to is not a station and
                 is left out of the count; it still shows in Incident Records.
-                (Agency Admins have one station, so their strip keeps
-                "Unassigned" here instead.) */}
+                (Agency Admins have one station, so their strip shows
+                "Total reports" here instead.) */}
             <StatCell
               icon={<Building2 size={12} strokeWidth={2} />}
               label="Reports by station"
