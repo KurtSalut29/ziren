@@ -1,0 +1,252 @@
+{
+  "agency_type": "MDRRMO",
+  "version": "2.0.0",
+  "rules": [
+    {
+      "rule_id": "MDRRMO-001",
+      "description": "Flood with confirmed casualties",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "flood"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — flood event with casualties. This is the most common high-severity MDRRMO scenario in Biliran (typhoon season flooding). Placeholder: any casualty in a flood = critical.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-002",
+      "description": "Landslide with confirmed casualties",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "landslide"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — landslide with casualties. Biliran province has significant landslide risk (mountainous terrain). Confirm MDRRMO's standard casualty threshold for declaring a critical landslide event.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-003",
+      "description": "Landslide with road blockage, no confirmed casualties",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "landslide"
+        ],
+        "casualty_mentioned": false,
+        "structure_type_in": [
+          "road",
+          "highway",
+          "national_road"
+        ]
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — landslide blocking a road. Road blockage escalates because it isolates barangays and delays other emergency responses. Confirm whether DPWH coordination is standard in this scenario.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-004",
+      "description": "Flood, no casualties, residential area affected",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "flood"
+        ],
+        "casualty_mentioned": false,
+        "structure_type_in": [
+          "residential",
+          "barangay",
+          "house"
+        ]
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — residential flooding without casualties. Placeholder severity=high (evacuation preparation needed). Confirm whether MDRRMO distinguishes between ankle-deep vs. waist-deep flooding in dispatch priority.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-005",
+      "description": "Typhoon / storm damage with structure collapse",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "calamity"
+        ],
+        "structure_type_in": [
+          "house",
+          "building",
+          "school",
+          "church"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — structure collapse from typhoon/storm with casualties. Confirm whether BFP is always co-dispatched for collapse rescue (entrapment protocol).",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-006",
+      "description": "Typhoon / storm damage, no confirmed casualties",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "calamity"
+        ],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — storm damage without casualties. Placeholder severity=medium. Confirm whether MDRRMO differentiates pre-landfall vs. post-landfall reports in their response priority.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-007",
+      "description": "Medical emergency / mass casualty",
+      "conditions": {
+        "incident_type_in": [
+          "medical_trauma"
+        ],
+        "injured_count_gte": 3,
+        "multi_agency_needed": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — mass casualty medical event. Placeholder threshold: 3+ injured with multi_agency flag = critical. Confirm MDRRMO's MCI (mass casualty incident) threshold for Biliran.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-008",
+      "description": "Medical emergency, single patient, life-threatening urgency",
+      "conditions": {
+        "incident_type_in": [
+          "medical_trauma"
+        ],
+        "urgency_level_in": [
+          "critical",
+          "life-threatening",
+          "emergency"
+        ],
+        "multi_agency_needed": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — single critical patient. urgency_level values are placeholders from the NLP signal vocabulary; confirm actual vocabulary with Phase 4 team. Confirm whether MDRRMO or BFP responds first to single-patient medicals in Biliran (depends on which has an ambulance in the municipality).",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-009",
+      "description": "Medical emergency, unclear severity",
+      "conditions": {
+        "incident_type_in": [
+          "medical_trauma"
+        ],
+        "urgency_level_in": [
+          "unknown",
+          "moderate",
+          "stable"
+        ]
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — medical report with unclear urgency. Placeholder severity=medium. Confirm MDRRMO default response level when injury severity is not described by the reporter.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-010",
+      "description": "Vehicular accident with multiple casualties",
+      "conditions": {
+        "incident_type_in": [
+          "vehicular"
+        ],
+        "injured_count_gte": 3,
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — multi-casualty vehicular accident. Placeholder threshold: 3+ injured = critical. Confirm with MDRRMO Naval/Cabucgayan whether PNP is always co-dispatched for MVAs.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-011",
+      "description": "Vehicular accident with injuries, single or unknown count",
+      "conditions": {
+        "incident_type_in": [
+          "vehicular"
+        ],
+        "casualty_mentioned": true,
+        "injured_count_lte": 2
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — minor to moderate vehicular accident. Placeholder severity=high. Confirm whether injured_count <= 2 is the right boundary or whether 1–2 injured should be medium.",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-012",
+      "description": "Vehicular accident, no confirmed injuries",
+      "conditions": {
+        "incident_type_in": [
+          "vehicular"
+        ],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — property-damage-only vehicular accident. Placeholder severity=medium. Confirm whether no-injury MVAs are handled by PNP or MDRRMO in practice (may depend on municipality).",
+      "active": true
+    },
+    {
+      "rule_id": "MDRRMO-013",
+      "description": "HAZMAT spill / chemical exposure with casualties — RETIRED in taxonomy v2.0 — the 'hazmat' incident category was merged out when the Phase 4 triage model was integrated (the model has no class for it), so this rule's incident_type condition can no longer match. Kept inactive rather than deleted: past evaluations reference this rule_id. Reactivate if 'hazmat' is ever restored as a category.",
+      "conditions": {
+        "incident_type_in": [
+          "hazmat"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — HAZMAT with casualties. BFP is likely co-lead. Confirm which agency is the primary coordinator for HAZMAT in Biliran (MDRRMO or BFP) and whether recommended_agency should be BFP instead.",
+      "active": false
+    },
+    {
+      "rule_id": "MDRRMO-014",
+      "description": "HAZMAT spill, no casualties, containment needed — RETIRED in taxonomy v2.0 — the 'hazmat' incident category was merged out when the Phase 4 triage model was integrated (the model has no class for it), so this rule's incident_type condition can no longer match. Kept inactive rather than deleted: past evaluations reference this rule_id. Reactivate if 'hazmat' is ever restored as a category.",
+      "conditions": {
+        "incident_type_in": [
+          "hazmat"
+        ],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — HAZMAT without casualties. Placeholder severity=high. Confirm whether municipal MDRRMO has containment capacity or always escalates to provincial level.",
+      "active": false
+    },
+    {
+      "rule_id": "MDRRMO-015",
+      "description": "Children involved in any calamity / medical / vehicular incident",
+      "conditions": {
+        "incident_type_in": [
+          "flood_landslide_calamity",
+          "medical_trauma",
+          "vehicular"
+        ],
+        "children_involved": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "MDRRMO",
+      "provenance": "TODO: cite MDRRMO field interview date/station — children present in a disaster/medical/vehicular scenario. Universal escalating factor across MDRRMO response types. Confirm whether this matches MDRRMO's own triage weighting.",
+      "active": true
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+ENV/
+*.egg-info/
+dist/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Models (large binary files — store in object storage, not git)
+*.pkl
+*.joblib
+*.h5
+models/trained/
+
+# ...except the triage model, which IS committed on purpose.
+#
+# It is 560KB, it is the artefact the whole Phase 4 pipeline depends on, and
+# predict.py's fallback when it is missing is to retrain from
+# 03_CLASSIFICATION/splits/train.csv — a file this repo deliberately does not
+# carry, because it holds incident data. So a clone without this file yields a
+# backend that starts cleanly and then triages nothing: every report saved with
+# severity NULL, no error anywhere except one startup warning.
+#
+# Committing it also pins provenance: app/ml/VERSION records which dataset
+# release produced the model that produced a given severity.
+!app/ml/07_MODELS/*.joblib
+
+# Whisper weights, fetched by faster-whisper on first load.
+#
+# NOT committed, unlike the triage model above, and the difference is
+# deliberate. The .joblib is 560KB and is the artefact whose provenance the
+# repo pins. These are ~500MB per size, are byte-identical for everyone who
+# asks CTranslate2 for the same model name, and carry no project provenance:
+# app/services/asr_engines.py names the model, requirements.txt pins the
+# library, and that is the whole reproducibility story. A clone re-downloads
+# them on first startup.
+app/ml/asr_models/
+
+# Face-recognition weights for automatic ID/selfie matching.
+#
+# 13.6 MB of binary, fetched by scripts/fetch_face_model.py rather than
+# committed: it is not ours to redistribute (InsightFace publishes buffalo_s
+# for non-commercial research use), and a file this size lives in every clone
+# and every branch forever once it is in the history.
+#
+# A deployment without it is a supported state — see face_match_service.
+app/ml_models/face/*.onnx
+app/ml_models/face/*.part
+
+# Build artefacts served at /download (the Android APK)
+public/downloads/

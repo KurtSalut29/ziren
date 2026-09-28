@@ -1,0 +1,2192 @@
+{
+  "@@locale": "en",
+  "regIdTypeTitle": "Choose an ID",
+  "regIdTypeSubtitle": "We use it once, to confirm you are a real person in Biliran.",
+  "actionTakePhoto": "Take a photo",
+  "regTakeIdPhoto": "Take a photo of your ID",
+  "regIdPhotoTips": "Flat, well lit, all four corners visible",
+  "regIdReadable": "Your ID looks readable.",
+  "@_COMMENT_SCOPE": "Resident report flow only. The rest of the app is still hardcoded; add keys here as screens are converted rather than translating everything at once.",
+  "reportReceivedTitle": "Report Received",
+  "@reportReceivedTitle": {
+    "description": "Success sheet heading after a report is submitted"
+  },
+  "reportReceivedBody": "Your report is now with the dispatcher.",
+  "@reportReceivedBody": {
+    "description": "Success sheet subheading. Deliberately makes no promise about response time."
+  },
+  "recordedAs": "Recorded as",
+  "@recordedAs": {
+    "description": "Label before the incident category, confirming what was understood. Acknowledgement only — never severity or priority."
+  },
+  "sentTo": "Sent to",
+  "@sentTo": {
+    "description": "Label before the station name the report was routed to"
+  },
+  "locationAttached": "Location attached",
+  "@locationAttached": {
+    "description": "Confirms GPS coordinates were included"
+  },
+  "mediaAttached": "{count, plural, =1{1 photo or video} other{{count} photos or videos}}",
+  "@mediaAttached": {
+    "description": "Confirms media was included",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportIdLabel": "Report ID",
+  "trackReport": "Track Report",
+  "backToHome": "Back to Home",
+  "myReportsTitle": "My Reports",
+  "filterAll": "All",
+  "filterOpen": "Active",
+  "filterDone": "Resolved",
+  "statusReceived": "Received",
+  "statusProcessing": "Being reviewed",
+  "@statusProcessing": {
+    "description": "Deliberately not 'Processing' — that reads as machine work to a resident waiting for help."
+  },
+  "statusDispatched": "Responder on the way",
+  "statusResolved": "Resolved",
+  "statusCancelled": "Cancelled",
+  "notifStatusTitle": "Report update",
+  "@notifStatusTitle": {
+    "description": "Title of the status-update sheet shown when a resident's own report changes status."
+  },
+  "notifStatusProcessing": "Your report is being reviewed.",
+  "@notifStatusProcessing": {
+    "description": "Status-update sheet body, status = processing."
+  },
+  "notifStatusDispatched": "A responder is on the way.",
+  "@notifStatusDispatched": {
+    "description": "Status-update sheet body, status = dispatched."
+  },
+  "notifStatusResolved": "Your report has been marked resolved.",
+  "@notifStatusResolved": {
+    "description": "Status-update sheet body, status = resolved."
+  },
+  "notifStatusCancelled": "Your report was cancelled.",
+  "@notifStatusCancelled": {
+    "description": "Status-update sheet body, status = cancelled."
+  },
+  "notifStatusOk": "Got it",
+  "@notifStatusOk": {
+    "description": "Dismiss button on the status-update sheet."
+  },
+  "noReportsYet": "No reports yet",
+  "noReportsYetBody": "Reports you submit will appear here.",
+  "noOpenReports": "No open reports",
+  "noOpenReportsBody": "All your reports are closed.",
+  "noResolvedYet": "Nothing resolved yet",
+  "noResolvedYetBody": "Resolved reports will appear here.",
+  "noDetails": "No details",
+  "retry": "Try again",
+  "groupToday": "Today",
+  "groupYesterday": "Yesterday",
+  "groupThisWeek": "This week",
+  "groupThisMonth": "This month",
+  "groupOlder": "Older",
+  "categoryFire": "Fire",
+  "categoryMedicalTrauma": "Medical / Trauma",
+  "categoryVehicular": "Road Accident",
+  "categoryFloodLandslideCalamity": "Flood / Landslide / Calamity",
+  "categoryDomesticDisputeCrime": "Disturbance / Crime",
+  "categoryOther": "Other",
+  "preferredLanguage": "Language",
+  "reportsOpenCount": "{open} open · {total} total",
+  "@reportsOpenCount": {
+    "placeholders": {
+      "open": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "reportsAllDone": "{total, plural, =1{1 report · closed} other{{total} reports · all closed}}",
+  "@reportsAllDone": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noReportsYetLong": "When you report an emergency, every step of the response will show up here.",
+  "@_COMMENT_ONBOARDING": "Onboarding: language choice, privacy/terms consent, welcome. Shown once per device, and again whenever LegalDocuments bumps a version.",
+  "consentTitle": "Before you start",
+  "consentSubtitle": "Please read and agree to both documents below.",
+  "consentSummaryTitle": "The short version",
+  "consentSummaryLocation": "We use your location and contact details so responders can find you.",
+  "consentSummaryReporting": "You can always report an emergency, verified or not.",
+  "consentSummaryPhotos": "Your ID and face photos are private, and deleted once checked.",
+  "consentSummaryNotHotline": "Ziren does not replace 911. Call directly if the app cannot reach the network.",
+  "consentPrivacyTitle": "Data Privacy Notice",
+  "consentPrivacySubtitle": "What we collect and why",
+  "consentTermsTitle": "Terms of Use",
+  "consentTermsSubtitle": "What Ziren does, and what it does not do",
+  "consentActionRead": "Read",
+  "consentBadgeRead": "Read",
+  "consentAgreePrivacy": "I agree to the Data Privacy Notice",
+  "consentAgreeTerms": "I agree to the Terms of Use",
+  "consentMustReadFirst": "Open each document first.",
+  "consentContinue": "Agree and continue",
+  "legalReadConfirm": "I have read this",
+  "legalScrollHint": "Scroll to the end to continue",
+  "legalClose": "Close",
+  "legalLoadError": "This document could not be opened. Please update the app or contact your MDRRMO office.",
+  "welcomeTagline": "Emergency response for Biliran.",
+  "welcomeSignIn": "Sign in",
+  "welcomeCreateAccount": "Create an account",
+  "welcomeHasAccount": "Already registered?",
+  "@_COMMENT_HOME": "Resident home screen. These were hardcoded Tagalog literals, so choosing English in onboarding changed nothing on the first screen a resident sees.",
+  "homeOnline": "Online",
+  "homeOffline": "Offline",
+  "homeConnecting": "Connecting",
+  "homeEmergency": "EMERGENCY",
+  "categoryFireShort": "Fire",
+  "categoryMedicalShort": "Medical",
+  "categoryCrimeShort": "Crime",
+  "categoryCalamityShort": "Calamity",
+  "categoryAccidentShort": "Accident",
+  "categoryOtherShort": "Other",
+  "homeLocation": "Location",
+  "homeTimeNow": "Time now",
+  "homeRouting": "Routing",
+  "homeBarangay": "Brgy. {name}",
+  "@homeBarangay": {
+    "description": "Resident's barangay in the hero fact strip. 'Brgy.' is the standard Philippine abbreviation and stays untranslated in both locales.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLocationUnknown": "Not known yet",
+  "@homeLocationUnknown": {
+    "description": "Hero fact value when the profile carries no barangay. Says the app does not know, never guesses."
+  },
+  "homeRoutingAuto": "Automatic",
+  "@homeRoutingAuto": {
+    "description": "Hero fact value: the report will be routed by the server."
+  },
+  "homeSosHint": "Not sure? Press this",
+  "@homeSosHint": {
+    "description": "Caption under the SOS button for someone who cannot name the emergency."
+  },
+  "homeResidentFallbackName": "Resident",
+  "@homeResidentFallbackName": {
+    "description": "Greeting name when neither the profile nor the email supplies one."
+  },
+  "homeMapAction": "Map",
+  "@homeMapAction": {
+    "description": "Action link on the Safe places card, opens the station map."
+  },
+  "homeDeliveryOnlineTitle": "Connected",
+  "@homeDeliveryOnlineTitle": {
+    "description": "Delivery band at the top of Home. States how the next report will travel, before it is sent."
+  },
+  "homeDeliveryOnlineDetail": "Your report goes straight to the nearest station.",
+  "homeDeliveryOfflineTitle": "No internet",
+  "@homeDeliveryOfflineTitle": {
+    "description": "Shown when the phone has no working route to the server. There is no fallback delivery path — the copy must not imply a report can still get out."
+  },
+  "homeDeliveryOfflineDetail": "Reports can't be sent right now. If this is an emergency, call 911 directly.",
+  "homeDeliveryCheckingTitle": "Checking connection",
+  "homeDeliveryCheckingDetail": "Checking whether the server can be reached.",
+  "homeBellLabel": "Notifications",
+  "@homeBellLabel": {
+    "description": "Screen-reader name and tooltip for the notification bell."
+  },
+  "homeBellLabelUnread": "Notifications, new items",
+  "@homeBellLabelUnread": {
+    "description": "Bell label when unread notifications exist. The unread dot is colour-only, so the state has to be spoken here."
+  },
+  "homeReportAction": "Report {category}",
+  "@homeReportAction": {
+    "description": "Screen-reader label for one category chip on the SOS dial. The chip shows only an icon and a short label, so the verb has to come from here.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAlerts": "Alerts",
+  "homeAlertsEmpty": "No new alerts. Updates on your reports will appear here.",
+  "homeTapToView": "Tap to view",
+  "homeSafePlaces": "Safe places",
+  "homeStationsUnavailable": "Could not load the station list.",
+  "homeStationCount": "{count, plural, =1{1 station} other{{count} stations}}",
+  "@homeStationCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agencyMdrrmo": "MDRRMO",
+  "agencyPnp": "Police",
+  "agencyBfp": "Fire",
+  "homeMyReports": "Your reports",
+  "homeSeeAll": "All",
+  "homeNoReportsTitle": "Nothing yet",
+  "homeNoReportsBody": "When you report an incident, you will see its status here.",
+  "homeUntitledReport": "Report",
+  "@_COMMENT_HOME_REDESIGN": "Home screen restyle — hero banner, CTA card, recent activity.",
+  "homeGreetingMorning": "Good morning, {name}!",
+  "@homeGreetingMorning": {
+    "description": "Home screen greeting, before noon.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingAfternoon": "Good afternoon, {name}!",
+  "@homeGreetingAfternoon": {
+    "description": "Home screen greeting, noon to 6pm.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeGreetingEvening": "Good evening, {name}!",
+  "@homeGreetingEvening": {
+    "description": "Home screen greeting, after 6pm.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeStayAlertBody": "Stay alert. Help is always near.",
+  "homeReportCtaTitle": "Report an Emergency",
+  "homeReportCtaSubtitle": "The fastest way to reach a station — pick what's wrong, hold to send",
+  "homeReportCtaBadge": "FASTEST",
+  "homeRecentActivity": "Recent activity",
+  "timeAgoJustNow": "just now",
+  "timeAgoMinutes": "{count}m ago",
+  "@timeAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoHours": "{count}h ago",
+  "@timeAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeAgoDays": "{count}d ago",
+  "@timeAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loginTitle": "Sign in",
+  "loginSubtitle": "Report an emergency, or respond to one.",
+  "fieldEmail": "Email address",
+  "hintEmail": "you@example.com",
+  "fieldPassword": "Password",
+  "hintPassword": "Enter your password",
+  "validationPasswordRequired": "Password is required.",
+  "loginForgotPassword": "Forgot password?",
+  "loginButton": "Sign in",
+  "loginNewToZiren": "New to Ziren?",
+  "loginCreateAccount": "Create an account",
+  "regHaveAccount": "Already have an account?",
+  "authLegalIntro": "By continuing, you agree to Ziren's",
+  "authLegalAnd": "and",
+  "actionClose": "Close",
+  "forgotSendLink": "Send reset link",
+  "forgotBackToSignIn": "Back to sign in",
+  "forgotSentBody": "If an account exists for that email, a password reset link has been sent.",
+  "pendingTitle": "Account pending approval",
+  "pendingBody": "Your Responder account has been created and is waiting for verification by your Agency Admin.",
+  "pendingStep1": "Your Agency Admin reviews your badge ID",
+  "pendingStep2": "They confirm it against agency records",
+  "pendingStep3": "You are notified as soon as the account is approved",
+  "rejectedTitle": "Account not approved",
+  "rejectedBody": "Your Responder account was not approved by your Agency Admin. The most common reason is a badge ID that could not be matched to agency records.",
+  "rejectedStep1": "Contact your agency directly to confirm your badge ID",
+  "rejectedStep2": "Ask your Agency Admin to review the account again",
+  "pendingWhatNext": "What happens next",
+  "actionLogOut": "Log out",
+  "navHome": "Home",
+  "navReports": "Reports",
+  "navZirenAi": "Ziren AI",
+  "navMap": "Map",
+  "navProfile": "Profile",
+  "forgotTitle": "Reset password",
+  "forgotSentTitle": "Check your email",
+  "forgotSubtitle": "Enter your email address and we will send you a link to set a new one.",
+  "regRoleTitle": "Create account",
+  "regRoleSubtitle": "Which of these are you?",
+  "roleResident": "Resident",
+  "roleResponder": "Responder",
+  "regRoleResidentBody": "Report emergencies where you live, and follow what happens to your report.",
+  "regRoleResponderBody": "BFP, PNP or MDRRMO. Your Agency Admin approves the account before you can use it.",
+  "regNameTitle": "Your name",
+  "regNameSubtitle": "Enter it exactly as it appears on your ID.",
+  "fieldFirstName": "First name",
+  "hintFirstName": "Juan",
+  "fieldMiddleName": "Middle name",
+  "hintMiddleName": "Santos",
+  "fieldLastName": "Last name",
+  "hintLastName": "dela Cruz",
+  "fieldSuffix": "Suffix",
+  "hintSuffix": "Jr, Sr, III",
+  "fieldDateOfBirth": "Date of birth",
+  "regChooseDob": "Choose your date of birth",
+  "regDobWhy": "A responding crew treats a 3-year-old and a 40-year-old differently for the same symptoms.",
+  "fieldSex": "Sex",
+  "sexMale": "Male",
+  "sexFemale": "Female",
+  "sexPreferNotToSay": "Prefer not to say",
+  "regAddressTitle": "Where you live",
+  "regAddressSubtitle": "This decides which station responds to you.",
+  "fieldMunicipality": "Municipality",
+  "hintMunicipality": "Choose your municipality",
+  "fieldBarangay": "Barangay",
+  "fieldPurok": "Purok or sitio",
+  "hintPurok": "Purok 3",
+  "fieldStreet": "Street or landmark",
+  "hintStreet": "Rizal St, beside the chapel",
+  "regStreetHelp": "What helps a crew find your door",
+  "regChooseMunicipalityFirst": "Choose a municipality first",
+  "hintBarangay": "Choose your barangay",
+  "regUseMyLocation": "Use my location",
+  "regFindingYou": "Finding you...",
+  "regLocationDenied": "Location permission was declined.",
+  "regLocationSet": "Municipality set from your location.",
+  "regLocationFailed": "Could not read your location. Choose it below.",
+  "regNotInBiliran": "You do not appear to be in Biliran right now. Choose your home municipality below.",
+  "regBarangayListFailed": "Could not load the barangay list. Check your connection.",
+  "actionRetry": "Retry",
+  "regContactTitle": "How we reach you",
+  "regContactSubtitle": "A responder may need to call you on the way.",
+  "fieldMobile": "Mobile number",
+  "hintMobile": "09XX XXX XXXX",
+  "hintCreatePassword": "Create a password",
+  "passwordRule": "Min 8 characters, 1 uppercase, 1 number",
+  "passwordReqTitle": "Your password must have:",
+  "passwordReqLength": "At least {count} characters",
+  "@passwordReqLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "passwordReqUpper": "1 uppercase letter (A-Z)",
+  "passwordReqNumber": "1 number (0-9)",
+  "passwordConfirmHint": "Type the same password again.",
+  "fieldConfirmPassword": "Confirm password",
+  "hintConfirmPassword": "Re-enter your password",
+  "fieldEmergencyContact": "Emergency contact",
+  "hintName": "Name",
+  "hintTheirMobile": "Their mobile number",
+  "regEmergencyWhoTitle": "Emergency contact person",
+  "regEmergencyWhoBody": "Add ONE other person we can call if something happens to YOU — for example a parent, spouse, sibling or close friend. Enter THEIR name and number, not your own. You can skip this.",
+  "hintEmergencyName": "Their full name (not yours)",
+  "hintEmergencyNumber": "Their mobile number (not yours)",
+  "regEmergencyNeedsNumber": "Add their mobile number too, or clear their name.",
+  "regEmergencyNeedsName": "Add their name too, or clear the number.",
+  "regEmergencySameAsYours": "That is your own number. Enter the number of someone else — the person we should call about you.",
+  "emergencyWhoShort": "The person we should call if something happens to YOU — a family member, a friend or someone you trust. Enter THEIR name and number, not your own.",
+  "hintPwdId": "PWD ID number",
+  "pwdIdHelp": "Issued by your MSWDO or PDAO - also proves residency",
+  "hintAccessibilityNotes": "Anything else that would help (optional)",
+  "contactModeAny": "Any way",
+  "contactModeSms": "Text only",
+  "contactModeApp": "In-app only",
+  "contactModeVoice": "Calling is fine",
+  "regIsPwd": "I am a person with disability",
+  "regAccessibility": "Accessibility",
+  "regAccessibilityWhy": "So a crew arrives prepared. Optional.",
+  "regAccessibilityAsk": "What should a crew know before they arrive?",
+  "regContactModeAsk": "How should we contact you?",
+  "regAgencyTitle": "Your agency",
+  "regAgencySubtitle": "Your Agency Admin checks these before approving you.",
+  "fieldAgency": "Agency",
+  "fieldBadgeId": "Badge or employee ID",
+  "hintBadgeId": "As issued by your agency",
+  "fieldRank": "Rank or position",
+  "hintRank": "SFO1, PCpl, Rescue Team Leader",
+  "fieldUnit": "Unit or station",
+  "hintUnit": "Naval Fire Station",
+  "fieldDateJoined": "Date you joined",
+  "fieldAgencyIdPhoto": "Photo of your agency ID",
+  "regTakeAgencyIdPhoto": "Take a photo of your agency ID",
+  "regChooseDate": "Choose a date",
+  "regAgencyIdWhy": "Speeds up approval considerably - your admin can check the badge number without calling your station.",
+  "regIdBestChoice": "Best choice",
+  "regIdProvesResidency": "Also proves you live in Biliran",
+  "regIdAlsoAccepted": "Also accepted",
+  "regIdIdentityOnly": "Proves who you are, but not where you live",
+  "actionChooseFromGallery": "Choose from gallery",
+  "regIdCaptureTitle": "Photograph your ID",
+  "fieldIdNumber": "ID number",
+  "hintIdNumber": "As printed on the card",
+  "regReadingId": "Reading your ID...",
+  "regOcrFilled": "Filled in from your photo - correct it if it is wrong",
+  "regIdPrivacyNote": "This photo is private. It is never shown publicly, never seen by responders, and is deleted once an administrator has checked it.",
+  "regIdUnreadable": "We could not read much from that photo. You can still continue - just type the number below. A clearer photo helps the reviewer.",
+  "actionRetake": "Retake",
+  "actionTryAgain": "Try again",
+  "actionTakePhotoShort": "Take photo",
+  "selfieFramingNone": "Put your face inside the circle",
+  "selfieFramingMultiple": "Only one face, please",
+  "selfieFramingTooFar": "Move a little closer",
+  "selfieFramingTooClose": "Move a little further back",
+  "selfieFramingOffCentre": "Centre your face",
+  "selfieAutoCapture": "We take the photo automatically once you do.",
+  "selfieOrManual": "Or take the photo yourself.",
+  "selfieTitle": "Take a selfie",
+  "selfieReviewTitle": "How does this look?",
+  "selfieSubtitle": "So an administrator can match your face to your ID.",
+  "selfieReviewSubtitle": "Make sure your face is clear and well lit.",
+  "selfieCameraError": "Could not open the camera. Check that Ziren has camera permission in your phone settings.",
+  "selfieCaptureError": "Could not take the photo. Please try again.",
+  "regReviewTitle": "Check your details",
+  "regReviewSubtitle": "Tap anything to change it.",
+  "regGroupAboutYou": "About you",
+  "regGroupAddress": "Where you live",
+  "regGroupContact": "Contact",
+  "regGroupAgency": "Agency",
+  "regGroupIdentity": "Identity",
+  "actionChange": "Change",
+  "regReenterPassword": "Re-enter your password",
+  "hintYourPassword": "Your password",
+  "regVerifyNowInstead": "Verify now instead",
+  "regVerificationSkipped": "Verification skipped",
+  "valueNotGiven": "Not given",
+  "valueAttached": "Attached",
+  "labelName": "Name",
+  "labelDateOfBirth": "Date of birth",
+  "labelSex": "Sex",
+  "labelMunicipality": "Municipality",
+  "labelBarangay": "Barangay",
+  "labelPurok": "Purok or sitio",
+  "labelStreet": "Street",
+  "labelEmail": "Email",
+  "labelMobile": "Mobile",
+  "labelEmergencyContact": "Emergency contact",
+  "labelAccessibility": "Accessibility",
+  "labelBadgeId": "Badge ID",
+  "labelRank": "Rank",
+  "labelUnit": "Unit",
+  "labelAgencyIdPhoto": "Agency ID photo",
+  "labelIdType": "ID type",
+  "labelIdNumber": "ID number",
+  "labelIdPhoto": "ID photo",
+  "regSelfieAttached": "Selfie attached for identity checking.",
+  "regSkippedNotice": "Your account will work straight away and you can report emergencies. Finish verification later from your profile.",
+  "regSkipDialogTitle": "Skip verification for now?",
+  "actionGoBack": "Go back",
+  "actionSkipForNow": "Skip for now",
+  "regSkipDialogBody": "Your account will be created and you can report emergencies straight away.\n\nA dispatcher will see that your identity has not been checked yet. You can finish this any time from your profile.",
+  "regSkipLink": "I need help right now - skip this",
+  "profilePersonalInfo": "Personal Info",
+  "labelNameProfile": "Name",
+  "labelEmailProfile": "Email",
+  "labelPhone": "Phone",
+  "profileAddress": "Address",
+  "labelBarangayProfile": "Barangay",
+  "labelMunicipalityProfile": "Municipality",
+  "profileAccount": "Account",
+  "labelRole": "Role",
+  "labelStatus": "Status",
+  "profileEmergencyContact": "Emergency Contact",
+  "labelNumber": "Number",
+  "profileNotSet": "Not set",
+  "labelEmergencyContactName": "Contact name",
+  "labelEmergencyContactNumber": "Contact number",
+  "profileAccountVerified": "Account verified",
+  "profileAccountVerifiedBody": "Your identity is confirmed. You get priority support during emergencies.",
+  "profileVerifyLearnMore": "Learn more",
+  "profileStaleWarning": "Details below may be out of date.",
+  "actionRetryProfile": "Retry",
+  "settingsProfile": "Profile",
+  "fieldFullName": "Full Name",
+  "fieldMobileNumber": "Mobile Number",
+  "hintMobileShort": "09xxxxxxxxx",
+  "settingsAddress": "Address",
+  "fieldBarangaySettings": "Barangay",
+  "hintBarangayExample": "e.g. Brgy. Caraycaray",
+  "fieldMunicipalitySettings": "Municipality",
+  "hintMunicipalityExample": "e.g. Naval",
+  "settingsPreferences": "Preferences",
+  "settingsEmergencyContact": "Emergency Contact",
+  "fieldContactName": "Contact person's name",
+  "hintContactName": "Their full name, e.g. Maria Santos",
+  "fieldContactNumber": "Contact person's number",
+  "verifyWhichId": "Which ID will you show?",
+  "verifyIdPhoto": "Photo of the ID",
+  "verifyIdNumber": "ID number",
+  "verifySelfie": "Selfie (optional but helps)",
+  "verifySubmit": "Submit for review",
+  "actionDone": "Done",
+  "verifyTitle": "Verify your account",
+  "verifyChooseId": "Choose an ID",
+  "verifyTakeIdPhoto": "Take a photo of your ID",
+  "verifyTakeSelfie": "Take a selfie",
+  "verifySentTitle": "Sent for review",
+  "verifyNotSignedIn": "You are not signed in.",
+  "verifyIntro": "This is optional. You can already report emergencies without it - verifying just tells a dispatcher your reports come from a confirmed resident.",
+  "verifySentBody": "An administrator will check your ID. Nothing changes for you in the meantime - keep using Ziren exactly as before.",
+  "verifyPrivacyNote": "Your photos are private, never shown to responders, and deleted once an administrator has checked them.",
+  "bannerInReview": "Verification in review",
+  "bannerFinishVerifying": "Finish verifying your account",
+  "bannerVerifyNow": "Verify now",
+  "bannerNotNow": "Not now",
+  "bannerInReviewBody": "An administrator is checking your ID. You can keep using Ziren normally in the meantime.",
+  "bannerFinishBody": "Add a valid ID so a dispatcher knows your reports come from a real resident. You can report emergencies either way.",
+  "@profileStaleWarning": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "badgeRequired": "REQUIRED",
+  "badgeOptional": "OPTIONAL",
+  "badgeAuto": "AUTO",
+  "reportTitle": "Report an Emergency",
+  "reportSectionWhat": "WHAT - Type of Emergency",
+  "reportExtraDetails": "More details",
+  "reportSectionHow": "HOW - Details",
+  "reportOverlapQuestion": "Anything else to worry about?",
+  "reportSelectAllApply": "Select all that apply",
+  "reportLocation": "Location",
+  "reportNoGps": "No GPS - it can still be sent without it",
+  "reportFindingLocation": "Finding your location...",
+  "reportGpsAcquired": "GPS acquired",
+  "reportFindingAddress": "Finding the address...",
+  "reviewTitle": "Review your report",
+  "reviewTypeOfEmergency": "TYPE OF EMERGENCY",
+  "reviewDetails": "DETAILS",
+  "reviewAlsoInvolved": "ALSO INVOLVED",
+  "reviewLocation": "LOCATION",
+  "reviewRelationship": "RELATIONSHIP TO THE VICTIM",
+  "reviewExtraDetails": "MORE DETAILS",
+  "reviewNoGps": "GPS not available",
+  "reviewFalseReportWarning": "Filing a false report carries legal penalties. Make sure all the information is correct.",
+  "reviewSubmit": "Submit Report",
+  "actionEdit": "Edit",
+  "reviewTakePhoto": "Take a photo",
+  "quickIncident": "Incident",
+  "quickReport": "Report",
+  "quickYourLocation": "Your location",
+  "quickSentTo": "Report sent to {station}.",
+  "@quickSentTo": {
+    "description": "Confirmation snackbar after a one-tap report is accepted.",
+    "placeholders": {
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "quickGpsPrecise": "GPS is accurate (±{meters} m)",
+  "@quickGpsPrecise": {
+    "description": "Shown under the captured coordinates when the fix is tight.",
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "quickGpsVague": "GPS is imprecise (±{meters} m) — this may not be exactly where you are.",
+  "@quickGpsVague": {
+    "description": "Shown when the fix is loose. Says so plainly rather than presenting a weak fix as fact.",
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "quickNoteHint": "e.g. someone is trapped inside",
+  "@quickNoteHint": {
+    "description": "Placeholder for the optional free-text note."
+  },
+  "quickSendReport": "Send report",
+  "@quickSendReport": {
+    "description": "Primary button on the one-tap report confirm screen."
+  },
+  "quickSendWarning": "This sends a real call-out to the station. A false report carries a penalty.",
+  "@quickSendWarning": {
+    "description": "Note under the send button."
+  },
+  "quickLocationOff": "Location is off. The report will still be sent, but a dispatcher will have to ask where you are.",
+  "quickSearching": "Searching...",
+  "quickCoordinatesFound": "Coordinates acquired",
+  "quickReceivingStation": "Receiving station",
+  "quickLoadingStations": "Loading the list...",
+  "quickStationUnknown": "Cannot be determined yet - your location is needed.",
+  "quickStationAuto": "Assigned automatically from your location",
+  "@quickStationAuto": {
+    "description": "Receiving-agency line on the quick-report review when the phone has a GPS fix but no station list (e.g. that one call has not loaded yet). The report is still sendable: the server picks the nearest station itself from coordinates."
+  },
+  "quickLandmark": "Landmark (optional)",
+  "quickLandmarkHelp": "What is next to it or nearby? This is what a responder will look for.",
+  "quickLandmarkHint": "e.g. next to the barangay hall",
+  "quickVoiceOnlyReportText": "{category} — reported by voice recording",
+  "@quickVoiceOnlyReportText": {
+    "description": "report_text sent when the resident recorded a voice note but typed no message. Must stay well over 10 characters for every category — the backend rejects report_text under 10 chars, and the transcript this refers to isn't available until after submission.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "quickNoDetailsReportText": "{category} — no additional details provided",
+  "@quickNoDetailsReportText": {
+    "description": "report_text sent when the resident typed no message AND recorded no voice note — category selection alone. Must stay well over 10 characters for every category.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "@_COMMENT_QUICK_REDESIGN": "Quick-report confirm + review screens, resident redesign.",
+  "quickFlowTitle": "Report a {category}",
+  "@quickFlowTitle": {
+    "description": "AppBar title on the quick-report confirm screen.",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "quickHelpSubtitle": "Help us get the right team to the right place.",
+  "quickYourLocationAuto": "Your location (auto-detected)",
+  "quickAccuracy": "Accuracy: ±{meters} m",
+  "@quickAccuracy": {
+    "description": "GPS accuracy line under the detected address.",
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "quickDescribeWhatHappened": "Describe what happened",
+  "quickOrTypeMessage": "Or type your message (optional)",
+  "quickAttachPhotoVideo": "Attach photo or video (optional)",
+  "quickMediaHint": "Add photos or videos as evidence (max 5, 50MB each)",
+  "quickTakePhoto": "Take a photo",
+  "quickRecordVideo": "Record a video",
+  "quickChooseFromGallery": "Choose from gallery",
+  "quickAddPhoto": "Add photo or video",
+  "quickReviewReportAction": "Review report",
+  "quickReviewWarning": "By sending this, you are creating a real emergency report. Please be serious and accurate.",
+  "quickReviewTitle": "Review report",
+  "quickReviewCareful": "Please review your report carefully.",
+  "quickReviewWillSendTo": "This will be sent to the nearest {agency} station.",
+  "@quickReviewWillSendTo": {
+    "description": "Sub-line under the careful-review banner.",
+    "placeholders": {
+      "agency": {
+        "type": "String"
+      }
+    }
+  },
+  "quickReviewDescription": "Description",
+  "quickReviewPhoto": "Photo",
+  "quickReviewAttachedCount": "{count} attached",
+  "@quickReviewAttachedCount": {
+    "description": "Photo/video count line on the review screen.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quickReviewReceivingAgency": "Receiving agency",
+  "quickReviewAway": "{km} km away",
+  "@quickReviewAway": {
+    "description": "Distance to the receiving station on the review screen.",
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "quickReviewVoiceRecording": "Voice recording",
+  "quickReviewAttached": "Attached",
+  "categoryQuestion": "What kind of emergency?",
+  "categoryHelp": "Choose the closest category",
+  "whoTitle": "Who and where?",
+  "whoRelationship": "What is your relationship to the victim?",
+  "whoLocation": "Location",
+  "whoLandmark": "Landmark or nearby marker (optional)",
+  "whoLandmarkHint": "For example: near the church, beside the market...",
+  "overlapTitle": "Anything else involved...",
+  "overlapHelp": "Select all that apply - this helps alert the right agency.",
+  "stationPickTitle": "Choose a Station",
+  "actionTryAgainStation": "Try again",
+  "stationNoneAvailable": "No stations available.",
+  "stationPickHelp": "Tap the station that should receive your report.",
+  "qFireMaterial": "What is burning?",
+  "qFireSpreading": "Is it still spreading?",
+  "qFireInjured": "Anyone hurt or trapped?",
+  "qFireRoadBlocked": "Is the fire blocking the road?",
+  "qMedType": "Type of emergency?",
+  "qMedVictimCount": "How many victims?",
+  "qMedBleeding": "Bleeding or serious wounds?",
+  "qMedConscious": "Is the victim conscious?",
+  "qVehType": "What vehicle?",
+  "qVehInjured": "Anyone hurt?",
+  "qVehRoadBlocked": "Is the road blocked?",
+  "qCalType": "Type of calamity?",
+  "qCalAffected": "How many families affected?",
+  "qCalRoadCut": "Is the road cut off?",
+  "qCalEvacuation": "Is evacuation needed?",
+  "qCrimeType": "Type of incident?",
+  "qCrimeWeapon": "Any weapons?",
+  "qCrimeOngoing": "Is it still happening now?",
+  "ansYes": "Yes",
+  "ansNo": "No",
+  "ansNone": "None",
+  "ansDontKnow": "I do not know",
+  "ansOther": "Other",
+  "ansHouse": "House",
+  "ansVehicle": "Vehicle",
+  "ansForestField": "Forest / Field",
+  "ansBuildingWarehouse": "Building / Warehouse",
+  "ansYesSpreading": "Yes, spreading",
+  "ansNoControlled": "No, under control",
+  "ansAccident": "Accident",
+  "ansHeartAttackStroke": "Heart attack / Stroke",
+  "ansSeizure": "Seizure",
+  "ansTroubleBreathing": "Trouble breathing",
+  "ansOne": "1",
+  "ansTwoToFive": "2-5",
+  "ansMoreThanFive": "More than 5",
+  "ansYesConscious": "Yes, conscious",
+  "ansNoUnconscious": "No, unconscious",
+  "ansMotorcycle": "Motorcycle",
+  "ansCarSuv": "Car / SUV",
+  "ansBusTruck": "Bus / Truck",
+  "ansTricycleEbike": "Tricycle / E-bike",
+  "ansYesBlocked": "Yes, blocked",
+  "ansPartly": "Partly",
+  "ansFlood": "Flood",
+  "ansLandslide": "Landslide",
+  "ansStorm": "Storm",
+  "ansEarthquake": "Earthquake",
+  "ansOneToFive": "1-5",
+  "ansSixToTwenty": "6-20",
+  "ansMoreThanTwenty": "More than 20",
+  "ansYesUrgent": "Yes, urgent",
+  "ansPossibly": "Possibly",
+  "ansNotYetNeeded": "Not needed yet",
+  "ansFightDisturbance": "Fight / Disturbance",
+  "ansTheftHoldup": "Theft / Hold-up",
+  "ansPhysicalAssault": "Physical assault",
+  "ansArmed": "Weapon involved",
+  "ansYesOngoing": "Yes, still happening",
+  "ansItIsOver": "It is over",
+  "qExtraDetails": "More details (optional)",
+  "sosAppBarTitle": "SOS - Emergency Report",
+  "sosHeading": "Emergency SOS",
+  "sosIntro": "Your identity and location will be sent to the nearest emergency station.",
+  "sosLocating": "Determining your location...",
+  "sosStationAuto": "Nearest station will be identified automatically.",
+  "sosLocationUnavailable": "Location unavailable",
+  "sosNoGpsBody": "Your SOS will be sent without GPS. The server will route to the nearest Naval station.",
+  "sosLocationCaptured": "Location captured",
+  "sosBriefDescription": "Brief description (optional)",
+  "sosLegalWarning": "Legal Warning",
+  "sosLegalBody": "Submitting a false emergency report is a punishable offense under Philippine law (RA 10175, local ordinances). Your full identity and location are permanently attached to this report. Repeated false reports will result in suspension of your SOS access and referral to local authorities.",
+  "@sosLegalBody": {
+    "description": "The legal warning itself. Sat under the localised heading in English only until now, so a Filipino-locale resident read a consequence notice in a second language."
+  },
+  "sosTruthConfirm": "I understand this is a real emergency and confirm my report is truthful.",
+  "@sosTruthConfirm": {
+    "description": "Checkbox the resident must tick before the SOS button enables."
+  },
+  "sosSendNow": "Send SOS Now",
+  "@sosSendNow": {
+    "description": "Primary button on the SOS confirm screen."
+  },
+  "sosCooldownWarning": "{minutes, plural, =1{You submitted an SOS recently. Please wait 1 more minute before sending another. If this is an ongoing emergency, call 911 directly.} other{You submitted an SOS recently. Please wait {minutes} more minutes before sending another. If this is an ongoing emergency, call 911 directly.}}",
+  "@sosCooldownWarning": {
+    "description": "Shown while the client-side SOS cooldown is active. Pluralised properly — the previous copy said 'minute(s)'.",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "sosSentTitle": "SOS Sent",
+  "sosSentBody": "Your emergency report has been received and is being reviewed by a dispatcher.",
+  "actionBackToHome": "Back to Home",
+  "sosWorsensNote": "If the emergency worsens, call 911 directly.\nA dispatcher will contact you if needed.",
+  "sosDispatchedTo": "Dispatched to",
+  "sosAddDetails": "Add more details (optional)",
+  "sosAddDetailsHelp": "Your SOS is already sent. If you can safely provide more information (what happened, number of people involved, etc.), the dispatcher will find it helpful.",
+  "actionSkip": "Skip",
+  "sosSendDetails": "Send Details",
+  "sosDetailsSent": "Additional details sent. The dispatcher has been updated.",
+  "formSubmittedTitle": "Report Submitted",
+  "formTrackReport": "Track My Report",
+  "formReportEmergency": "Report Emergency",
+  "formMyReports": "My Reports",
+  "actionLogOutForm": "Log out",
+  "formDescribe": "Describe the emergency",
+  "formDescribeHint": "For example: Fire in Brgy. Caraycaray Naval, a house is burning, two people are escaping...",
+  "formDescribeRequired": "Please describe the emergency.",
+  "formDescribeTooShort": "Please provide more detail (at least 10 characters).",
+  "formSubmit": "Submit Emergency Report",
+  "formSubmitNote": "This report will be reviewed by a dispatcher. For life-threatening emergencies, also call 911.",
+  "actionChangeForm": "Change",
+  "formNoLocation": "Location not available - report will be sent without GPS",
+  "withdrawReport": "Move to Trash",
+  "@withdrawReport": {
+    "description": "Resident withdrawing their own report from My Reports."
+  },
+  "withdrawConfirmTitle": "Move this report to Trash?",
+  "@withdrawConfirmTitle": {
+    "description": "Resident withdrawing their own report from My Reports."
+  },
+  "withdrawConfirmBody": "It will be moved to Trash and taken off the dispatcher's list. Reports in Trash are permanently deleted after 30 days. Do this only if help is no longer needed.",
+  "@withdrawConfirmBody": {
+    "description": "Resident withdrawing their own report from My Reports. Must state the 30-day auto-delete policy — this is the only place that promise is made before the fact."
+  },
+  "withdrawConfirmAction": "Move to Trash",
+  "@withdrawConfirmAction": {
+    "description": "Resident withdrawing their own report from My Reports."
+  },
+  "withdrawCancelAction": "Keep report",
+  "@withdrawCancelAction": {
+    "description": "Resident withdrawing their own report from My Reports."
+  },
+  "withdrawDone": "Moved to Trash. It will be permanently deleted in 30 days.",
+  "@withdrawDone": {
+    "description": "Resident withdrawing their own report from My Reports."
+  },
+  "filterTrash": "Trash",
+  "@filterTrash": {
+    "description": "Trash filter on My Reports: reports the resident withdrew."
+  },
+  "noTrashedReports": "Nothing withdrawn",
+  "@noTrashedReports": {
+    "description": "Trash filter on My Reports: reports the resident withdrew."
+  },
+  "noTrashedReportsBody": "Reports you take back appear here. They stay on record, but nobody is working on them.",
+  "@noTrashedReportsBody": {
+    "description": "Trash filter on My Reports: reports the resident withdrew."
+  },
+  "trashDeletesInDays": "{days, plural, =0{Deletes today} =1{Deletes in 1 day} other{Deletes in {days} days}}",
+  "@trashDeletesInDays": {
+    "description": "Countdown shown on a trashed report — how long until the 30-day retention permanently deletes it.",
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "reportDetailsTitle": "Report Details",
+  "@reportDetailsTitle": {
+    "description": "App bar title of the full report detail screen, opened by tapping a card in My Reports."
+  },
+  "respTabHome": "Home",
+  "@respTabHome": {
+    "description": "Responder app: Home"
+  },
+  "respTabStats": "Stats",
+  "@respTabStats": {
+    "description": "Responder app: Stats"
+  },
+  "respTabReports": "Reports",
+  "@respTabReports": {
+    "description": "Responder app: the tab listing every report assigned to this responder"
+  },
+  "respStatToday": "Today",
+  "@respStatToday": {
+    "description": "Responder app: incidents this responder closed today"
+  },
+  "respStatTypical": "Typical",
+  "@respStatTypical": {
+    "description": "Responder app: this responder's median time from dispatch to close"
+  },
+  "respTabMap": "Map",
+  "@respTabMap": {
+    "description": "Responder app: Map"
+  },
+  "respTabProfile": "Profile",
+  "@respTabProfile": {
+    "description": "Responder app: Profile"
+  },
+  "respStatAssigned": "Assigned",
+  "@respStatAssigned": {
+    "description": "Responder app: Assigned"
+  },
+  "respStatCritical": "Critical",
+  "@respStatCritical": {
+    "description": "Responder app: Critical"
+  },
+  "respStatOldest": "Longest waiting",
+  "@respStatOldest": {
+    "description": "Responder app: Longest waiting"
+  },
+  "respHomeGreetingSubtitle": "Here's what's on your queue today.",
+  "@respHomeGreetingSubtitle": {
+    "description": "Responder app: Home screen greeting subtitle, under the name greeting"
+  },
+  "respHomeRecentActivity": "Recent Activity",
+  "@respHomeRecentActivity": {
+    "description": "Responder app: Home screen recent-activity section heading"
+  },
+  "respHomeViewAll": "View all",
+  "@respHomeViewAll": {
+    "description": "Responder app: Home screen recent-activity \"view all\" action"
+  },
+  "respHomeQueueTitle": "Assigned to you",
+  "@respHomeQueueTitle": {
+    "description": "Responder app: Home screen queue section heading"
+  },
+  "respHomeAwaitingDispatch": "Awaiting Dispatch",
+  "@respHomeAwaitingDispatch": {
+    "description": "Responder app: Home screen quick-action tile jumping to the worst-ranked open assignment"
+  },
+  "respHomeNoAssignmentsTitle": "No assignments",
+  "@respHomeNoAssignmentsTitle": {
+    "description": "Responder app: Home screen empty-queue card title, on duty"
+  },
+  "respHomeOffDutyTitle": "Off duty",
+  "@respHomeOffDutyTitle": {
+    "description": "Responder app: Home screen empty-queue card title, off duty"
+  },
+  "respHomeQueueClear": "Queue clear",
+  "@respHomeQueueClear": {
+    "description": "Responder app: Home screen empty-queue card body heading, on duty"
+  },
+  "respHomeNotAccepting": "Not accepting calls",
+  "@respHomeNotAccepting": {
+    "description": "Responder app: Home screen empty-queue card body heading, off duty"
+  },
+  "respHomeQueueClearBody": "Nothing assigned to you yet. New calls will show up here.",
+  "@respHomeQueueClearBody": {
+    "description": "Responder app: Home screen empty-queue card body, on duty"
+  },
+  "respHomeOffDutyBody": "No assignments will be sent while you are off duty. Flip the switch above.",
+  "@respHomeOffDutyBody": {
+    "description": "Responder app: Home screen empty-queue card body, off duty"
+  },
+  "respDashTitle": "My dashboard",
+  "@respDashTitle": {
+    "description": "Responder app: My dashboard"
+  },
+  "respDashAssigned": "Assigned",
+  "@respDashAssigned": {
+    "description": "Responder app: Assigned"
+  },
+  "respDashCritical": "Critical",
+  "@respDashCritical": {
+    "description": "Responder app: Critical"
+  },
+  "respDashEnRoute": "En route",
+  "@respDashEnRoute": {
+    "description": "Responder app: En route"
+  },
+  "respDashOnScene": "On scene",
+  "@respDashOnScene": {
+    "description": "Responder app: On scene"
+  },
+  "respDashClosedToday": "Closed today",
+  "@respDashClosedToday": {
+    "description": "Responder app: Closed today"
+  },
+  "respDashTypicalTime": "Typical time to close",
+  "@respDashTypicalTime": {
+    "description": "Responder app: Typical time to close"
+  },
+  "respDashTypicalBody": "From the moment you were sent, to resolved.",
+  "@respDashTypicalBody": {
+    "description": "Responder app: From the moment you were sent, to resolved."
+  },
+  "respHistoryTitle": "My closed incidents",
+  "@respHistoryTitle": {
+    "description": "Responder app: My closed incidents"
+  },
+  "respHistoryError": "Could not load your history",
+  "@respHistoryError": {
+    "description": "Responder app: Could not load your history"
+  },
+  "respHistoryEmpty": "Nothing closed yet",
+  "@respHistoryEmpty": {
+    "description": "Responder app: Nothing closed yet"
+  },
+  "respAccept": "I WILL RESPOND",
+  "@respAccept": {
+    "description": "Responder app: I WILL RESPOND"
+  },
+  "respDecline": "CAN'T RESPOND",
+  "@respDecline": {
+    "description": "Responder app: CAN'T RESPOND"
+  },
+  "respDeclineLong": "CAN'T RESPOND",
+  "@respDeclineLong": {
+    "description": "Responder app: CAN'T RESPOND"
+  },
+  "respAccepted": "You have accepted this. The dispatcher knows.",
+  "@respAccepted": {
+    "description": "Responder app: You have accepted this. The dispatcher knows."
+  },
+  "respSeconds": "seconds",
+  "@respSeconds": {
+    "description": "Responder app: seconds"
+  },
+  "respOverdue": "NO ANSWER YET",
+  "@respOverdue": {
+    "description": "Responder app: NO ANSWER YET"
+  },
+  "respUntriaged": "NOT YET TRIAGED",
+  "@respUntriaged": {
+    "description": "Responder app: NOT YET TRIAGED"
+  },
+  "respDeclineTitle": "Can't respond?",
+  "@respDeclineTitle": {
+    "description": "Responder app: Can't respond?"
+  },
+  "respDeclineSubtitle": "This goes back to the dispatcher with your reason, so they can send someone else right away.",
+  "@respDeclineSubtitle": {
+    "description": "Responder app: This goes back to the dispatcher with your reason, so they can send so"
+  },
+  "respDeclineNote": "Extra detail (optional)",
+  "@respDeclineNote": {
+    "description": "Responder app: Extra detail (optional)"
+  },
+  "respDeclineNoteHint": "For example: truck is on a jack, 30 more minutes",
+  "@respDeclineNoteHint": {
+    "description": "Responder app: For example: truck is on a jack, 30 more minutes"
+  },
+  "respDeclineSubmit": "Send back to dispatcher",
+  "@respDeclineSubmit": {
+    "description": "Responder app: Send back to dispatcher"
+  },
+  "respCloseTitle": "What did you find?",
+  "@respCloseTitle": {
+    "description": "Responder app: What did you find?"
+  },
+  "respCloseCasualties": "Number of people",
+  "@respCloseCasualties": {
+    "description": "Responder app: Number of people"
+  },
+  "respCloseCasualtiesHint": "Leave blank if not counted. That is not the same as zero.",
+  "@respCloseCasualtiesHint": {
+    "description": "Responder app: Leave blank if not counted. That is not the same as zero."
+  },
+  "respCloseInjured": "Injured",
+  "@respCloseInjured": {
+    "description": "Responder app: Injured"
+  },
+  "respCloseFatal": "Died",
+  "@respCloseFatal": {
+    "description": "Responder app: Died"
+  },
+  "respCloseTransported": "Taken to hospital",
+  "@respCloseTransported": {
+    "description": "Responder app: Taken to hospital"
+  },
+  "respCloseNarrative": "Short account (optional)",
+  "@respCloseNarrative": {
+    "description": "Responder app: Short account (optional)"
+  },
+  "respCloseNarrativeHint": "What happened, and what you did",
+  "@respCloseNarrativeHint": {
+    "description": "Responder app: What happened, and what you did"
+  },
+  "respCloseSubmit": "Close incident",
+  "@respCloseSubmit": {
+    "description": "Responder app: Close incident"
+  },
+  "respCloseLater": "Not yet — I'll come back",
+  "@respCloseLater": {
+    "description": "Responder app: Not yet — I'll come back"
+  },
+  "respCount": "Count",
+  "@respCount": {
+    "description": "Responder app: Count"
+  },
+  "respNotCounted": "Not counted",
+  "@respNotCounted": {
+    "description": "Responder app: Not counted"
+  },
+  "respClosed": "Incident closed. Thank you!",
+  "@respClosed": {
+    "description": "Responder app: Incident closed. Thank you!"
+  },
+  "respBackupTitle": "Request assistance",
+  "@respBackupTitle": {
+    "description": "Responder app: Request assistance"
+  },
+  "respBackupSubtitle": "This creates a new incident for their dispatcher, linked to this call. It is not just a message.",
+  "@respBackupSubtitle": {
+    "description": "Responder app: This creates a new incident for their dispatcher, linked to this call."
+  },
+  "respBackupNeed": "What do you need? *",
+  "@respBackupNeed": {
+    "description": "Responder app: What do you need? *"
+  },
+  "respBackupNeedHint": "For example: 2 injured, need an ambulance",
+  "@respBackupNeedHint": {
+    "description": "Responder app: For example: 2 injured, need an ambulance"
+  },
+  "respBackupSubmit": "Send the request",
+  "@respBackupSubmit": {
+    "description": "Responder app: Send the request"
+  },
+  "respBackupAction": "Request another agency's help",
+  "@respBackupAction": {
+    "description": "Responder app: Request another agency's help"
+  },
+  "respDistressTitle": "Are you in danger?",
+  "@respDistressTitle": {
+    "description": "Responder app: Are you in danger?"
+  },
+  "respDistressBody": "This alerts the dispatcher immediately, with your location.\n\nUse it if you yourself need help.",
+  "@respDistressBody": {
+    "description": "Responder app: This alerts the dispatcher immediately, with your location.\n\nUse it if"
+  },
+  "respDistressNo": "No",
+  "@respDistressNo": {
+    "description": "Responder app: No"
+  },
+  "respDistressYes": "YES, HELP",
+  "@respDistressYes": {
+    "description": "Responder app: YES, HELP"
+  },
+  "respDistressHold": "PRESS AND HOLD IF YOU ARE IN DANGER",
+  "@respDistressHold": {
+    "description": "Responder app: PRESS AND HOLD IF YOU ARE IN DANGER"
+  },
+  "respDistressHoldBody": "For your own safety, not the incident",
+  "@respDistressHoldBody": {
+    "description": "Responder app: For your own safety, not the incident"
+  },
+  "respDistressSemantics": "Distress signal. Press and hold to raise.",
+  "@respDistressSemantics": {
+    "description": "Responder app: Distress signal. Press and hold to raise."
+  },
+  "respNavTitle": "Going to the scene",
+  "@respNavTitle": {
+    "description": "Responder app: Going to the scene"
+  },
+  "respNavLocating": "Finding your location...",
+  "@respNavLocating": {
+    "description": "Responder app: Finding your location..."
+  },
+  "respNavStraightLine": "This is a straight line, not a road. Follow the actual streets.",
+  "@respNavStraightLine": {
+    "description": "Responder app: This is a straight line, not a road. Follow the actual streets."
+  },
+  "respNavExternal": "Open in Google Maps for directions",
+  "@respNavExternal": {
+    "description": "Responder app: Open in Google Maps for directions"
+  },
+  "respNavNoMapsApp": "No maps app on this phone.",
+  "@respNavNoMapsApp": {
+    "description": "Responder app: No maps app on this phone."
+  },
+  "respNavStraightDistance": "straight-line distance",
+  "@respNavStraightDistance": {
+    "description": "Responder app: straight-line distance"
+  },
+  "respNavClose": "almost there",
+  "@respNavClose": {
+    "description": "Responder app: almost there"
+  },
+  "respIncident": "Incident",
+  "@respIncident": {
+    "description": "Responder app: Incident"
+  },
+  "respSectionReport": "INCIDENT REPORT",
+  "@respSectionReport": {
+    "description": "Responder app: INCIDENT REPORT"
+  },
+  "respSectionLocation": "LOCATION",
+  "@respSectionLocation": {
+    "description": "Responder app: LOCATION"
+  },
+  "respSectionReporter": "REPORTER",
+  "@respSectionReporter": {
+    "description": "Responder app: REPORTER"
+  },
+  "respSectionStation": "STATION",
+  "@respSectionStation": {
+    "description": "Responder app: STATION"
+  },
+  "respFieldCategory": "Category",
+  "@respFieldCategory": {
+    "description": "Responder app: Category"
+  },
+  "respFieldAddress": "Address",
+  "@respFieldAddress": {
+    "description": "Responder app: Address"
+  },
+  "respFieldLandmark": "Landmark",
+  "@respFieldLandmark": {
+    "description": "Responder app: Landmark"
+  },
+  "respFieldGps": "GPS",
+  "@respFieldGps": {
+    "description": "Responder app: GPS"
+  },
+  "respFieldName": "Name",
+  "@respFieldName": {
+    "description": "Responder app: Name"
+  },
+  "respFieldPhone": "Phone",
+  "@respFieldPhone": {
+    "description": "Responder app: Phone"
+  },
+  "respFieldStation": "Station",
+  "@respFieldStation": {
+    "description": "Responder app: Station"
+  },
+  "respFieldEmergencyContact": "Emergency Contact",
+  "@respFieldEmergencyContact": {
+    "description": "Responder app: Emergency Contact"
+  },
+  "respFieldContactNumber": "Contact Number",
+  "@respFieldContactNumber": {
+    "description": "Responder app: Contact Number"
+  },
+  "respNavigate": "Navigate",
+  "@respNavigate": {
+    "description": "Responder app: Navigate"
+  },
+  "respGoBack": "Go Back",
+  "@respGoBack": {
+    "description": "Responder app: Go Back"
+  },
+  "respSosFlagged": "SOS account flagged",
+  "@respSosFlagged": {
+    "description": "Responder app: SOS account flagged"
+  },
+  "respTranscriptWarning": "The words above are transcribed and can be wrong.",
+  "@respTranscriptWarning": {
+    "description": "Responder app: The words above are transcribed and can be wrong."
+  },
+  "respSceneOnlyWhenOnScene": "You can only take photos once you are on scene.",
+  "@respSceneOnlyWhenOnScene": {
+    "description": "Responder app: You can only take photos once you are on scene."
+  },
+  "respSceneUploading": "Uploading...",
+  "@respSceneUploading": {
+    "description": "Responder app: scene capture button label while uploading"
+  },
+  "respSceneTakePhoto": "Take a photo of the scene",
+  "@respSceneTakePhoto": {
+    "description": "Responder app: scene capture button label before any photo is attached"
+  },
+  "respSceneAddMore": "Add more ({count} added)",
+  "@respSceneAddMore": {
+    "description": "Responder app: scene capture button label after at least one photo is attached",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "respSceneNotSignedIn": "You are not signed in.",
+  "@respSceneNotSignedIn": {
+    "description": "Responder app: scene capture failure, no authenticated user"
+  },
+  "respScenePhotoAdded": "Photo added.",
+  "@respScenePhotoAdded": {
+    "description": "Responder app: scene capture success toast"
+  },
+  "respScenePhotoNotAdded": "Photo could not be added.",
+  "@respScenePhotoNotAdded": {
+    "description": "Responder app: scene capture attach-failure toast"
+  },
+  "respScenePhotoUploadFailed": "Photo could not be uploaded. Try again when you have signal.",
+  "@respScenePhotoUploadFailed": {
+    "description": "Responder app: scene capture upload-failure toast, offline"
+  },
+  "respActionAccept": "Accepting the call",
+  "@respActionAccept": {
+    "description": "Responder app: queued-action label, accept"
+  },
+  "respActionDecline": "Declining the call",
+  "@respActionDecline": {
+    "description": "Responder app: queued-action label, decline"
+  },
+  "respActionStatusUpdate": "Status update",
+  "@respActionStatusUpdate": {
+    "description": "Responder app: queued-action label, status change"
+  },
+  "respActionClose": "Closing the incident",
+  "@respActionClose": {
+    "description": "Responder app: queued-action label, close"
+  },
+  "respActionSceneMedia": "Scene photos",
+  "@respActionSceneMedia": {
+    "description": "Responder app: queued-action label, scene media attach"
+  },
+  "respActionDistress": "Distress signal",
+  "@respActionDistress": {
+    "description": "Responder app: queued-action label, distress signal"
+  },
+  "respProfileTitle": "Profile",
+  "@respProfileTitle": {
+    "description": "Responder app: Profile"
+  },
+  "respProfileSaved": "Profile saved.",
+  "@respProfileSaved": {
+    "description": "Responder app: Profile saved."
+  },
+  "respProfileCancel": "Cancel",
+  "@respProfileCancel": {
+    "description": "Responder app: Cancel"
+  },
+  "respProfileEdit": "Edit",
+  "@respProfileEdit": {
+    "description": "Responder app: Edit"
+  },
+  "respProfileSave": "Save",
+  "@respProfileSave": {
+    "description": "Responder app: Save"
+  },
+  "respProfileContact": "Contact",
+  "@respProfileContact": {
+    "description": "Responder app: Contact"
+  },
+  "respProfileAssignment": "Assignment",
+  "@respProfileAssignment": {
+    "description": "Responder app: Assignment"
+  },
+  "respProfileShift": "This shift",
+  "@respProfileShift": {
+    "description": "Responder app: This shift"
+  },
+  "respProfileBadge": "Badge ID",
+  "@respProfileBadge": {
+    "description": "Responder app: Badge ID"
+  },
+  "respProfileAgency": "Agency",
+  "@respProfileAgency": {
+    "description": "Responder app: Agency"
+  },
+  "respProfileMunicipality": "Municipality",
+  "@respProfileMunicipality": {
+    "description": "Responder app: Municipality"
+  },
+  "respProfileStatus": "Status",
+  "@respProfileStatus": {
+    "description": "Responder app: Status"
+  },
+  "respProfileAssignedNow": "Assigned right now",
+  "@respProfileAssignedNow": {
+    "description": "Responder app: Assigned right now"
+  },
+  "respProfileWaitingToSend": "Waiting to send",
+  "@respProfileWaitingToSend": {
+    "description": "Responder app: Waiting to send"
+  },
+  "respProfileResolvedPeriod": "Resolved this period",
+  "@respProfileResolvedPeriod": {
+    "description": "Responder app: Profile shift summary — incidents resolved in the current 30-day dashboard window"
+  },
+  "respProfileTypicalResponse": "Typical response time",
+  "@respProfileTypicalResponse": {
+    "description": "Responder app: Profile shift summary — median minutes from dispatch to close"
+  },
+  "respProfileNameRequired": "Name is required.",
+  "@respProfileNameRequired": {
+    "description": "Responder app: Name is required."
+  },
+  "respLogout": "Log out",
+  "@respLogout": {
+    "description": "Responder app: Log out"
+  },
+  "respLogoutConfirm": "Log out?",
+  "@respLogoutConfirm": {
+    "description": "Responder app: Log out?"
+  },
+  "respLogoutBody": "You will stop receiving dispatch alerts on this phone until you sign in again.",
+  "@respLogoutBody": {
+    "description": "Responder app: You will stop receiving dispatch alerts on this phone until you sign i"
+  },
+  "respOnDuty": "ON DUTY",
+  "@respOnDuty": {
+    "description": "Responder app: ON DUTY"
+  },
+  "respOffDuty": "OFF DUTY",
+  "@respOffDuty": {
+    "description": "Responder app: OFF DUTY"
+  },
+  "respApproved": "Approved",
+  "@respApproved": {
+    "description": "Responder app: Approved"
+  },
+  "respRejected": "Not approved",
+  "@respRejected": {
+    "description": "Responder app: Not approved"
+  },
+  "respPending": "Awaiting approval",
+  "@respPending": {
+    "description": "Responder app: Awaiting approval"
+  },
+  "respPendingTitle": "Awaiting approval",
+  "@respPendingTitle": {
+    "description": "Responder app: Awaiting approval"
+  },
+  "respPendingBody": "You cannot receive dispatch until your Agency Admin verifies your badge ID.",
+  "@respPendingBody": {
+    "description": "Responder app: You cannot receive dispatch until your Agency Admin verifies your badg"
+  },
+  "respRejectedTitle": "Your account was not approved",
+  "@respRejectedTitle": {
+    "description": "Responder app: Your account was not approved"
+  },
+  "respRejectedBody": "You cannot receive dispatch. Talk to your Agency Admin.",
+  "@respRejectedBody": {
+    "description": "Responder app: You cannot receive dispatch. Talk to your Agency Admin."
+  },
+  "respCancel": "Cancel",
+  "@respCancel": {
+    "description": "Responder app: Cancel"
+  },
+  "respHazardBanner": "ROAD WARNINGS ({count})",
+  "@respHazardBanner": {
+    "description": "Responder app: ROAD WARNINGS ({count})",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "respDeclinedTimes": "Refused {count}x",
+  "@respDeclinedTimes": {
+    "description": "Responder app: Refused {count}x",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "respPriorWarnings": "{count} prior warning(s)",
+  "@respPriorWarnings": {
+    "description": "Responder app: {count} prior warning(s)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "respSyncPending": "{count} waiting — will send when there is signal",
+  "@respSyncPending": {
+    "description": "Responder app: {count} waiting — will send when there is signal",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "respTellingResident": "Resident is told: {eta}",
+  "@respTellingResident": {
+    "description": "Responder app: Resident is told: {eta}",
+    "placeholders": {
+      "eta": {
+        "type": "String"
+      }
+    }
+  },
+  "respLandmarkPrefix": "Landmark: {landmark}",
+  "@respLandmarkPrefix": {
+    "description": "Responder app: Landmark: {landmark}",
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "respStatsPeriod": "Last {days} days",
+  "@respStatsPeriod": {
+    "description": "Responder app: Last {days} days",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "respAnswerWithin": "Answer within {time}",
+  "@respAnswerWithin": {
+    "description": "Responder app: Answer within {time}",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respEtaMinutes": "about {minutes} min",
+  "@respEtaMinutes": {
+    "description": "Responder app: about {minutes} min",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "respReasonVehicleDown": "Vehicle down",
+  "@respReasonVehicleDown": {
+    "description": "Responder app: Vehicle down"
+  },
+  "respReasonVehicleDownHint": "The truck or ambulance cannot roll",
+  "@respReasonVehicleDownHint": {
+    "description": "Responder app: The truck or ambulance cannot roll"
+  },
+  "respReasonCommitted": "On another call",
+  "@respReasonCommitted": {
+    "description": "Responder app: On another call"
+  },
+  "respReasonCommittedHint": "Already on another incident that is not closed",
+  "@respReasonCommittedHint": {
+    "description": "Responder app: Already on another incident that is not closed"
+  },
+  "respReasonOutOfArea": "Out of area",
+  "@respReasonOutOfArea": {
+    "description": "Responder app: Out of area"
+  },
+  "respReasonOutOfAreaHint": "Wrong municipality for this unit",
+  "@respReasonOutOfAreaHint": {
+    "description": "Responder app: Wrong municipality for this unit"
+  },
+  "respReasonCrew": "Not enough crew",
+  "@respReasonCrew": {
+    "description": "Responder app: Not enough crew"
+  },
+  "respReasonCrewHint": "Not enough hands to respond safely",
+  "@respReasonCrewHint": {
+    "description": "Responder app: Not enough hands to respond safely"
+  },
+  "respReasonRoad": "Road impassable",
+  "@respReasonRoad": {
+    "description": "Responder app: Road impassable"
+  },
+  "respReasonRoadHint": "Flood, landslide or a cut bridge",
+  "@respReasonRoadHint": {
+    "description": "Responder app: Flood, landslide or a cut bridge"
+  },
+  "respReasonOther": "Another reason",
+  "@respReasonOther": {
+    "description": "Responder app: Another reason"
+  },
+  "respReasonOtherHint": "Explain in the note",
+  "@respReasonOtherHint": {
+    "description": "Responder app: Explain in the note"
+  },
+  "respOutcomeHandled": "Handled on scene",
+  "@respOutcomeHandled": {
+    "description": "Responder app: Handled on scene"
+  },
+  "respOutcomeHandledHint": "Dealt with, nobody moved",
+  "@respOutcomeHandledHint": {
+    "description": "Responder app: Dealt with, nobody moved"
+  },
+  "respOutcomeTransported": "Taken to hospital",
+  "@respOutcomeTransported": {
+    "description": "Responder app: Taken to hospital"
+  },
+  "respOutcomeTransportedHint": "Casualties taken to a facility",
+  "@respOutcomeTransportedHint": {
+    "description": "Responder app: Casualties taken to a facility"
+  },
+  "respOutcomeTurnedOver": "Turned over",
+  "@respOutcomeTurnedOver": {
+    "description": "Responder app: Turned over"
+  },
+  "respOutcomeTurnedOverHint": "Handed over to PNP, BFP, MDRRMO or a hospital",
+  "@respOutcomeTurnedOverHint": {
+    "description": "Responder app: Handed over to PNP, BFP, MDRRMO or a hospital"
+  },
+  "respOutcomeFalseAlarm": "No real emergency",
+  "@respOutcomeFalseAlarm": {
+    "description": "Responder app: No real emergency"
+  },
+  "respOutcomeFalseAlarmHint": "Nothing was happening",
+  "@respOutcomeFalseAlarmHint": {
+    "description": "Responder app: Nothing was happening"
+  },
+  "respOutcomeNobodyFound": "Nobody found",
+  "@respOutcomeNobodyFound": {
+    "description": "Responder app: Nobody found"
+  },
+  "respOutcomeNobodyFoundHint": "Arrived, no incident and no reporter",
+  "@respOutcomeNobodyFoundHint": {
+    "description": "Responder app: Arrived, no incident and no reporter"
+  },
+  "respOutcomeRefused": "Refused assistance",
+  "@respOutcomeRefused": {
+    "description": "Responder app: Refused assistance"
+  },
+  "respOutcomeRefusedHint": "Party present and declined help",
+  "@respOutcomeRefusedHint": {
+    "description": "Responder app: Party present and declined help"
+  },
+  "respOutcomeNoAccess": "Could not reach it",
+  "@respOutcomeNoAccess": {
+    "description": "Responder app: Could not reach it"
+  },
+  "respOutcomeNoAccessHint": "Could not reach the scene at all",
+  "@respOutcomeNoAccessHint": {
+    "description": "Responder app: Could not reach the scene at all"
+  },
+  "respOutcomeOther": "Other",
+  "@respOutcomeOther": {
+    "description": "Responder app: Other"
+  },
+  "respOutcomeOtherHint": "Explain in the notes",
+  "@respOutcomeOtherHint": {
+    "description": "Responder app: Explain in the notes"
+  },
+  "respHazardRoad": "Impassable",
+  "@respHazardRoad": {
+    "description": "Responder app: Impassable"
+  },
+  "respHazardAccess": "Hard to reach",
+  "@respHazardAccess": {
+    "description": "Responder app: Hard to reach"
+  },
+  "respHazardSecurity": "Dangerous",
+  "@respHazardSecurity": {
+    "description": "Responder app: Dangerous"
+  },
+  "respHazardAnimal": "Animals",
+  "@respHazardAnimal": {
+    "description": "Responder app: Animals"
+  },
+  "respHazardStructural": "Unsafe building",
+  "@respHazardStructural": {
+    "description": "Responder app: Unsafe building"
+  },
+  "respHazardOther": "Warning",
+  "@respHazardOther": {
+    "description": "Responder app: Warning"
+  },
+  "respNoAnswerSeen": "No answer — the dispatcher can see this",
+  "@respNoAnswerSeen": {
+    "description": "Responder app: No answer — the dispatcher can see this"
+  },
+  "respUpdateStatus": "Update Status",
+  "@respUpdateStatus": {
+    "description": "Responder app: incident detail, fallback action button label"
+  },
+  "respAnswerSendFailed": "Could not send. Try again.",
+  "@respAnswerSendFailed": {
+    "description": "Responder app: incident detail, generic answer/backup send failure toast"
+  },
+  "respCloseFailed": "Could not close.",
+  "@respCloseFailed": {
+    "description": "Responder app: incident detail, close-incident failure toast"
+  },
+  "respDeclineSent": "Sent back to the dispatcher. They will look for another unit.",
+  "@respDeclineSent": {
+    "description": "Responder app: incident detail, decline-assignment success toast"
+  },
+  "respBackupSentTo": "Sent to {station}. It is now in their queue.",
+  "@respBackupSentTo": {
+    "description": "Responder app: incident detail, backup-request success toast",
+    "placeholders": {
+      "station": {"type": "String"}
+    }
+  },
+  "respEscalateSent": "Sent. The Agency Admin knows.",
+  "@respEscalateSent": {
+    "description": "Responder app: incident detail, escalate success toast"
+  },
+  "respDistressSentLive": "SENT. The dispatcher can see you now.",
+  "@respDistressSentLive": {
+    "description": "Responder app: incident detail, distress signal sent while online"
+  },
+  "respDistressSentQueued": "No signal — this is queued. CALL THE STATION ON RADIO NOW.",
+  "@respDistressSentQueued": {
+    "description": "Responder app: incident detail, distress signal queued while offline — a safety-critical fallback instruction"
+  },
+  "respConfirmResolve": "Mark this incident as Resolved? The dispatcher and the reporter will see this.",
+  "@respConfirmResolve": {
+    "description": "Responder app: incident detail, confirm dialog body when resolving"
+  },
+  "respConfirmStatusUpdate": "Update the incident's status?",
+  "@respConfirmStatusUpdate": {
+    "description": "Responder app: incident detail, confirm dialog body for a generic status advance"
+  },
+  "respNoLocationRecorded": "No location was recorded on this report. Ask the dispatcher.",
+  "@respNoLocationRecorded": {
+    "description": "Responder app: incident detail, navigation fallback when the report has neither coordinates nor an address"
+  },
+  "@_COMMENT_MAP_REDESIGN": "Map screen restyle.",
+  "mapNearbyStationsTitle": "Nearby Emergency Stations",
+  "mapResponderTitle": "Incident Map",
+  "mapReportLocationTitle": "Report Location",
+  "@mapReportLocationTitle": {
+    "description": "Map screen title when opened from My Reports' 'View on Map' — locked to one report and its responding station, not the usual nearby-stations view."
+  },
+  "mapLocationOff": "Location is off",
+  "mapLocationSearching": "Finding your location…",
+  "mapLocationPrecise": "You are here · ±{accuracy} m",
+  "@mapLocationPrecise": {
+    "placeholders": {
+      "accuracy": {
+        "type": "int"
+      }
+    }
+  },
+  "mapLocationImprecise": "Approximate · ±{accuracy} m",
+  "@mapLocationImprecise": {
+    "placeholders": {
+      "accuracy": {
+        "type": "int"
+      }
+    }
+  },
+  "mapNoLocationYet": "No location yet. Check if your GPS is turned on.",
+  "mapLoading": "Loading map…",
+  "mapGetDirections": "Get directions",
+  "mapStationDistance": "{distanceKm} km away · {agency}",
+  "@mapStationDistance": {
+    "placeholders": {
+      "distanceKm": {
+        "type": "String"
+      },
+      "agency": {
+        "type": "String"
+      }
+    }
+  },
+  "mapStationDistanceShort": "{distanceKm} km",
+  "@mapStationDistanceShort": {
+    "description": "Distance-only, for a row in the station picker list — the agency is already shown as an icon on that row.",
+    "placeholders": {
+      "distanceKm": {
+        "type": "String"
+      }
+    }
+  },
+  "@_COMMENT_SETTINGS_REDESIGN": "Settings screen restructure.",
+  "settingsScreenTitle": "Settings & Profile",
+  "settingsEditPersonalInfo": "Edit personal information",
+  "settingsChangePassword": "Change password",
+  "settingsNotificationPreferences": "Notification preferences",
+  "settingsAppSettingsSection": "App Settings",
+  "settingsDarkMode": "Dark mode",
+  "settingsLocationServices": "Location services",
+  "settingsLocationDenied": "Location permission was not granted.",
+  "settingsLocationOffTitle": "Turn off location services?",
+  "settingsLocationOffBody": "Android and iOS only let you change this in your phone's Settings app, not inside Ziren.",
+  "settingsOpenSystemSettings": "Open Settings",
+  "settingsCancel": "Cancel",
+  "settingsOfflineMaps": "Offline maps",
+  "settingsOfflineMapsComingSoon": "Offline maps are coming in a future update.",
+  "settingsSupportSection": "Support",
+  "@_COMMENT_SETTINGS_CATEGORIES": "Categorized section labels for the settings hub — only sections backing a real, working row appear; a category with nothing real behind it (biometric login, delete account, connectivity diagnostics, etc.) is left out rather than shown with a fake or disabled row.",
+  "settingsSectionAccount": "Account",
+  "settingsSectionNotifications": "Notifications",
+  "settingsSectionLocation": "Location",
+  "settingsSectionLanguage": "Language",
+  "settingsSectionHelpSupport": "Help & Support",
+  "settingsSectionAbout": "About",
+  "settingsHelpFaq": "Help & FAQ",
+  "settingsFaqReportQ": "How do I report an emergency?",
+  "settingsFaqReportA": "Tap the SOS button on Home, or fill out a report from the Report tab. Both reach the nearest responding agency.",
+  "settingsFaqOfflineQ": "What happens with no internet?",
+  "settingsFaqOfflineA": "Ziren needs an internet connection to send a report. If you have no signal or data, call 911 or your local emergency number directly instead.",
+  "settingsFaqAgencyQ": "Which agency responds to my report?",
+  "settingsFaqAgencyA": "Ziren routes your report to BFP, PNP, or MDRRMO based on what you reported and how severe it is.",
+  "settingsFaqAccountQ": "How do I update my emergency contact?",
+  "settingsFaqAccountA": "Go to Settings & Profile → Edit personal information to update your emergency contact anytime.",
+  "settingsAboutZiren": "About Ziren",
+  "settingsAboutTagline": "Emergency Response, Simplified. Built for the residents of Biliran.",
+  "settingsAboutVersion": "Version {version}",
+  "@settingsAboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAboutTerms": "Terms of Use",
+  "settingsAboutPrivacy": "Data Privacy Notice",
+  "settingsLogOut": "Log out",
+  "settingsLogOutConfirmTitle": "Log out?",
+  "settingsLogOutConfirmBody": "You will need to sign in again to access Ziren.",
+  "@_COMMENT_ACCESSIBILITY": "Settings > Accessibility section. Shared by the resident and responder apps — one screen, one set of strings.",
+  "settingsSectionAccessibility": "Accessibility",
+  "settingsAccessibilityAppearance": "Appearance",
+  "appearanceSystem": "System",
+  "appearanceLight": "Light",
+  "appearanceDark": "Dark",
+  "settingsAccessibilityTextSize": "Text size",
+  "textSizeSmall": "Small",
+  "textSizeDefault": "Default",
+  "textSizeLarge": "Large",
+  "textSizeExtraLarge": "Extra Large",
+  "textSizePreview": "A responder will see your report exactly this size.",
+  "settingsReduceMotion": "Reduce motion",
+  "settingsHighContrast": "High contrast",
+  "@_COMMENT_NOTIFICATIONS_REDESIGN": "Notifications screen restyle.",
+  "notifMoreOptions": "More options",
+  "notifClearAll": "Clear all",
+  "notifCategoryEmergencyUpdate": "Emergency Update",
+  "notifCategoryReportConfirmed": "Report Confirmed",
+  "notifCategorySafetyAdvisory": "Safety Advisory",
+  "notifCategorySystemMessage": "System Message",
+  "notifReportPrefix": "Report #",
+  "notifEmptyTitle": "No notifications yet",
+  "notifEmptySubtitle": "Status updates for your reports will appear here.",
+  "@_COMMENT_VOICE_REDESIGN": "VoiceReportControl restyle — was hardcoded Tagalog, now localized.",
+  "voiceTapToRecord": "Tap to record",
+  "voiceTapToStop": "Tap to stop",
+  "voiceUpToMinutes": "(up to {minutes} min)",
+  "@voiceUpToMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "voiceRecordingHint": "Say what happened in your own words. The station will hear it directly.",
+  "voicePlay": "Play",
+  "voicePause": "Pause",
+  "voiceRecorded": "Recorded · {clock}",
+  "@voiceRecorded": {
+    "placeholders": {
+      "clock": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceWillSend": "This will be sent to the station.",
+  "voiceDeleteTooltip": "Delete recording",
+  "voiceCaptureFailedMsg": "Voice couldn't be recorded. Please write what happened above — your report can still be sent.",
+  "voiceUploadFailedMsg": "Your report was sent, but the recording didn't reach the station. If signal is weak, try again.",
+  "voicePeopleCountQuestion": "How many people are involved? (optional)",
+  "voicePeopleCountHint": "This is often missed in the recording.",
+  "voicePeopleCountNotSure": "Not sure",
+  "homeLocating": "Locating…",
+  "reportsLocationDistance": "{location} · {km} km",
+  "@reportsLocationDistance": {
+    "description": "My Reports card: location plus distance from the resident's current position.",
+    "placeholders": {
+      "location": {
+        "type": "String"
+      },
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "reportsViewOnMap": "View on Map",
+  "@reportsViewOnMap": {
+    "description": "Report Details: tapping the location card opens the Map tab centred on this report."
+  },
+  "@_COMMENT_SAFETY_GUIDE": "Emergency Preparedness / Safety Guide — spec Section 22. Offline reference content.",
+  "safetyGuideTitle": "Safety Guide",
+  "safetyFireTitle": "Fire",
+  "safetyFireStep1": "Get out of the building immediately. Do not go back for belongings.",
+  "safetyFireStep2": "If there is smoke, get low and crawl to the exit.",
+  "safetyFireStep3": "Do not use the elevator — stairs only.",
+  "safetyFireStep4": "Touch the doorknob with the back of your hand before opening it — if it is hot, do not open it.",
+  "safetyFireStep5": "Once outside, call the BFP right away or report using Ziren.",
+  "safetyFireStep6": "Do not go back inside until it has been declared safe.",
+  "safetyEarthquakeTitle": "Earthquake",
+  "safetyEarthquakeStep1": "Duck, Cover, Hold — drop down, take cover under a sturdy table, and hold on.",
+  "safetyEarthquakeStep2": "Stay away from windows, glass, and heavy furniture.",
+  "safetyEarthquakeStep3": "If outdoors, move away from buildings, posts, and power lines.",
+  "safetyEarthquakeStep4": "If driving, pull over to a safe spot and stay inside the vehicle.",
+  "safetyEarthquakeStep5": "After the shaking stops, be ready for aftershocks.",
+  "safetyEarthquakeStep6": "Check your surroundings for damaged gas or power lines before moving.",
+  "safetyFloodTitle": "Flood",
+  "safetyFloodStep1": "Move to higher ground immediately if your barangay is under a flood warning.",
+  "safetyFloodStep2": "Avoid walking or driving through floodwater — six inches of water can knock a person down.",
+  "safetyFloodStep3": "Turn off electrical appliances and switch off the main breaker if there is still time.",
+  "safetyFloodStep4": "Keep important documents in a waterproof container.",
+  "safetyFloodStep5": "Follow MDRRMO's instructions on evacuation.",
+  "safetyFloodStep6": "Do not drink floodwater or tap water until it has been declared safe.",
+  "safetyTyphoonTitle": "Typhoon",
+  "safetyTyphoonStep1": "Watch PAGASA advisories and announcements from Ziren.",
+  "safetyTyphoonStep2": "Prepare an emergency kit: water, food, flashlight, first aid, and a power bank.",
+  "safetyTyphoonStep3": "Secure or bring inside anything that could be blown away by the wind.",
+  "safetyTyphoonStep4": "Stay indoors unless told to evacuate.",
+  "safetyTyphoonStep5": "Stay away from trees and power poles during strong winds.",
+  "safetyTyphoonStep6": "Know the location of the nearest evacuation center before the typhoon arrives.",
+  "safetyRoadAccidentTitle": "Road Accident",
+  "safetyRoadAccidentStep1": "Make sure you are safe first before helping others.",
+  "safetyRoadAccidentStep2": "Turn on hazard/warning lights and set up a marker if you have one.",
+  "safetyRoadAccidentStep3": "Do not move the victim unless there is immediate danger (e.g. fire).",
+  "safetyRoadAccidentStep4": "Call the PNP and/or MDRRMO right away, or report using Ziren.",
+  "safetyRoadAccidentStep5": "Monitor the victim's breathing and pulse while waiting for help.",
+  "safetyRoadAccidentStep6": "If there is bleeding, apply pressure with a clean cloth.",
+  "safetyMedicalTitle": "Medical Emergency",
+  "safetyMedicalStep1": "Check if the patient is still conscious and breathing normally.",
+  "safetyMedicalStep2": "Call for help right away — do not wait for the situation to get worse.",
+  "safetyMedicalStep3": "If not breathing and unconscious, start CPR if you know how.",
+  "safetyMedicalStep4": "Do not give food or drink to someone having trouble breathing or who is unconscious.",
+  "safetyMedicalStep5": "Keep the patient calm and comfortable while waiting.",
+  "safetyMedicalStep6": "Prepare the patient's information (age, condition, medication) for the responder.",
+  "safetyCrimeTitle": "Crime",
+  "safetyCrimeStep1": "Prioritize your own safety — move away from danger if you can.",
+  "safetyCrimeStep2": "Do not touch or disturb the crime scene if it is safe to move away.",
+  "safetyCrimeStep3": "Call the PNP right away, or report using Ziren.",
+  "safetyCrimeStep4": "Note the details: appearance, plate number, direction — if you can safely do so.",
+  "safetyCrimeStep5": "Stay in a safe place until the responder arrives.",
+  "safetyCrimeStep6": "Follow the police's instructions once they arrive at the scene.",
+  "@_COMMENT_EMERGENCY_CONTACTS": "Emergency Contacts screen — spec Section 21.",
+  "contactsTitle": "Emergency Contacts",
+  "contactsNationalTitle": "National Emergency Hotline",
+  "contactsNationalSubtitle": "For any emergency, anywhere in the Philippines",
+  "contactsLocalAgencies": "LOCAL AGENCIES",
+  "contactsNoneListed": "No numbers listed yet. Use 911 or report through Ziren.",
+  "contactsHospitalsSection": "HOSPITALS & EVACUATION CENTERS",
+  "contactsFindOnMap": "Find on the Map",
+  "contactsFindOnMapBody": "See the nearest station on the map.",
+  "contactsOpen": "Open",
+  "@_COMMENT_ANNOUNCEMENTS": "Announcements screen — spec Section 24.",
+  "announcementsTitle": "Announcements",
+  "announcementsLoadError": "Could not load announcements.",
+  "announcementsRetry": "Retry",
+  "announcementsEmptyTitle": "No announcements right now",
+  "announcementsEmptyBody": "Official notices from Ziren will appear here.",
+  "announceCategoryMaintenance": "Maintenance",
+  "announceCategoryEmergency": "Emergency Notice",
+  "announceCategoryServiceInterruption": "Service Interruption",
+  "announceCategoryFeature": "New Feature",
+  "announceCategoryReminder": "Reminder",
+  "announceCategoryGeneral": "Announcement",
+  "profileSafetySection": "Safety",
+  "@_COMMENT_AI_SCREEN": "Ziren AI placeholder screen.",
+  "aiScreenBody": "This will help you build your report — asking what, where, and who was hurt, so the station receives complete information.",
+  "aiNotAvailable": "This isn't available yet",
+  "aiNotAvailableBody": "While you wait, use the quick report on Home or SOS if you need immediate help.",
+  "@_COMMENT_VOICE_CONFIRM": "Report Confirm screen — the post-submission voice transcript review flow.",
+  "voiceConfirmAppBarTitle": "Your report has been sent",
+  "voiceConfirmSkip": "Skip",
+  "voiceConfirmSaveError": "Your correction could not be saved. The report was still sent.",
+  "voiceConfirmSentTitle": "Your report has been sent.",
+  "voiceConfirmSentBodyStation": "The station can already hear this.",
+  "voiceConfirmSentBodyStationNamed": "{station} can already hear this.",
+  "@voiceConfirmSentBodyStationNamed": {
+    "placeholders": {
+      "station": {"type": "String"}
+    }
+  },
+  "voiceConfirmGaveUpTitle": "The station will listen to your recording.",
+  "voiceConfirmGaveUpBody": "We couldn't write down what you said right away, but they already have your actual voice.",
+  "voiceConfirmOk": "OK",
+  "voiceConfirmListeningTitle": "We're listening to your voice…",
+  "voiceConfirmListeningBody": "Just a moment. We'll show you what we understood.",
+  "voiceConfirmEditTitle": "What did you actually say?",
+  "voiceConfirmBack": "Back",
+  "voiceConfirmSave": "Save",
+  "voiceConfirmHeardTitle": "Here's what we heard:",
+  "voiceConfirmWrongFix": "Wrong — fix it",
+  "voiceConfirmCorrect": "Correct",
+  "@_COMMENT_FEEDBACK_SHEET": "Post-resolution feedback sheet — spec Section 26.",
+  "feedbackThanks": "Thank you for your feedback!",
+  "feedbackClose": "Close",
+  "feedbackHowWasIt": "How was your experience?",
+  "feedbackNoImpact": "This will not affect the priority of your next report.",
+  "feedbackCommentHint": "Additional comments (optional)…",
+  "feedbackSubmit": "Submit",
+  "feedbackMaybeLater": "Maybe later",
+  "@_COMMENT_THREAD_SHEET": "Incident thread sheet — add info / incident-specific messaging, spec Sections 14 and 16.",
+  "threadTitle": "Report Updates",
+  "threadLoadError": "Could not load messages.",
+  "threadEmptyTitle": "No messages yet",
+  "threadEmptyBody": "Any extra details you add and the agency's replies will appear here.",
+  "threadComposerHint": "Add a detail…",
+  "threadClosedNotice": "This report is closed — no more messages can be added.",
+  "reportsAskConfirmVoice": "Did we hear this right?",
+  "reportsAlreadyRated": "You already rated this · {rating}/5",
+  "@reportsAlreadyRated": {
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
+  },
+  "reportsRateService": "Rate the Service",
+  "@_COMMENT_INCIDENT_MODEL": "Resident IncidentModel display labels.",
+  "incidentStatusReceived": "Received",
+  "incidentStatusProcessing": "Processing",
+  "incidentStatusDispatched": "Responder Dispatched",
+  "incidentStatusResolved": "Resolved",
+  "incidentStatusCancelled": "Cancelled",
+  "incidentEtaMinutes": "about {minutes} minutes",
+  "@incidentEtaMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "threadAuthorYou": "You",
+  "@_COMMENT_ACTIVE_REPORT_STRIP": "Home screen active-report status strip.",
+  "activeReportAgencyEnRoute": "{agency} is on the way — {eta}",
+  "@activeReportAgencyEnRoute": {
+    "placeholders": {
+      "agency": {"type": "String"},
+      "eta": {"type": "String"}
+    }
+  },
+  "activeReportResponderEnRoute": "A responder is on the way — {eta}",
+  "@activeReportResponderEnRoute": {
+    "placeholders": {
+      "eta": {"type": "String"}
+    }
+  },
+  "activeReportNotFollowedUp": "This report was not followed up.",
+  "activeReportStale": "Waiting a long time. Tap to check.",
+  "activeReportStep": "Step {step} of {total}",
+  "@activeReportStep": {
+    "placeholders": {
+      "step": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "readyPanelFalseReportWarning": "Filing a false report carries a penalty.",
+  "reviewRecordVideo": "Record a video",
+  "reviewChooseFromGallery": "Choose from gallery",
+  "reviewAttachmentsSection": "ATTACHMENTS",
+  "reviewAddAttachment": "Add",
+  "reviewAttachmentsHint": "Optional — add a photo or video as evidence (max 5, 50MB each)",
+  "sosAddDetailsExample": "e.g. \"3 people trying to escape, fire on the ground floor, no more visible flames outside…\"",
+  "reportsAddInformation": "Chat",
+  "avatarSheetTitle": "Profile Photo",
+  "avatarRemovePhoto": "Remove photo",
+  "avatarUploadFailed": "Could not update your profile picture. Please try again.",
+  "@_COMMENT_DUTY_CARD": "Responder Home — the duty status card (responder_kit.dart).",
+  "respDutyCardBusy": "Just a moment...",
+  "respDutyCardOn": "Currently On-Duty",
+  "respDutyCardOff": "Off Duty",
+  "respDutyCardStation": "(Station: {station})",
+  "@respDutyCardStation": {
+    "placeholders": {
+      "station": {"type": "String"}
+    }
+  },
+  "respDutyToggleOff": "Go off duty",
+  "respDutyToggleOn": "Go on duty",
+  "statusRejected": "Rejected",
+  "@statusRejected": {"description": "Status badge for a report the agency reviewed and did not accept. Distinct from Cancelled, which is a report the resident withdrew."},
+  "statusNeedsReply": "Needs your reply",
+  "@statusNeedsReply": {"description": "Badge on a report the agency has asked the resident a question about."},
+  "reportRejectedTitle": "The agency did not accept this report",
+  "reportRejectedReason": "Reason: {reason}",
+  "@reportRejectedReason": {"description": "The reason the agency gave for rejecting the report.", "placeholders": {"reason": {"type": "String"}}},
+  "reportRejectedHelp": "If this is a real emergency, call the station now, or send a new report with more detail.",
+  "reportRejectedCall": "Call emergency contacts",
+  "reportFileAgain": "Send a new report",
+  "clarificationTitle": "The agency needs more information",
+  "clarificationAsked": "They asked:",
+  "clarificationReply": "Reply",
+  "clarificationReplyHint": "Answer here. The agency is waiting on your reply before it decides what to do.",
+  "notifRejectedTitle": "Report not accepted",
+  "notifClarificationTitle": "The agency needs more information",
+  "notifViewReport": "View report",
+  "notifReplyNow": "Reply now",
+  "idCheckTitle": "We can't accept this photo yet",
+  "idCheckNoText": "We couldn't read any text on it. Take the photo in good light, flat, with the whole card in frame.",
+  "idCheckNotAnIdTitle": "We will not accept this — it is not an ID",
+  "idCheckNotAnId": "We can't accept this photo because it is not an ID. Please upload again and make sure it is a photo of your {chosen} — the card itself, not your face or another picture.",
+  "@idCheckNotAnId": {
+    "description": "Shown when the photographed thing is not an ID at all (a selfie, a wall, a screenshot).",
+    "placeholders": {
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "idCheckWrongTypeTitle": "This is not a {chosen}",
+  "@idCheckWrongTypeTitle": {
+    "placeholders": {
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "idCheckWrongType": "We can't accept this. You chose {chosen}, but this photo looks like a {found}. Upload your {chosen} instead — or go back and choose the ID type that matches your card.",
+  "@idCheckWrongType": {
+    "description": "Shown when the photo is a real ID of a different type than the one chosen.",
+    "placeholders": {
+      "chosen": {
+        "type": "String"
+      },
+      "found": {
+        "type": "String"
+      }
+    }
+  },
+  "idCheckTypeUnconfirmed": "We can't confirm that this is a {chosen}. Take a clear photo of the FRONT of your {chosen}, flat and in good light, with the printed words readable.",
+  "@idCheckTypeUnconfirmed": {
+    "placeholders": {
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "idCheckNoFace": "We couldn't find your photo on the card. Use the FRONT of your ID.",
+  "idCheckNoNumber": "We couldn't find an ID number on it. Make sure the number is sharp and not covered by glare.",
+  "idCheckNumberMismatch": "The number you typed is not the one on your ID photo. Fix it, or retake the photo.",
+  "idCheckRetakeHint": "Retake the photo, or skip verification and do it later from Settings.",
+  "idCheckRetakeOnly": "Retake the photo to continue.",
+  "idCheckPassed": "ID photo accepted",
+  "idCheckChecking": "Checking your photo…",
+  "regLocationBarangaySet": "Found your barangay: {barangay}, {municipality}. Check that it is right.",
+  "@regLocationBarangaySet": {"description": "Shown after Use my location fills in both the municipality and the barangay.", "placeholders": {"barangay": {"type": "String"}, "municipality": {"type": "String"}}},
+  "regLocationBarangayNear": "Closest barangay: {barangay}, {municipality}. We are not sure, so please confirm or change it.",
+  "@regLocationBarangayNear": {"placeholders": {"barangay": {"type": "String"}, "municipality": {"type": "String"}}},
+  "regLocationMunicipalityOnly": "Found {municipality}, but could not tell your barangay. Please choose it below.",
+  "@regLocationMunicipalityOnly": {"placeholders": {"municipality": {"type": "String"}}},
+  "selfieCapture": "Take photo",
+  "@selfieCapture": {"description": "The shutter button on the selfie step."},
+  "selfieCapturing": "Taking photo…",
+  "statusArrived": "Responder arrived",
+  "@statusArrived": {"description": "Status label: the responder has reached the resident's location."},
+  "statusCancelledByAgency": "Cancelled by the agency",
+  "@statusCancelledByAgency": {"description": "Status badge for a report the AGENCY cancelled (not one the resident trashed, and not one it rejected)."},
+  "notifAcceptedTitle": "Report accepted",
+  "notifAcceptedBody": "The agency confirmed your report is real and is preparing a response.",
+  "notifEnRouteBody": "The responder is heading to your location now.",
+  "notifArrivedBody": "The responder has arrived at your location.",
+  "notifResolvedHelp": "You can rate the response from My Reports.",
+  "notifCancelledTitle": "Report cancelled by the agency",
+  "notifCancelledBody": "The agency cancelled your report.",
+  "notifCancelledReason": "Reason: {reason}",
+  "@notifCancelledReason": {"description": "Why the agency cancelled the report.", "placeholders": {"reason": {"type": "String"}}},
+  "notifCancelledHelp": "If you still need help, call the station or send a new report.",
+  "notifMessageTitle": "New message from the agency",
+  "notifMessageHelp": "Reply in the chat on this report.",
+  "notifOpenChat": "Open chat",
+  "notifMessageFromResponder": "New message from the responder",
+  "notifFeedTitleAccepted": "Report accepted",
+  "notifFeedTitleCancelled": "Report cancelled",
+  "notifFeedTitleMessage": "New message",
+  "respEnRouteDone": "You are marked en route. The dispatcher and the resident can see it.",
+  "respArrivedDone": "You are marked on scene. The dispatcher and the resident can see it.",
+  "settingsProfileSaved": "Your profile was saved.",
+  "welcomeResumeTitle": "Continue where you left off?",
+  "welcomeResumeBody": "You started creating an account on this phone but did not finish.",
+  "welcomeResumeContinue": "Continue",
+  "welcomeResumeStartOver": "Start over",
+  "respActiveAssignmentTitle": "Active Assignment",
+  "respActiveAssignmentBody": "You currently have an active incident assignment. Signing out may prevent you from receiving important updates.",
+  "respStaySignedIn": "Stay Signed In",
+  "respNearbyTitle": "Incidents near you",
+  "@respNearbyTitle": {"description": "Home screen: section heading for undispatched incidents near this on-duty responder."},
+  "respNearbySubtitle": "Nobody has been sent yet. You can say whether you're able to go — the dispatcher decides who responds.",
+  "@respNearbySubtitle": {"description": "Home screen: explains that answering does not assign the call."},
+  "respNearbyDistanceUnknown": "Distance unknown",
+  "respNearbyAlreadyOn": "You are already on {category}",
+  "@respNearbyAlreadyOn": {"description": "Shown on a nearby-incident card when this responder is busy with another call.", "placeholders": {"category": {"type": "String"}}},
+  "respNearbyNotAvailable": "Not available",
+  "respNearbyCanRespond": "I can respond",
+  "respNearbyAnsweredYes": "You said you can respond",
+  "respNearbyAnsweredNo": "You said you are not available",
+  "respNearbySosChip": "SOS"
+}

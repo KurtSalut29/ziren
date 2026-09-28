@@ -1,0 +1,23 @@
+# Used together with `railway up --no-gitignore`: that flag disables
+# .gitignore entirely for the upload (needed so public/downloads/ziren.apk —
+# gitignored on purpose, it's a build artefact — actually reaches the
+# builder), but it has no "except for X" option, so without this file
+# .venv/, ngrok.exe, cloudflared.exe and .env would all go along for the
+# ride too. Railway respects this file independently of .gitignore.
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+.env
+.env.bak.*
+*.log
+ngrok.exe
+ngrok.err.log
+ngrok.out.log
+cloudflared.exe
+uvicorn.out.log
+uvicorn.err.log
+ziren_dashboard/
+app/ml/asr_models/

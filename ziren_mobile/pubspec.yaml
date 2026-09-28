@@ -1,0 +1,224 @@
+name: Ziren
+description: "Ziren — Emergency Incident Reporting & Dispatch System (Mobile App)"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+5
+
+environment:
+  sdk: ^3.7.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Localisation — the resident picks a language in Settings and the app has
+  # to actually speak it. Locale codes: en, fil.
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+
+  # Icon set for the whole app — every Icons.* (Material) reference is being
+  # replaced with LucideIcons.* equivalents.
+  flutter_lucide: ^1.45.0
+
+  # Auth & session
+  supabase_flutter: ^2.10.2
+  flutter_secure_storage: ^9.2.2
+
+  # Routing
+  go_router: ^14.7.1
+
+  # HTTP client
+  http: ^1.2.2
+
+  # State management
+  provider: ^6.1.2
+
+  # Location
+  geolocator: ^13.0.2
+  permission_handler: ^11.3.1
+
+  # Speech-to-text
+  speech_to_text: ^7.0.0
+
+  # Voice note capture. Separate from speech_to_text on purpose: that plugin
+  # wraps the platform recogniser, which returns words and never hands back the
+  # audio. The recording is what the dispatcher listens to, so it has to be
+  # captured by something that produces a file.
+  # Pinned to the 6.x line, and both bounds matter.
+  #
+  # 5.x resolves record_linux 0.7.2 against record_platform_interface 1.6.0,
+  # and those two disagree about hasPermission's signature. The APK build dies
+  # in kernel_snapshot on a Linux file this app never runs, with an error that
+  # names neither `record` nor anything we wrote.
+  #
+  # 7.x fixes that, but requires Dart >= 3.12 and this project is on 3.7.
+  record: ^6.0.0
+  audioplayers: ^6.1.0
+  # Declared directly because voice_note_service imports it. It already arrives
+  # transitively, but relying on that means an unrelated package bump can break
+  # the build with no change of ours to point at.
+  path_provider: ^2.1.5
+
+  # Typography — Inter font
+  google_fonts: ^6.2.1
+
+  # Media attachment (Phase 3 — photo/video)
+  image_picker: ^1.1.2
+
+  # SOS client-side cooldown persistence (Phase 3B)
+  shared_preferences: ^2.3.5
+
+  # Connectivity — OS-level network change events for instant chip updates
+  connectivity_plus: ^7.3.0
+
+  # Map — MapLibre GL, self-hosted OSM tiles, no API key (6C architecture)
+  maplibre_gl: ^0.21.0
+
+  # URL launcher — tap-to-call, open maps navigation (Responder detail screen)
+  url_launcher: ^6.3.1
+
+  # Identity verification during registration (Phase 7).
+  #
+  # camera drives the live preview for the ID and selfie capture. image_picker
+  # above is kept and still used elsewhere — it cannot do this job, because a
+  # liveness challenge needs a frame stream to analyse, not a single returned
+  # file.
+  camera: ^0.11.2+1
+
+  # Pixel access in pure Dart. Two jobs, both of which need to read and write
+  # individual pixels and neither of which Flutter's own image APIs can do:
+  #
+  #   1. Un-mirroring the front-camera selfie before it is stored, so the photo
+  #      an admin compares against an ID is the way round a person's face
+  #      actually is. See SelfieOrientation.
+  #   2. Cropping and aligning a face to the 112x112 canonical frame the
+  #      ArcFace recogniser expects. See FaceAlignService.
+  #
+  # Pure Dart, no platform channel, so it also runs in tests.
+  image: ^4.5.4
+
+  # OS notifications for the Responder.
+  #
+  # An assignment reaches the phone over Supabase Realtime, which only delivers
+  # while the app is running. That is enough to update the queue and the badge
+  # and useless for the thing that actually matters: a responder is not looking
+  # at their screen when a call comes in. This raises a real notification —
+  # sound, heads-up banner, lock screen — so the phone can interrupt them.
+  #
+  # NOT Firebase Cloud Messaging. FCM would deliver while the app is fully
+  # killed, which is genuinely better, but it needs a Firebase project, a
+  # server key in the backend, and google-services.json per build. This works
+  # with the Realtime subscription already in place and no new infrastructure.
+  # The limitation is real and worth naming: a force-stopped app is not
+  # notified. See ResponderAlertService.
+  flutter_local_notifications: ^18.0.1
+
+  # On-device ML Kit. Both run entirely on the handset: no API key, no network,
+  # and no face or ID image ever leaves the phone for analysis. That is a
+  # deliberate privacy property, not just a cost saving — see migration 020.
+  #
+  # face_detection powers the blink / head-turn liveness challenge. It is a UX
+  # guard against an honest user photographing a photo; it is NOT server-
+  # verifiable and must never raise verification_level on its own.
+  #
+  # text_recognition reads the ID number and name off the card so the form can
+  # fill itself and flag a mismatch against what was typed.
+  google_mlkit_face_detection: ^0.13.1
+  google_mlkit_text_recognition: ^0.15.0
+  sqlite3: ^2.9.4
+  sqlite3_flutter_libs: ^0.5.42
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # Generates AppLocalizations from lib/l10n/*.arb on every build.
+  # See l10n.yaml for the input/output configuration.
+  generate: true
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/map/
+    # Map pin artwork — one per agency, plus the person markers. Registered
+    # with MapLibre at style load; see map_screen.dart.
+    - assets/markers/
+    # The phone's own sounds: a soft chime for a resident's status update and
+    # the responder's dispatch alarm. Deliberately NOT the dispatcher console's
+    # alert file - that one belongs to the dashboard. Bundled rather than
+    # fetched: they have to sound at the exact moment the network may be at
+    # its worst.
+    - assets/sounds/
+    # Terms of Use and Data Privacy Notice, EN + FIL. Bundled rather than
+    # fetched: the consent screen runs before the user has an account and
+    # often before they have a usable connection. See LegalDocuments.
+    - assets/legal/
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package

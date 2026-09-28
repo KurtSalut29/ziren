@@ -1,0 +1,7225 @@
+{
+ "meta": {
+  "name": "Ziren Lexicon (full reporting-register normalization dictionary)",
+  "version": "0.4.0-lexicon",
+  "updated": "2026-09-04",
+  "description": "Complete content-word lexicon of the Ziren reporting register, derived from classification_dataset.csv. Hybrid two-layer normalization: 'canonical' = within-language readable surface form; 'lemma' = cross-language concept key linking Waray/Cebuano/Tagalog/English forms of the same meaning. Pure grammar particles and personal pronouns are excluded by design.",
+  "languages": [
+   "war",
+   "ceb",
+   "fil",
+   "en",
+   "unknown"
+  ],
+  "layers": {
+   "surface": "variant -> canonical (readable, within-language).",
+   "lemma": "canonical -> lemma (cross-language concept; the classifier feature that links languages).",
+   "incident_concept": "optional target-side tag on incident-signal entries (MEDICAL/CRIME/VEHICULAR_ACCIDENT/ACCIDENT/FIRE/NATURAL_HAZARD, with hazard_subtype).",
+   "negation": "negation:true marks a negator that must survive normalisation -- predict._negated() reads these words, so dropping them inverts a signal."
+  },
+  "coverage_policy": "All content words with freq>=2 are included. Pure grammar particles/pronouns are intentionally excluded (see grammar_excluded). Curated entries have a checked lemma+gloss+register; register:'uncurated' entries are auto-extracted and need a native-speaker gloss/lemma pass (verified:false).",
+  "registers": [
+   "action",
+   "address",
+   "courtesy",
+   "descriptor",
+   "filler",
+   "greeting",
+   "help",
+   "incident",
+   "injury",
+   "object",
+   "occupation",
+   "person",
+   "place_marker",
+   "quantity",
+   "report_frame",
+   "structure",
+   "time",
+   "uncurated",
+   "urgency"
+  ],
+  "invariants": [
+   "one canonical per variant dictionary-wide",
+   "no canonical is also another entry's variant (idempotent)",
+   "surface forms unique across the lexicon"
+  ],
+  "grammar_excluded": [
+   "a",
+   "across",
+   "adto",
+   "after",
+   "ako",
+   "akon",
+   "akong",
+   "am",
+   "amin",
+   "amoa",
+   "amoang",
+   "amon",
+   "among",
+   "an",
+   "and",
+   "ang",
+   "are",
+   "as",
+   "at",
+   "aton",
+   "ba",
+   "back",
+   "baga",
+   "be",
+   "because",
+   "been",
+   "being",
+   "but",
+   "by",
+   "canila",
+   "da",
+   "daw",
+   "de",
+   "del",
+   "didi",
+   "didto",
+   "diha",
+   "diin",
+   "din",
+   "dinha",
+   "dinhi",
+   "dini",
+   "diri",
+   "dito",
+   "diyan",
+   "doon",
+   "down",
+   "each",
+   "eto",
+   "from",
+   "get",
+   "ha",
+   "had",
+   "hain",
+   "han",
+   "has",
+   "have",
+   "he",
+   "her",
+   "here",
+   "him",
+   "hin",
+   "his",
+   "i",
+   "if",
+   "ikaw",
+   "ila",
+   "ilang",
+   "imo",
+   "imoha",
+   "in",
+   "ini",
+   "into",
+   "is",
+   "it",
+   "ito",
+   "iton",
+   "iya",
+   "iyang",
+   "ka",
+   "kami",
+   "kamo",
+   "kan",
+   "kanako",
+   "kanila",
+   "kaniya",
+   "kasi",
+   "kay",
+   "kaya",
+   "kita",
+   "ko",
+   "koh",
+   "koy",
+   "kun",
+   "kung",
+   "kuno",
+   "lamang",
+   "lang",
+   "ma",
+   "may",
+   "mga",
+   "mi",
+   "mo",
+   "move",
+   "my",
+   "n't",
+   "na",
+   "naa",
+   "naay",
+   "nako",
+   "nakon",
+   "naku",
+   "namin",
+   "namo",
+   "namon",
+   "nandito",
+   "nandiyan",
+   "nang",
+   "ng",
+   "nga",
+   "nga't",
+   "ngan",
+   "ni",
+   "nila",
+   "nimo",
+   "niya",
+   "niyan",
+   "o",
+   "of",
+   "off",
+   "og",
+   "on",
+   "or",
+   "other",
+   "our",
+   "out",
+   "pa",
+   "pag",
+   "pagka",
+   "para",
+   "pero",
+   "po",
+   "po's",
+   "pong",
+   "pu",
+   "raw",
+   "rin",
+   "rito",
+   "roon",
+   "sa",
+   "sana",
+   "several",
+   "she",
+   "si",
+   "sila",
+   "sin",
+   "something",
+   "that",
+   "the",
+   "their",
+   "them",
+   "there",
+   "these",
+   "they",
+   "this",
+   "those",
+   "to",
+   "toh",
+   "ug",
+   "under",
+   "ung",
+   "us",
+   "was",
+   "way",
+   "we",
+   "were",
+   "when",
+   "with",
+   "would",
+   "yang",
+   "you",
+   "your",
+   "yun",
+   "yung"
+  ],
+  "ambiguous_places_left_to_ner": [
+   "bari-is",
+   "baso",
+   "bato",
+   "bunga",
+   "center",
+   "eamiguel",
+   "looc",
+   "lorenzo",
+   "marvel",
+   "mula",
+   "pili",
+   "union",
+   "virginia"
+  ],
+  "source_legend": {
+   "dataset": "occurs in classification_dataset.csv",
+   "seed": "added, not yet in this dataset",
+   "stt": "STT-induced",
+   "manual": "maintainer-added",
+   "split": "separated out of a merged entry in 0.4.0; the frequency was not recounted"
+  },
+  "negation_forms": [
+   "dili",
+   "hindi",
+   "wala",
+   "waray",
+   "not",
+   "cannot",
+   "ayaw"
+  ],
+  "reserved_place_forms": [
+   "bari-is",
+   "baso",
+   "bato",
+   "bunga",
+   "center",
+   "eamiguel",
+   "looc",
+   "lorenzo",
+   "marvel",
+   "mula",
+   "pili",
+   "sabang",
+   "union",
+   "virginia"
+  ],
+  "forbidden_merges": [
+   [
+    "bana",
+    "asawa"
+   ],
+   [
+    "husband",
+    "wife"
+   ],
+   [
+    "son",
+    "daughter"
+   ],
+   [
+    "tulong",
+    "katulong"
+   ],
+   [
+    "lying",
+    "collapsed"
+   ]
+  ],
+  "suppletive_variants": [
+   [
+    "aftershock",
+    "earthquake"
+   ],
+   [
+    "assist",
+    "help"
+   ],
+   [
+    "assistance",
+    "help"
+   ],
+   [
+    "ate",
+    "swallowed"
+   ],
+   [
+    "baryo",
+    "barangay"
+   ],
+   [
+    "blaze",
+    "flames"
+   ],
+   [
+    "blood",
+    "bleeding"
+   ],
+   [
+    "brawl",
+    "fight"
+   ],
+   [
+    "brgy",
+    "barangay"
+   ],
+   [
+    "brgy.",
+    "barangay"
+   ],
+   [
+    "collided",
+    "crash"
+   ],
+   [
+    "collision",
+    "crash"
+   ],
+   [
+    "come",
+    "respond"
+   ],
+   [
+    "cyclone",
+    "typhoon"
+   ],
+   [
+    "drank",
+    "swallowed"
+   ],
+   [
+    "duguan",
+    "dugo"
+   ],
+   [
+    "fainted",
+    "unconscious"
+   ],
+   [
+    "fallen",
+    "fell"
+   ],
+   [
+    "fast",
+    "quickly"
+   ],
+   [
+    "giingon",
+    "gisulti"
+   ],
+   [
+    "gilumsan",
+    "nalumos"
+   ],
+   [
+    "gindadara",
+    "sumat"
+   ],
+   [
+    "gipaak",
+    "nakagat"
+   ],
+   [
+    "gone",
+    "missing"
+   ],
+   [
+    "gumuhong",
+    "guho"
+   ],
+   [
+    "highway",
+    "road"
+   ],
+   [
+    "hurry",
+    "quickly"
+   ],
+   [
+    "ill",
+    "sick"
+   ],
+   [
+    "illness",
+    "sick"
+   ],
+   [
+    "ingon",
+    "gisulti"
+   ],
+   [
+    "kalye",
+    "kalsada"
+   ],
+   [
+    "kid",
+    "child"
+   ],
+   [
+    "kumaon",
+    "nakakaon"
+   ],
+   [
+    "lason",
+    "hilo"
+   ],
+   [
+    "manggagawa",
+    "trabahador"
+   ],
+   [
+    "manggagawà",
+    "trabahador"
+   ],
+   [
+    "manong",
+    "kuya"
+   ],
+   [
+    "nabuong",
+    "nabasag"
+   ],
+   [
+    "nadahili",
+    "nahugno"
+   ],
+   [
+    "nagdurugo",
+    "dugo"
+   ],
+   [
+    "nalason",
+    "hilo"
+   ],
+   [
+    "nanghaharas",
+    "nananakot"
+   ],
+   [
+    "narumpag",
+    "nahugno"
+   ],
+   [
+    "nong",
+    "kuya"
+   ],
+   [
+    "now",
+    "immediately"
+   ],
+   [
+    "pakitulungan",
+    "tulong"
+   ],
+   [
+    "people",
+    "person"
+   ],
+   [
+    "pinusil",
+    "baril"
+   ],
+   [
+    "pusil",
+    "baril"
+   ],
+   [
+    "saklolo",
+    "tulong"
+   ],
+   [
+    "seizure",
+    "stroke"
+   ],
+   [
+    "serious",
+    "severe"
+   ],
+   [
+    "shake",
+    "shook"
+   ],
+   [
+    "shaking",
+    "shook"
+   ],
+   [
+    "sobra",
+    "grabe"
+   ],
+   [
+    "someone",
+    "person"
+   ],
+   [
+    "storm",
+    "typhoon"
+   ],
+   [
+    "street",
+    "road"
+   ],
+   [
+    "struck",
+    "crash"
+   ],
+   [
+    "told",
+    "said"
+   ],
+   [
+    "tremor",
+    "earthquake"
+   ],
+   [
+    "tulungan",
+    "tulong"
+   ],
+   [
+    "well",
+    "um"
+   ],
+   [
+    "wounded",
+    "injured"
+   ]
+  ]
+ },
+ "lexicon": [
+  {
+   "lemma": "drown",
+   "canonical": "nalumos",
+   "lang": "ceb",
+   "variants": [
+    "nalulumos",
+    "gilumsan"
+   ],
+   "gloss": "drowning / drowned",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 46
+  },
+  {
+   "lemma": "drown",
+   "canonical": "nalunod",
+   "lang": "fil",
+   "variants": [
+    "nalulunod",
+    "malunod",
+    "pagkalunod"
+   ],
+   "gloss": "drowning / drowned",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 8
+  },
+  {
+   "lemma": "drown",
+   "canonical": "drowning",
+   "lang": "en",
+   "variants": [
+    "drowned",
+    "drown"
+   ],
+   "gloss": "drowning / drowned",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 12
+  },
+  {
+   "lemma": "fell",
+   "canonical": "nahulog",
+   "lang": "fil",
+   "variants": [
+    "nakahulog"
+   ],
+   "gloss": "fell / fell from height",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 36
+  },
+  {
+   "lemma": "fell",
+   "canonical": "fell",
+   "lang": "en",
+   "variants": [
+    "fall",
+    "fallen"
+   ],
+   "gloss": "fell / fell from height",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 6
+  },
+  {
+   "lemma": "height",
+   "canonical": "itaas",
+   "lang": "fil",
+   "variants": [
+    "taas"
+   ],
+   "gloss": "height / from above",
+   "register": "descriptor",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 18
+  },
+  {
+   "lemma": "missing",
+   "canonical": "nawala",
+   "lang": "fil",
+   "variants": [
+    "nawara",
+    "nawawala",
+    "nawawara"
+   ],
+   "gloss": "went missing / lost",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 19
+  },
+  {
+   "lemma": "missing",
+   "canonical": "missing",
+   "lang": "en",
+   "variants": [
+    "gone"
+   ],
+   "gloss": "went missing / lost",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "swept",
+   "canonical": "naanod",
+   "lang": "fil",
+   "variants": [
+    "naaanod",
+    "inanod"
+   ],
+   "gloss": "swept away by water",
+   "register": "incident",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "sinaktan",
+   "lang": "fil",
+   "variants": [
+    "sinasaktan"
+   ],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "hurt",
+   "lang": "en",
+   "variants": [
+    "hurting"
+   ],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 27
+  },
+  {
+   "lemma": "attack_person",
+   "canonical": "gisulong",
+   "lang": "fil",
+   "variants": [
+    "sinulong",
+    "sulongon",
+    "sulong"
+   ],
+   "gloss": "assault someone",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "blade",
+   "canonical": "sundang",
+   "lang": "war",
+   "variants": [
+    "sondang"
+   ],
+   "gloss": "bladed weapon / bolo",
+   "register": "object",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "chase",
+   "canonical": "nanagan",
+   "lang": "fil",
+   "variants": [
+    "nagdadalagan",
+    "nagdagan",
+    "nagdalagan"
+   ],
+   "gloss": "chasing / ran",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "crying",
+   "canonical": "nagtitinangis",
+   "lang": "war",
+   "variants": [
+    "nagtinangis",
+    "tangis"
+   ],
+   "gloss": "crying / wailing",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "fight",
+   "canonical": "away",
+   "lang": "fil",
+   "variants": [
+    "awayan",
+    "nag-away",
+    "nagaaway",
+    "gin-away"
+   ],
+   "gloss": "fight / brawl",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 46
+  },
+  {
+   "lemma": "fight",
+   "canonical": "fight",
+   "lang": "en",
+   "variants": [
+    "brawl"
+   ],
+   "gloss": "fight / brawl",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 5
+  },
+  {
+   "lemma": "harass",
+   "canonical": "nananakot",
+   "lang": "fil",
+   "variants": [
+    "nanghaharas"
+   ],
+   "gloss": "threaten / harass",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "punching",
+   "canonical": "suntukan",
+   "lang": "fil",
+   "variants": [
+    "nagsusuntukan",
+    "suntok"
+   ],
+   "gloss": "fistfight",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "robbery",
+   "canonical": "holdap",
+   "lang": "fil",
+   "variants": [
+    "hold up",
+    "hinoldap",
+    "giholdap"
+   ],
+   "gloss": "holdup / robbery",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "shoot",
+   "canonical": "baril",
+   "lang": "fil",
+   "variants": [
+    "binaril",
+    "barilan",
+    "pinusil",
+    "pusil"
+   ],
+   "gloss": "shoot / gun",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 1
+  },
+  {
+   "lemma": "shouting",
+   "canonical": "nagsisinggit",
+   "lang": "war",
+   "variants": [
+    "nagsinggit",
+    "nasinggit",
+    "nagsigsinggit"
+   ],
+   "gloss": "shouting (distress)",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "stab",
+   "canonical": "dunggab",
+   "lang": "ceb",
+   "variants": [
+    "gidunggab",
+    "dinunggab"
+   ],
+   "gloss": "stab",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "stab",
+   "canonical": "saksak",
+   "lang": "fil",
+   "variants": [
+    "sinaksak",
+    "sak sak"
+   ],
+   "gloss": "stab",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "blazing",
+   "canonical": "nagdilaab",
+   "lang": "ceb",
+   "variants": [
+    "nagdidilaab",
+    "nagdilaob"
+   ],
+   "gloss": "blazing / flaring",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "blazing",
+   "canonical": "nagliliyab",
+   "lang": "fil",
+   "variants": [
+    "lumiliyab"
+   ],
+   "gloss": "blazing / flaring",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 43
+  },
+  {
+   "lemma": "blazing",
+   "canonical": "nagsiga",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "blazing / flaring",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "blazing",
+   "canonical": "flames",
+   "lang": "en",
+   "variants": [
+    "flame",
+    "blaze"
+   ],
+   "gloss": "blazing / flaring",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 17
+  },
+  {
+   "lemma": "burning",
+   "canonical": "nasusunog",
+   "lang": "fil",
+   "variants": [
+    "nasusnog",
+    "nasusonog"
+   ],
+   "gloss": "is burning",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 28
+  },
+  {
+   "lemma": "caught_fire",
+   "canonical": "nasunog",
+   "lang": "ceb",
+   "variants": [
+    "nasonog"
+   ],
+   "gloss": "caught fire",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 8
+  },
+  {
+   "lemma": "fire",
+   "canonical": "sunog",
+   "lang": "ceb",
+   "variants": [
+    "sonog",
+    "snog",
+    "sunug",
+    "sonug"
+   ],
+   "gloss": "fire / burning",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 84
+  },
+  {
+   "lemma": "fire",
+   "canonical": "fire",
+   "lang": "en",
+   "variants": [
+    "fires"
+   ],
+   "gloss": "fire / burning",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 29
+  },
+  {
+   "lemma": "smoke",
+   "canonical": "usok",
+   "lang": "fil",
+   "variants": [
+    "aso"
+   ],
+   "gloss": "smoke",
+   "register": "object",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "smoke",
+   "canonical": "smoke",
+   "lang": "en",
+   "variants": [],
+   "gloss": "smoke",
+   "register": "object",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "ate",
+   "canonical": "nakakaon",
+   "lang": "ceb",
+   "variants": [
+    "nakalamon",
+    "nakainom",
+    "kumaon",
+    "nakaon"
+   ],
+   "gloss": "ate / swallowed",
+   "register": "action",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 18
+  },
+  {
+   "lemma": "ate",
+   "canonical": "swallowed",
+   "lang": "en",
+   "variants": [
+    "ate",
+    "drank"
+   ],
+   "gloss": "ate / swallowed",
+   "register": "action",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "attack",
+   "canonical": "atake",
+   "lang": "fil",
+   "variants": [
+    "atakeng"
+   ],
+   "gloss": "heart/asthma attack",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "attack",
+   "canonical": "stroke",
+   "lang": "en",
+   "variants": [
+    "seizure"
+   ],
+   "gloss": "heart/asthma attack",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "bitten",
+   "canonical": "nakagat",
+   "lang": "ceb",
+   "variants": [
+    "gipaak",
+    "nakat-an"
+   ],
+   "gloss": "bitten (animal)",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "bleeding",
+   "canonical": "dugo",
+   "lang": "fil",
+   "variants": [
+    "duguan",
+    "nagdugo",
+    "nagdurugo",
+    "nagdudugo"
+   ],
+   "gloss": "blood / bleeding",
+   "register": "injury",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "bleeding",
+   "canonical": "bleeding",
+   "lang": "en",
+   "variants": [
+    "blood"
+   ],
+   "gloss": "blood / bleeding",
+   "register": "injury",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "cannot_breathe",
+   "canonical": "makaginhawa",
+   "lang": "ceb",
+   "variants": [
+    "maginhawa",
+    "ginhawa"
+   ],
+   "gloss": "cannot breathe",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "cannot_breathe",
+   "canonical": "makahinga",
+   "lang": "fil",
+   "variants": [
+    "huminga"
+   ],
+   "gloss": "cannot breathe",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "cannot_breathe",
+   "canonical": "breathe",
+   "lang": "en",
+   "variants": [
+    "breathing"
+   ],
+   "gloss": "cannot breathe",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "faint",
+   "canonical": "gikuyapan",
+   "lang": "ceb",
+   "variants": [
+    "nakuyapan",
+    "kuyap"
+   ],
+   "gloss": "fainted / unconscious",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "faint",
+   "canonical": "hinimatay",
+   "lang": "fil",
+   "variants": [
+    "nahimatay",
+    "himatay"
+   ],
+   "gloss": "fainted / unconscious",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "faint",
+   "canonical": "unconscious",
+   "lang": "en",
+   "variants": [
+    "fainted"
+   ],
+   "gloss": "fainted / unconscious",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "gasping",
+   "canonical": "naghangos",
+   "lang": "war",
+   "variants": [
+    "naghahangos",
+    "hangos"
+   ],
+   "gloss": "labored breathing / gasping",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "gasping",
+   "canonical": "humihingal",
+   "lang": "fil",
+   "variants": [
+    "hinghingal"
+   ],
+   "gloss": "labored breathing / gasping",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "medical",
+   "canonical": "ambulansya",
+   "lang": "fil",
+   "variants": [
+    "ambulance"
+   ],
+   "gloss": "medical / ambulance",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 28
+  },
+  {
+   "lemma": "medical",
+   "canonical": "medikal",
+   "lang": "fil",
+   "variants": [
+    "medical"
+   ],
+   "gloss": "medical / ambulance",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 9
+  },
+  {
+   "lemma": "medical",
+   "canonical": "emergency",
+   "lang": "en",
+   "variants": [],
+   "gloss": "medical / ambulance",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 31
+  },
+  {
+   "lemma": "outbreak",
+   "canonical": "outbreak",
+   "lang": "en",
+   "variants": [
+    "nag-outbreak"
+   ],
+   "gloss": "disease outbreak",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 21
+  },
+  {
+   "lemma": "poison",
+   "canonical": "hilo",
+   "lang": "fil",
+   "variants": [
+    "nahiloan",
+    "nalason",
+    "lason"
+   ],
+   "gloss": "poisoning / swallowed poison",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "poison",
+   "canonical": "poison",
+   "lang": "en",
+   "variants": [
+    "poisoned"
+   ],
+   "gloss": "poisoning / swallowed poison",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "shellfish",
+   "canonical": "shellfish",
+   "lang": "en",
+   "variants": [],
+   "gloss": "shellfish",
+   "register": "object",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 13
+  },
+  {
+   "lemma": "sick",
+   "canonical": "nagkasakit",
+   "lang": "fil",
+   "variants": [
+    "nagkakasakit",
+    "nagkasumpong",
+    "nagkadapo",
+    "nagkadapu",
+    "sakit",
+    "nagsakit"
+   ],
+   "gloss": "got sick / illness",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "sick",
+   "canonical": "sick",
+   "lang": "en",
+   "variants": [
+    "ill",
+    "illness"
+   ],
+   "gloss": "got sick / illness",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "vomiting",
+   "canonical": "nagsuka",
+   "lang": "ceb",
+   "variants": [
+    "nagsusuka"
+   ],
+   "gloss": "vomiting",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 5
+  },
+  {
+   "lemma": "vomiting",
+   "canonical": "vomiting",
+   "lang": "en",
+   "variants": [
+    "vomit"
+   ],
+   "gloss": "vomiting",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 2
+  },
+  {
+   "lemma": "weak",
+   "canonical": "naluluya",
+   "lang": "war",
+   "variants": [
+    "naluya",
+    "luya"
+   ],
+   "gloss": "weak / faint",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "weak",
+   "canonical": "weak",
+   "lang": "en",
+   "variants": [],
+   "gloss": "weak / faint",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 1
+  },
+  {
+   "lemma": "broke",
+   "canonical": "nabasag",
+   "lang": "fil",
+   "variants": [
+    "nagkatiti-basag",
+    "nagkabasag",
+    "nabuong"
+   ],
+   "gloss": "things fell and broke",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "earthquake",
+   "canonical": "linog",
+   "lang": "ceb",
+   "variants": [
+    "linug",
+    "lininog"
+   ],
+   "gloss": "earthquake",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": true,
+   "freq": 14
+  },
+  {
+   "lemma": "earthquake",
+   "canonical": "lindol",
+   "lang": "fil",
+   "variants": [
+    "lindul"
+   ],
+   "gloss": "earthquake",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": true,
+   "freq": 3
+  },
+  {
+   "lemma": "earthquake",
+   "canonical": "earthquake",
+   "lang": "en",
+   "variants": [
+    "quake",
+    "tremor",
+    "aftershock"
+   ],
+   "gloss": "earthquake",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": true,
+   "freq": 3
+  },
+  {
+   "lemma": "shaking",
+   "canonical": "nag-uyog",
+   "lang": "war",
+   "variants": [
+    "naguyog",
+    "nag uyog"
+   ],
+   "gloss": "ground/house shaking",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "shaking",
+   "canonical": "yumanig",
+   "lang": "fil",
+   "variants": [
+    "yumayanig",
+    "nayanig",
+    "niyanig"
+   ],
+   "gloss": "ground/house shaking",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "shaking",
+   "canonical": "shook",
+   "lang": "en",
+   "variants": [
+    "shaking",
+    "shake"
+   ],
+   "gloss": "ground/house shaking",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "EARTHQUAKE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 1
+  },
+  {
+   "lemma": "flood",
+   "canonical": "lunop",
+   "lang": "ceb",
+   "variants": [
+    "lunup",
+    "gilunopan"
+   ],
+   "gloss": "flood",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "flood",
+   "canonical": "baha",
+   "lang": "fil",
+   "variants": [
+    "bahâ",
+    "baja",
+    "bumabaha",
+    "binabaha"
+   ],
+   "gloss": "flood",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "dataset",
+   "verified": true,
+   "freq": 90
+  },
+  {
+   "lemma": "flood",
+   "canonical": "flood",
+   "lang": "en",
+   "variants": [
+    "flooding",
+    "floodwater"
+   ],
+   "gloss": "flood",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "dataset",
+   "verified": true,
+   "freq": 6
+  },
+  {
+   "lemma": "rain",
+   "canonical": "ulan",
+   "lang": "fil",
+   "variants": [
+    "uran",
+    "nag-ulan"
+   ],
+   "gloss": "rain",
+   "register": "object",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "landslide",
+   "canonical": "naguba",
+   "lang": "ceb",
+   "variants": [
+    "naguba nga",
+    "nagun-ob"
+   ],
+   "gloss": "landslide",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "LANDSLIDE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 10
+  },
+  {
+   "lemma": "landslide",
+   "canonical": "nahugno",
+   "lang": "ceb",
+   "variants": [
+    "nadahili",
+    "narumpag"
+   ],
+   "gloss": "landslide",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "LANDSLIDE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "landslide",
+   "canonical": "guho",
+   "lang": "fil",
+   "variants": [
+    "gumuho",
+    "pagguho",
+    "gumuhong",
+    "guhô"
+   ],
+   "gloss": "landslide",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "LANDSLIDE",
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "landslide",
+   "canonical": "landslide",
+   "lang": "en",
+   "variants": [
+    "mudslide",
+    "rockslide",
+    "land slide"
+   ],
+   "gloss": "landslide",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "LANDSLIDE",
+   "source": "dataset",
+   "verified": false,
+   "freq": 18
+  },
+  {
+   "lemma": "soil",
+   "canonical": "yuta",
+   "lang": "ceb",
+   "variants": [
+    "lupa"
+   ],
+   "gloss": "soil / earth",
+   "register": "object",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "LANDSLIDE",
+   "source": "dataset",
+   "verified": true,
+   "freq": 7
+  },
+  {
+   "lemma": "storm_surge",
+   "canonical": "daluyong",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "storm surge",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "STORM_SURGE",
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "storm_surge",
+   "canonical": "storm surge",
+   "lang": "en",
+   "variants": [
+    "stormsurge",
+    "surge"
+   ],
+   "gloss": "storm surge",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "STORM_SURGE",
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "typhoon",
+   "canonical": "bagyo",
+   "lang": "fil",
+   "variants": [
+    "bagyu",
+    "bagyong"
+   ],
+   "gloss": "typhoon / storm",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "TYPHOON",
+   "source": "dataset",
+   "verified": true,
+   "freq": 30
+  },
+  {
+   "lemma": "typhoon",
+   "canonical": "typhoon",
+   "lang": "en",
+   "variants": [
+    "storm",
+    "cyclone"
+   ],
+   "gloss": "typhoon / storm",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "TYPHOON",
+   "source": "dataset",
+   "verified": true,
+   "freq": 2
+  },
+  {
+   "lemma": "wind",
+   "canonical": "hangin",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "strong wind",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "TYPHOON",
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "accident",
+   "canonical": "aksidente",
+   "lang": "fil",
+   "variants": [
+    "aksdente",
+    "aksidenti",
+    "accidente",
+    "aksidenteng"
+   ],
+   "gloss": "accident",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 94
+  },
+  {
+   "lemma": "accident",
+   "canonical": "accident",
+   "lang": "en",
+   "variants": [
+    "accidents"
+   ],
+   "gloss": "accident",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 21
+  },
+  {
+   "lemma": "collision",
+   "canonical": "nabangga",
+   "lang": "fil",
+   "variants": [
+    "nabanga",
+    "gibanggaan",
+    "nabangaan"
+   ],
+   "gloss": "collision / crash",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 31
+  },
+  {
+   "lemma": "collision",
+   "canonical": "banggaan",
+   "lang": "fil",
+   "variants": [
+    "bangaan",
+    "nagkabanggaan",
+    "nagkabanggaay",
+    "nagbanggaan",
+    "nagkabangga"
+   ],
+   "gloss": "collision / crash",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 28
+  },
+  {
+   "lemma": "collision",
+   "canonical": "crash",
+   "lang": "en",
+   "variants": [
+    "crashed",
+    "collision",
+    "collided",
+    "struck"
+   ],
+   "gloss": "collision / crash",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "got_accident",
+   "canonical": "naaksidente",
+   "lang": "ceb",
+   "variants": [
+    "naaksdente",
+    "naaksidenteng",
+    "na-aksidente"
+   ],
+   "gloss": "got into accident",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 55
+  },
+  {
+   "lemma": "hit_object",
+   "canonical": "nasalpok",
+   "lang": "fil",
+   "variants": [
+    "sumalpok",
+    "napasalpok"
+   ],
+   "gloss": "rammed / slammed into",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 12
+  },
+  {
+   "lemma": "hit_object",
+   "canonical": "hit",
+   "lang": "en",
+   "variants": [],
+   "gloss": "rammed / slammed into",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 13
+  },
+  {
+   "lemma": "motorcycle",
+   "canonical": "motor",
+   "lang": "fil",
+   "variants": [
+    "motorsiklo"
+   ],
+   "gloss": "motorcycle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 98
+  },
+  {
+   "lemma": "post",
+   "canonical": "poste",
+   "lang": "fil",
+   "variants": [
+    "post"
+   ],
+   "gloss": "post / pole",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 18
+  },
+  {
+   "lemma": "toppled",
+   "canonical": "natumba",
+   "lang": "ceb",
+   "variants": [
+    "nagumba",
+    "natumban"
+   ],
+   "gloss": "fell over / toppled",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 42,
+   "note": "incident_concept is a hint only: natumba covers a person, a tree, a post or a motorcycle falling over, and only the last is vehicular."
+  },
+  {
+   "lemma": "tricycle",
+   "canonical": "tricycle",
+   "lang": "en",
+   "variants": [],
+   "gloss": "tricycle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 6
+  },
+  {
+   "lemma": "vehicle",
+   "canonical": "sakyanan",
+   "lang": "ceb",
+   "variants": [
+    "salakyanan",
+    "sasakyan",
+    "sakyan",
+    "sakayanan"
+   ],
+   "gloss": "vehicle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 72
+  },
+  {
+   "lemma": "vehicle",
+   "canonical": "vehicle",
+   "lang": "en",
+   "variants": [
+    "vehicles"
+   ],
+   "gloss": "vehicle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 10
+  },
+  {
+   "lemma": "hey",
+   "canonical": "oy",
+   "lang": "ceb",
+   "variants": [
+    "uy",
+    "hoy"
+   ],
+   "gloss": "hey (call)",
+   "register": "address",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 31
+  },
+  {
+   "lemma": "sir",
+   "canonical": "kuya",
+   "lang": "fil",
+   "variants": [
+    "manong",
+    "nong"
+   ],
+   "gloss": "sir / big brother",
+   "register": "address",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 70
+  },
+  {
+   "lemma": "sir",
+   "canonical": "sir",
+   "lang": "en",
+   "variants": [],
+   "gloss": "sir / big brother",
+   "register": "address",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "excuse_me",
+   "canonical": "excuse me",
+   "lang": "en",
+   "variants": [
+    "excuse"
+   ],
+   "gloss": "excuse me",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "please",
+   "canonical": "palihog",
+   "lang": "ceb",
+   "variants": [
+    "palehog",
+    "palihug"
+   ],
+   "gloss": "please (courtesy)",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 301
+  },
+  {
+   "lemma": "please",
+   "canonical": "paki",
+   "lang": "fil",
+   "variants": [
+    "pakiusap"
+   ],
+   "gloss": "please (courtesy)",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "thanks",
+   "canonical": "salamat",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "thank you",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 162
+  },
+  {
+   "lemma": "thanks",
+   "canonical": "thank",
+   "lang": "en",
+   "variants": [
+    "thanks",
+    "thank you"
+   ],
+   "gloss": "thank you",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 44
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "siguro",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 38
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "maybe",
+   "lang": "en",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "severe",
+   "canonical": "grabe",
+   "lang": "fil",
+   "variants": [
+    "grabeng",
+    "sobra"
+   ],
+   "gloss": "severe / intense",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 156
+  },
+  {
+   "lemma": "severe",
+   "canonical": "severe",
+   "lang": "en",
+   "variants": [
+    "serious"
+   ],
+   "gloss": "severe / intense",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 8
+  },
+  {
+   "lemma": "strong",
+   "canonical": "malakas",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "strong / loud",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "sure",
+   "canonical": "sigurado",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "sure / certain",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 54
+  },
+  {
+   "lemma": "what",
+   "canonical": "unsa",
+   "lang": "ceb",
+   "variants": [
+    "unsa toh",
+    "unsay"
+   ],
+   "gloss": "what",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 20
+  },
+  {
+   "lemma": "what",
+   "canonical": "ano",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "what",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 82
+  },
+  {
+   "lemma": "alarm",
+   "canonical": "hala",
+   "lang": "ceb",
+   "variants": [
+    "haladto"
+   ],
+   "gloss": "exclamation of alarm",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 54
+  },
+  {
+   "lemma": "alarm",
+   "canonical": "omg",
+   "lang": "en",
+   "variants": [],
+   "gloss": "exclamation of alarm",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "filler_um",
+   "canonical": "kuan",
+   "lang": "ceb",
+   "variants": [
+    "kuwan",
+    "kwan",
+    "ku-an"
+   ],
+   "gloss": "hesitation filler (um)",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 296
+  },
+  {
+   "lemma": "filler_um",
+   "canonical": "um",
+   "lang": "en",
+   "variants": [
+    "uh",
+    "well"
+   ],
+   "gloss": "hesitation filler (um)",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 14
+  },
+  {
+   "lemma": "ouch",
+   "canonical": "aguy",
+   "lang": "war",
+   "variants": [
+    "aguuy",
+    "aray",
+    "aruy"
+   ],
+   "gloss": "cry of pain/alarm",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 23
+  },
+  {
+   "lemma": "good_greeting",
+   "canonical": "maayong",
+   "lang": "ceb",
+   "variants": [
+    "maayo nga"
+   ],
+   "gloss": "good (day/evening) greeting",
+   "register": "greeting",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 37
+  },
+  {
+   "lemma": "good_greeting",
+   "canonical": "maupay",
+   "lang": "war",
+   "variants": [
+    "maupay nga"
+   ],
+   "gloss": "good (day/evening) greeting",
+   "register": "greeting",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 140
+  },
+  {
+   "lemma": "good_greeting",
+   "canonical": "magandang",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "good (day/evening) greeting",
+   "register": "greeting",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 36
+  },
+  {
+   "lemma": "good_greeting",
+   "canonical": "good",
+   "lang": "en",
+   "variants": [],
+   "gloss": "good (day/evening) greeting",
+   "register": "greeting",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 31
+  },
+  {
+   "lemma": "help",
+   "canonical": "tabang",
+   "lang": "ceb",
+   "variants": [
+    "tabng",
+    "tabangi",
+    "tabanga",
+    "tabangan",
+    "pakitabang"
+   ],
+   "gloss": "help / assistance",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 172
+  },
+  {
+   "lemma": "help",
+   "canonical": "bulig",
+   "lang": "war",
+   "variants": [
+    "buligi",
+    "buligan",
+    "bulíg"
+   ],
+   "gloss": "help / assistance",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 46
+  },
+  {
+   "lemma": "help",
+   "canonical": "tulong",
+   "lang": "fil",
+   "variants": [
+    "tulungan",
+    "pakitulungan",
+    "pakitulong",
+    "saklolo"
+   ],
+   "gloss": "help / assistance",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 61
+  },
+  {
+   "lemma": "help",
+   "canonical": "help",
+   "lang": "en",
+   "variants": [
+    "assist",
+    "assistance"
+   ],
+   "gloss": "help / assistance",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 87
+  },
+  {
+   "lemma": "please_come",
+   "canonical": "pakadi",
+   "lang": "war",
+   "variants": [
+    "pakadto",
+    "pakadi kamo",
+    "pakadto kamo",
+    "pakadi na kamo"
+   ],
+   "gloss": "please come here",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 241
+  },
+  {
+   "lemma": "lying_down",
+   "canonical": "nakahigda",
+   "lang": "ceb",
+   "variants": [
+    "nakahiga",
+    "naghigda",
+    "nakahandusay"
+   ],
+   "gloss": "lying on ground / collapsed",
+   "register": "injury",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 32
+  },
+  {
+   "lemma": "lying_down",
+   "canonical": "lying",
+   "lang": "en",
+   "variants": [],
+   "gloss": "lying on ground / collapsed",
+   "register": "injury",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 17
+  },
+  {
+   "lemma": "wounded",
+   "canonical": "nasamdan",
+   "lang": "ceb",
+   "variants": [
+    "nasamad",
+    "gisamdan",
+    "nasamaran"
+   ],
+   "gloss": "wounded / injured",
+   "register": "injury",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 117
+  },
+  {
+   "lemma": "wounded",
+   "canonical": "sugatan",
+   "lang": "fil",
+   "variants": [
+    "nasugatan",
+    "sugat"
+   ],
+   "gloss": "wounded / injured",
+   "register": "injury",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 45
+  },
+  {
+   "lemma": "wounded",
+   "canonical": "injured",
+   "lang": "en",
+   "variants": [
+    "wounded"
+   ],
+   "gloss": "wounded / injured",
+   "register": "injury",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "creek",
+   "canonical": "sapa",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "creek / river",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "sea",
+   "canonical": "dagat",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "sea",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 12
+  },
+  {
+   "lemma": "water",
+   "canonical": "tubig",
+   "lang": "fil",
+   "variants": [
+    "tubeg"
+   ],
+   "gloss": "water",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 66
+  },
+  {
+   "lemma": "water",
+   "canonical": "water",
+   "lang": "en",
+   "variants": [],
+   "gloss": "water",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 14
+  },
+  {
+   "lemma": "police",
+   "canonical": "pulis",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "police",
+   "register": "occupation",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 9
+  },
+  {
+   "lemma": "work",
+   "canonical": "trabaho",
+   "lang": "fil",
+   "variants": [
+    "trabahoan",
+    "trabahuan"
+   ],
+   "gloss": "work/job",
+   "register": "occupation",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "worker",
+   "canonical": "trabahador",
+   "lang": "fil",
+   "variants": [
+    "trabahante",
+    "manggagawa",
+    "manggagawà"
+   ],
+   "gloss": "laborer/worker",
+   "register": "occupation",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "worker",
+   "canonical": "worker",
+   "lang": "en",
+   "variants": [],
+   "gloss": "laborer/worker",
+   "register": "occupation",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "child",
+   "canonical": "bata",
+   "lang": "fil",
+   "variants": [
+    "batang",
+    "bataa"
+   ],
+   "gloss": "child",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 33
+  },
+  {
+   "lemma": "child",
+   "canonical": "child",
+   "lang": "en",
+   "variants": [
+    "kid"
+   ],
+   "gloss": "child",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 4
+  },
+  {
+   "lemma": "couple",
+   "canonical": "mag-asawa",
+   "lang": "fil",
+   "variants": [
+    "magasawa"
+   ],
+   "gloss": "married couple",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "man",
+   "canonical": "lalaki",
+   "lang": "fil",
+   "variants": [
+    "lalake",
+    "lalaking",
+    "laki"
+   ],
+   "gloss": "adult male",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 59
+  },
+  {
+   "lemma": "man",
+   "canonical": "man",
+   "lang": "en",
+   "variants": [
+    "men"
+   ],
+   "gloss": "adult male",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 20
+  },
+  {
+   "lemma": "neighbor",
+   "canonical": "silingan",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "neighbor",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 46
+  },
+  {
+   "lemma": "neighbor",
+   "canonical": "neighbor",
+   "lang": "en",
+   "variants": [
+    "neighbour"
+   ],
+   "gloss": "neighbor",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "offspring",
+   "canonical": "anak",
+   "lang": "fil",
+   "variants": [
+    "nak",
+    "anakon"
+   ],
+   "gloss": "son/daughter",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 112
+  },
+  {
+   "lemma": "offspring",
+   "canonical": "son",
+   "lang": "en",
+   "variants": [],
+   "gloss": "son/daughter",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 11
+  },
+  {
+   "lemma": "person",
+   "canonical": "tawo",
+   "lang": "ceb",
+   "variants": [
+    "tawó",
+    "tawu"
+   ],
+   "gloss": "person/human",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 515
+  },
+  {
+   "lemma": "person",
+   "canonical": "tao",
+   "lang": "fil",
+   "variants": [
+    "tau"
+   ],
+   "gloss": "person/human",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 51
+  },
+  {
+   "lemma": "person",
+   "canonical": "person",
+   "lang": "en",
+   "variants": [
+    "someone",
+    "people"
+   ],
+   "gloss": "person/human",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 16
+  },
+  {
+   "lemma": "spouse",
+   "canonical": "bana",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "husband/wife",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 49
+  },
+  {
+   "lemma": "spouse",
+   "canonical": "husband",
+   "lang": "en",
+   "variants": [],
+   "gloss": "husband/wife",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 19
+  },
+  {
+   "lemma": "woman",
+   "canonical": "babaye",
+   "lang": "ceb",
+   "variants": [
+    "babae",
+    "babayi",
+    "babaeng"
+   ],
+   "gloss": "adult female",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 50
+  },
+  {
+   "lemma": "woman",
+   "canonical": "woman",
+   "lang": "en",
+   "variants": [
+    "women"
+   ],
+   "gloss": "adult female",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 11
+  },
+  {
+   "lemma": "barangay",
+   "canonical": "barangay",
+   "lang": "fil",
+   "variants": [
+    "brgy",
+    "brgy.",
+    "baranggay",
+    "baryo"
+   ],
+   "gloss": "barangay / village",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 122
+  },
+  {
+   "lemma": "corner",
+   "canonical": "kanto",
+   "lang": "fil",
+   "variants": [
+    "kanto ng",
+    "kanto sa"
+   ],
+   "gloss": "street corner",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 282
+  },
+  {
+   "lemma": "neighborhood_here",
+   "canonical": "dida",
+   "lang": "war",
+   "variants": [
+    "dida ha"
+   ],
+   "gloss": "around here (locative phrase kept)",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "road",
+   "canonical": "dalan",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "road / street",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 175
+  },
+  {
+   "lemma": "many",
+   "canonical": "damo",
+   "lang": "war",
+   "variants": [
+    "madamo"
+   ],
+   "gloss": "many / a lot",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 25
+  },
+  {
+   "lemma": "many",
+   "canonical": "many",
+   "lang": "en",
+   "variants": [],
+   "gloss": "many / a lot",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "one",
+   "canonical": "usa",
+   "lang": "ceb",
+   "variants": [
+    "isa"
+   ],
+   "gloss": "one",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 7
+  },
+  {
+   "lemma": "two",
+   "canonical": "duha",
+   "lang": "ceb",
+   "variants": [
+    "duruha"
+   ],
+   "gloss": "two",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 78
+  },
+  {
+   "lemma": "two",
+   "canonical": "dalawa",
+   "lang": "fil",
+   "variants": [
+    "dalawang"
+   ],
+   "gloss": "two",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": true,
+   "freq": 0
+  },
+  {
+   "lemma": "from",
+   "canonical": "tikang",
+   "lang": "war",
+   "variants": [],
+   "gloss": "from (origin phrase)",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 60
+  },
+  {
+   "lemma": "heard",
+   "canonical": "nakadungog",
+   "lang": "ceb",
+   "variants": [
+    "nakabati",
+    "nadunggan"
+   ],
+   "gloss": "heard",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 46
+  },
+  {
+   "lemma": "heard",
+   "canonical": "narinig",
+   "lang": "fil",
+   "variants": [
+    "marinig"
+   ],
+   "gloss": "heard",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 12
+  },
+  {
+   "lemma": "heard",
+   "canonical": "heard",
+   "lang": "en",
+   "variants": [],
+   "gloss": "heard",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 16
+  },
+  {
+   "lemma": "news",
+   "canonical": "balita",
+   "lang": "fil",
+   "variants": [
+    "balite"
+   ],
+   "gloss": "news / word that",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 35
+  },
+  {
+   "lemma": "report_v",
+   "canonical": "sumat",
+   "lang": "war",
+   "variants": [
+    "ginsumat",
+    "gindadara"
+   ],
+   "gloss": "to report",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 33
+  },
+  {
+   "lemma": "report_v",
+   "canonical": "nagreport",
+   "lang": "fil",
+   "variants": [
+    "nagrereport",
+    "magreport",
+    "ireport",
+    "nag-report",
+    "nag report"
+   ],
+   "gloss": "to report",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 108
+  },
+  {
+   "lemma": "report_v",
+   "canonical": "report",
+   "lang": "en",
+   "variants": [
+    "reporting"
+   ],
+   "gloss": "to report",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "say",
+   "canonical": "gisulti",
+   "lang": "ceb",
+   "variants": [
+    "gsulti",
+    "ingon",
+    "giingon"
+   ],
+   "gloss": "said / tell",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "say",
+   "canonical": "sabi",
+   "lang": "fil",
+   "variants": [
+    "sabihin"
+   ],
+   "gloss": "said / tell",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 40
+  },
+  {
+   "lemma": "say",
+   "canonical": "said",
+   "lang": "en",
+   "variants": [
+    "told",
+    "says"
+   ],
+   "gloss": "said / tell",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 10
+  },
+  {
+   "lemma": "want_to",
+   "canonical": "gusto",
+   "lang": "fil",
+   "variants": [
+    "gusto ko"
+   ],
+   "gloss": "want to (report)",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 49
+  },
+  {
+   "lemma": "house",
+   "canonical": "balay",
+   "lang": "ceb",
+   "variants": [
+    "balayan",
+    "baláy"
+   ],
+   "gloss": "house/home",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 161
+  },
+  {
+   "lemma": "house",
+   "canonical": "bahay",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "house/home",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 40
+  },
+  {
+   "lemma": "house",
+   "canonical": "house",
+   "lang": "en",
+   "variants": [
+    "home"
+   ],
+   "gloss": "house/home",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 46
+  },
+  {
+   "lemma": "roof",
+   "canonical": "atop",
+   "lang": "war",
+   "variants": [],
+   "gloss": "roof",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 20
+  },
+  {
+   "lemma": "day",
+   "canonical": "adlaw",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "day",
+   "register": "time",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 65
+  },
+  {
+   "lemma": "day",
+   "canonical": "araw",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "day",
+   "register": "time",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 14
+  },
+  {
+   "lemma": "evening",
+   "canonical": "gab-i",
+   "lang": "ceb",
+   "variants": [
+    "gabii",
+    "gabi",
+    "gab i"
+   ],
+   "gloss": "evening",
+   "register": "time",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 90
+  },
+  {
+   "lemma": "morning",
+   "canonical": "buntag",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "morning",
+   "register": "time",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "at_once",
+   "canonical": "dayon",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "at once / immediately",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 179
+  },
+  {
+   "lemma": "at_once",
+   "canonical": "agad",
+   "lang": "fil",
+   "variants": [
+    "kaagad"
+   ],
+   "gloss": "at once / immediately",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "at_once",
+   "canonical": "immediately",
+   "lang": "en",
+   "variants": [
+    "now"
+   ],
+   "gloss": "at once / immediately",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "quick",
+   "canonical": "dali",
+   "lang": "ceb",
+   "variants": [
+    "dail",
+    "dalia"
+   ],
+   "gloss": "quick / hurry",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 346
+  },
+  {
+   "lemma": "quick",
+   "canonical": "dagmit",
+   "lang": "war",
+   "variants": [
+    "dagmita"
+   ],
+   "gloss": "quick / hurry",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 68
+  },
+  {
+   "lemma": "quick",
+   "canonical": "quickly",
+   "lang": "en",
+   "variants": [
+    "quick",
+    "fast",
+    "hurry"
+   ],
+   "gloss": "quick / hurry",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 40
+  },
+  {
+   "lemma": "respond",
+   "canonical": "bilis",
+   "lang": "fil",
+   "variants": [
+    "mabilis"
+   ],
+   "gloss": "respond / come",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 13
+  },
+  {
+   "lemma": "respond",
+   "canonical": "respond",
+   "lang": "en",
+   "variants": [
+    "come"
+   ],
+   "gloss": "respond / come",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": true,
+   "freq": 47
+  },
+  {
+   "lemma": "please",
+   "canonical": "please",
+   "lang": "en",
+   "variants": [],
+   "gloss": "please (courtesy)",
+   "register": "courtesy",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 121
+  },
+  {
+   "lemma": "not",
+   "canonical": "dili",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "not / cannot (negator)",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 69,
+   "negation": true
+  },
+  {
+   "lemma": "busali",
+   "canonical": "busali",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 40
+  },
+  {
+   "lemma": "amyaw",
+   "canonical": "amyaw",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 33
+  },
+  {
+   "lemma": "not",
+   "canonical": "hindi",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "not (negator)",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 33,
+   "negation": true
+  },
+  {
+   "lemma": "kinahanglan",
+   "canonical": "kinahanglan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 29
+  },
+  {
+   "lemma": "need",
+   "canonical": "need",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 25
+  },
+  {
+   "lemma": "ground",
+   "canonical": "ground",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 23
+  },
+  {
+   "lemma": "two",
+   "canonical": "two",
+   "lang": "en",
+   "variants": [],
+   "gloss": "two",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 23
+  },
+  {
+   "lemma": "makita",
+   "canonical": "makita",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 22
+  },
+  {
+   "lemma": "pls",
+   "canonical": "pls",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 22
+  },
+  {
+   "lemma": "incident",
+   "canonical": "incident",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 21
+  },
+  {
+   "lemma": "tungod",
+   "canonical": "tungod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 19
+  },
+  {
+   "lemma": "makina",
+   "canonical": "makina",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 17
+  },
+  {
+   "lemma": "not",
+   "canonical": "not",
+   "lang": "en",
+   "variants": [],
+   "gloss": "not",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 17,
+   "negation": true
+  },
+  {
+   "lemma": "not",
+   "canonical": "cannot",
+   "lang": "en",
+   "variants": [],
+   "gloss": "cannot",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 16,
+   "negation": true
+  },
+  {
+   "lemma": "none",
+   "canonical": "wala",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "none / not present",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 15,
+   "negation": true
+  },
+  {
+   "lemma": "area",
+   "canonical": "area",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 14
+  },
+  {
+   "lemma": "health",
+   "canonical": "health",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 13
+  },
+  {
+   "lemma": "naglalaga",
+   "canonical": "naglalaga",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 13
+  },
+  {
+   "lemma": "katapos",
+   "canonical": "katapos",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 12
+  },
+  {
+   "lemma": "maagian",
+   "canonical": "maagian",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 12
+  },
+  {
+   "lemma": "nagsaka",
+   "canonical": "nagsaka",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 12
+  },
+  {
+   "lemma": "dara",
+   "canonical": "dara",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "magbangon",
+   "canonical": "magbangon",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "makagawas",
+   "canonical": "makagawas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 11
+  },
+  {
+   "lemma": "coming",
+   "canonical": "coming",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 10
+  },
+  {
+   "lemma": "makalihok",
+   "canonical": "makalihok",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 10
+  },
+  {
+   "lemma": "looks",
+   "canonical": "looks",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 9
+  },
+  {
+   "lemma": "vehicular",
+   "canonical": "vehicular",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 9
+  },
+  {
+   "lemma": "commercial",
+   "canonical": "commercial",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "lisod",
+   "canonical": "lisod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "pi",
+   "canonical": "pi",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "tamarindo",
+   "canonical": "tamarindo",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "none",
+   "canonical": "waray",
+   "lang": "war",
+   "variants": [],
+   "gloss": "none / there is none. NOTE: identical to the language name; never read this surface as a language tag",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8,
+   "negation": true
+  },
+  {
+   "lemma": "went",
+   "canonical": "went",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 8
+  },
+  {
+   "lemma": "dispute",
+   "canonical": "dispute",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "domestic",
+   "canonical": "domestic",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "halas",
+   "canonical": "halas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "holding",
+   "canonical": "holding",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "kaso",
+   "canonical": "kaso",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "madaanan",
+   "canonical": "madaanan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "naglilibang",
+   "canonical": "naglilibang",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "sulod",
+   "canonical": "sulod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 7
+  },
+  {
+   "lemma": "nagtataas",
+   "canonical": "nagtataas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "nasusulod",
+   "canonical": "nasusulod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "tuna",
+   "canonical": "tuna",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 6
+  },
+  {
+   "lemma": "butang",
+   "canonical": "butang",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "case",
+   "canonical": "case",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "entering",
+   "canonical": "entering",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "gamit",
+   "canonical": "gamit",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "hawak",
+   "canonical": "hawak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "kaayo",
+   "canonical": "kaayo",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "masabay",
+   "canonical": "masabay",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "nagraradas",
+   "canonical": "nagraradas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 5
+  },
+  {
+   "lemma": "attacked",
+   "canonical": "attacked",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "bungbong",
+   "canonical": "bungbong",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "burning",
+   "canonical": "burning",
+   "lang": "en",
+   "variants": [],
+   "gloss": "is burning",
+   "register": "incident",
+   "incident_concept": "FIRE",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "chest",
+   "canonical": "chest",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "field",
+   "canonical": "field",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "fighting",
+   "canonical": "fighting",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "gave",
+   "canonical": "gave",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "getting",
+   "canonical": "getting",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "ginbunoan",
+   "canonical": "ginbunoan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "hard",
+   "canonical": "hard",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "hika",
+   "canonical": "hika",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "hilanat",
+   "canonical": "hilanat",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "hubak",
+   "canonical": "hubak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "human",
+   "canonical": "human",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "inatake",
+   "canonical": "inatake",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "kabanwaan",
+   "canonical": "kabanwaan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "kailangan",
+   "canonical": "kailangan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "makagalaw",
+   "canonical": "makagalaw",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "manganganak",
+   "canonical": "manganganak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "marami",
+   "canonical": "marami",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "matalim",
+   "canonical": "matalim",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "naghugpa",
+   "canonical": "naghugpa",
+   "lang": "unknown",
+   "variants": [
+    "naghulga"
+   ],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "nagkabungguan",
+   "canonical": "nagkabungguan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "nagliki",
+   "canonical": "nagliki",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "naglisod",
+   "canonical": "naglisod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "nagtago",
+   "canonical": "nagtago",
+   "lang": "unknown",
+   "variants": [
+    "nagtatago"
+   ],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "nangunguna",
+   "canonical": "nangunguna",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "pagpanganak",
+   "canonical": "pagpanganak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "pumapasok",
+   "canonical": "pumapasok",
+   "lang": "unknown",
+   "variants": [
+    "pumasok"
+   ],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "ran",
+   "canonical": "ran",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "rising",
+   "canonical": "rising",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "things",
+   "canonical": "things",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "uma",
+   "canonical": "uma",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 4
+  },
+  {
+   "lemma": "agos",
+   "canonical": "agos",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "badly",
+   "canonical": "badly",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "balacson",
+   "canonical": "balacson",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "banlas",
+   "canonical": "banlas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "binalayan",
+   "canonical": "binalayan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "binongto-an",
+   "canonical": "binongto-an",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "canduhao",
+   "canonical": "canduhao",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "casiawan",
+   "canonical": "casiawan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "children",
+   "canonical": "children",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "cornejo",
+   "canonical": "cornejo",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "dala",
+   "canonical": "dala",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "dalang",
+   "canonical": "dalang",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "dughan",
+   "canonical": "dughan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "east",
+   "canonical": "east",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "entered",
+   "canonical": "entered",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "ermita",
+   "canonical": "ermita",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "esperanza",
+   "canonical": "esperanza",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "gasping",
+   "canonical": "gasping",
+   "lang": "en",
+   "variants": [],
+   "gloss": "labored breathing / gasping",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "gianod",
+   "canonical": "gianod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "gidala",
+   "canonical": "gidala",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "ginkawatan",
+   "canonical": "ginkawatan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "ginpakadto",
+   "canonical": "ginpakadto",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "hait",
+   "canonical": "hait",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "happened",
+   "canonical": "happened",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "having",
+   "canonical": "having",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "hiya",
+   "canonical": "hiya",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "impassable",
+   "canonical": "impassable",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "kahoy",
+   "canonical": "kahoy",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "kansanoc",
+   "canonical": "kansanoc",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "kaumahan",
+   "canonical": "kaumahan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "kawatan",
+   "canonical": "kawatan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "machinery",
+   "canonical": "machinery",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "magtiayon",
+   "canonical": "magtiayon",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "makaahon",
+   "canonical": "makaahon",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "makabuhat",
+   "canonical": "makabuhat",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "mapuyo",
+   "canonical": "mapuyo",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nag-aaway",
+   "canonical": "nag-aaway",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nagsulod",
+   "canonical": "nagsulod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nagtatae",
+   "canonical": "nagtatae",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nahitabo",
+   "canonical": "nahitabo",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nakakain",
+   "canonical": "nakakain",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "nangluya",
+   "canonical": "nangluya",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "natabunan",
+   "canonical": "natabunan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "pale",
+   "canonical": "pale",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "panlugos",
+   "canonical": "panlugos",
+   "lang": "unknown",
+   "variants": [
+    "panglugos"
+   ],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "pinagsamantalahan",
+   "canonical": "pinagsamantalahan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "poblacion",
+   "canonical": "poblacion",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "poisoning",
+   "canonical": "poisoning",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "ps",
+   "canonical": "ps",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "puno",
+   "canonical": "puno",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "running",
+   "canonical": "running",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "sharp",
+   "canonical": "sharp",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "stabbed",
+   "canonical": "stabbed",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "suba",
+   "canonical": "suba",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "sumusuka",
+   "canonical": "sumusuka",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "tinangay",
+   "canonical": "tinangay",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "viga",
+   "canonical": "viga",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "worksite",
+   "canonical": "worksite",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 3
+  },
+  {
+   "lemma": "ahas",
+   "canonical": "ahas",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "asthma",
+   "canonical": "asthma",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "attack",
+   "canonical": "attack",
+   "lang": "en",
+   "variants": [],
+   "gloss": "heart/asthma attack",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "babayeng",
+   "canonical": "babayeng",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "bitten",
+   "canonical": "bitten",
+   "lang": "en",
+   "variants": [],
+   "gloss": "bitten (animal)",
+   "register": "incident",
+   "incident_concept": "MEDICAL",
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "bumagsak",
+   "canonical": "bumagsak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "bundok",
+   "canonical": "bundok",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "bungtod",
+   "canonical": "bungtod",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "buried",
+   "canonical": "buried",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "casibang",
+   "canonical": "casibang",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "comfortable",
+   "canonical": "comfortable",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "damuhan",
+   "canonical": "damuhan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "following",
+   "canonical": "following",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "foot",
+   "canonical": "foot",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "gi-atake",
+   "canonical": "gi-atake",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "hirap",
+   "canonical": "hirap",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "hitting",
+   "canonical": "hitting",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "inside",
+   "canonical": "inside",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "keeps",
+   "canonical": "keeps",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "lagnat",
+   "canonical": "lagnat",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "magnanakaw",
+   "canonical": "magnanakaw",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "maraming",
+   "canonical": "maraming",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "maraot",
+   "canonical": "maraot",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "mig",
+   "canonical": "mig",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "mokaon",
+   "canonical": "mokaon",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nag-aatake",
+   "canonical": "nag-aatake",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "naghulog",
+   "canonical": "naghulog",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nagkatumba",
+   "canonical": "nagkatumba",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nagkukuptan",
+   "canonical": "nagkukuptan",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nangabuak",
+   "canonical": "nangabuak",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nauyog",
+   "canonical": "nauyog",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nawawalang",
+   "canonical": "nawawalang",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "nawong",
+   "canonical": "nawong",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "padad-i",
+   "canonical": "padad-i",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "pagkaon",
+   "canonical": "pagkaon",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "puti",
+   "canonical": "puti",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "rape",
+   "canonical": "rape",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "roof",
+   "canonical": "roof",
+   "lang": "en",
+   "variants": [],
+   "gloss": "roof",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "saba",
+   "canonical": "saba",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "sagbot",
+   "canonical": "sagbot",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "screaming",
+   "canonical": "screaming",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "spreading",
+   "canonical": "spreading",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "swelling",
+   "canonical": "swelling",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "taken",
+   "canonical": "taken",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "taong",
+   "canonical": "taong",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "tore",
+   "canonical": "tore",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "tree",
+   "canonical": "tree",
+   "lang": "unknown",
+   "variants": [],
+   "gloss": "",
+   "register": "uncurated",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "dataset",
+   "verified": false,
+   "freq": 2
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "giabuso",
+   "lang": "ceb",
+   "variants": [
+    "gi-abuso"
+   ],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "gipasiparahan",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "gin-aabuso",
+   "lang": "war",
+   "variants": [],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "ginpasiparahan",
+   "lang": "war",
+   "variants": [],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "abuse",
+   "canonical": "inabuso",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "hurting / abuse",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "collision",
+   "canonical": "nagkabungguanay",
+   "lang": "ceb",
+   "variants": [
+    "nakabungguanay"
+   ],
+   "gloss": "collision / crash",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "collision",
+   "canonical": "nagkasagian",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "collision / crash",
+   "register": "incident",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "corner",
+   "canonical": "corner",
+   "lang": "en",
+   "variants": [],
+   "gloss": "street corner",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "alarm",
+   "canonical": "oh my god",
+   "lang": "en",
+   "variants": [],
+   "gloss": "exclamation of alarm",
+   "register": "filler",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "creek",
+   "canonical": "ilog",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "creek / river",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "creek",
+   "canonical": "river",
+   "lang": "en",
+   "variants": [],
+   "gloss": "creek / river",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "crying",
+   "canonical": "umiiyak",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "crying / wailing",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "fight",
+   "canonical": "nagbiraay",
+   "lang": "war",
+   "variants": [
+    "nagbibiraay"
+   ],
+   "gloss": "fight / brawl",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "fight",
+   "canonical": "nagbinunalay",
+   "lang": "war",
+   "variants": [],
+   "gloss": "fight / brawl",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "from",
+   "canonical": "gikan",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "from (origin phrase)",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "harass",
+   "canonical": "threaten",
+   "lang": "en",
+   "variants": [
+    "threatening"
+   ],
+   "gloss": "threaten / harass",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "height",
+   "canonical": "height",
+   "lang": "en",
+   "variants": [],
+   "gloss": "height / from above",
+   "register": "descriptor",
+   "incident_concept": "ACCIDENT",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "many",
+   "canonical": "daghan",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "many / a lot",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "many",
+   "canonical": "dami",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "many / a lot",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "many",
+   "canonical": "a lot",
+   "lang": "en",
+   "variants": [],
+   "gloss": "many / a lot",
+   "register": "quantity",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "basi",
+   "lang": "war",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "basin",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "tingali",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "maybe",
+   "canonical": "baka",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "maybe / not sure",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "morning",
+   "canonical": "aga",
+   "lang": "war",
+   "variants": [],
+   "gloss": "morning",
+   "register": "time",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "neighbor",
+   "canonical": "kapitbahay",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "neighbor",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "offspring",
+   "canonical": "daughter",
+   "lang": "en",
+   "variants": [],
+   "gloss": "son/daughter",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "please_come",
+   "canonical": "pakiadto",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "please come here",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "please_come",
+   "canonical": "pakipuntahan",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "please come here",
+   "register": "help",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "police",
+   "canonical": "police",
+   "lang": "en",
+   "variants": [],
+   "gloss": "police",
+   "register": "occupation",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "punching",
+   "canonical": "nagsusumbagay",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "fistfight",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "rain",
+   "canonical": "nagbunok",
+   "lang": "war",
+   "variants": [],
+   "gloss": "rain",
+   "register": "object",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "report_v",
+   "canonical": "gisumat",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "to report",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "respond",
+   "canonical": "send help",
+   "lang": "en",
+   "variants": [],
+   "gloss": "respond / come",
+   "register": "urgency",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "road",
+   "canonical": "kalsada",
+   "lang": "fil",
+   "variants": [
+    "kalye"
+   ],
+   "gloss": "road / street",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "road",
+   "canonical": "road",
+   "lang": "en",
+   "variants": [
+    "highway",
+    "street"
+   ],
+   "gloss": "road / street",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "road",
+   "canonical": "daan",
+   "lang": "war",
+   "variants": [],
+   "gloss": "road / street",
+   "register": "place_marker",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "roof",
+   "canonical": "bubong",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "roof",
+   "register": "structure",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "sea",
+   "canonical": "sea",
+   "lang": "en",
+   "variants": [],
+   "gloss": "sea",
+   "register": "object",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "severe",
+   "canonical": "seryoso",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "severe / intense",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "shoot",
+   "canonical": "gipusil",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "shoot / gun",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "shouting",
+   "canonical": "sigaw",
+   "lang": "fil",
+   "variants": [
+    "sumisigaw"
+   ],
+   "gloss": "shouting (distress)",
+   "register": "incident",
+   "incident_concept": "CRIME",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "spouse",
+   "canonical": "asawa",
+   "lang": "fil",
+   "variants": [],
+   "gloss": "husband/wife",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "spouse",
+   "canonical": "wife",
+   "lang": "en",
+   "variants": [],
+   "gloss": "husband/wife",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "spouse",
+   "canonical": "spouse",
+   "lang": "en",
+   "variants": [],
+   "gloss": "husband/wife",
+   "register": "person",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "storm_surge",
+   "canonical": "dagko nga balod",
+   "lang": "ceb",
+   "variants": [],
+   "gloss": "storm surge",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "STORM_SURGE",
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "strong",
+   "canonical": "kusog",
+   "lang": "ceb",
+   "variants": [
+    "makusog"
+   ],
+   "gloss": "strong / loud",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "sure",
+   "canonical": "sure",
+   "lang": "en",
+   "variants": [],
+   "gloss": "sure / certain",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "tricycle",
+   "canonical": "traysikel",
+   "lang": "fil",
+   "variants": [
+    "traysikol"
+   ],
+   "gloss": "tricycle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "typhoon",
+   "canonical": "tropical storm",
+   "lang": "en",
+   "variants": [],
+   "gloss": "typhoon / storm",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "TYPHOON",
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "flood",
+   "canonical": "flash flood",
+   "lang": "en",
+   "variants": [
+    "flashflood"
+   ],
+   "gloss": "flood",
+   "register": "incident",
+   "incident_concept": "NATURAL_HAZARD",
+   "hazard_subtype": "FLOOD",
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "motorcycle",
+   "canonical": "motorcycle",
+   "lang": "en",
+   "variants": [
+    "motorcycles"
+   ],
+   "gloss": "motorcycle",
+   "register": "object",
+   "incident_concept": "VEHICULAR_ACCIDENT",
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "report_v",
+   "canonical": "gireport",
+   "lang": "ceb",
+   "variants": [
+    "mureport"
+   ],
+   "gloss": "to report",
+   "register": "report_frame",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "split",
+   "verified": false,
+   "freq": 0
+  },
+  {
+   "lemma": "do_not",
+   "canonical": "ayaw",
+   "lang": "ceb",
+   "variants": [
+    "ayaw'g",
+    "ayawg"
+   ],
+   "gloss": "do not (prohibitive)",
+   "register": "descriptor",
+   "incident_concept": null,
+   "hazard_subtype": null,
+   "source": "seed",
+   "verified": false,
+   "freq": 0,
+   "negation": true
+  }
+ ],
+ "phrases": [
+  {
+   "canonical": "naay",
+   "variants": [
+    "na ay",
+    "naa ay",
+    "naa y"
+   ],
+   "lemma": "there_is",
+   "gloss": "there is / has",
+   "lang": "ceb",
+   "type": "segmentation"
+  },
+  {
+   "canonical": "namo og",
+   "variants": [
+    "namog"
+   ],
+   "lemma": "for_us",
+   "gloss": "for/of us",
+   "lang": "ceb",
+   "type": "segmentation"
+  }
+ ],
+ "locations": [
+  {
+   "canonical": "San Roque",
+   "variants": [
+    "san roque"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "San Isidro",
+   "variants": [
+    "san isidro"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Burabod",
+   "variants": [
+    "burabod"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Sanggalang",
+   "variants": [
+    "sanggalang",
+    "sangalang"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Julita",
+   "variants": [
+    "julita"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Caraycaray",
+   "variants": [
+    "caray-caray",
+    "caraycaray",
+    "karay-karay"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": true
+  },
+  {
+   "canonical": "Larrazabal",
+   "variants": [
+    "larrazabal",
+    "larazabal"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Padre Inocentes",
+   "variants": [
+    "padre inocentes"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Villa Enage",
+   "variants": [
+    "villa enage"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Balaquid",
+   "variants": [
+    "balaquid",
+    "balakid"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Catmon",
+   "variants": [
+    "catmon"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Libertad",
+   "variants": [
+    "libertad"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Tabunan",
+   "variants": [
+    "tabunan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Lucsoon",
+   "variants": [
+    "lucsoon",
+    "luksoon"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Iyusan",
+   "variants": [
+    "iyusan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Sambawan Island",
+   "variants": [
+    "sambawan island",
+    "sambawan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Naval",
+   "variants": [
+    "nabal"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Garcia",
+   "variants": [
+    "garcia"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Pinangumhan",
+   "variants": [
+    "pinangumhan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Tibaan",
+   "variants": [
+    "tibaan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Atipolo",
+   "variants": [
+    "atipolo"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Tucdao",
+   "variants": [
+    "tucdao"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Hugpa",
+   "variants": [
+    "hugpa"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Agpangi",
+   "variants": [
+    "agpangi"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Kawayanon",
+   "variants": [
+    "kawayanon"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Sampao",
+   "variants": [
+    "sampao"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Cabibihan",
+   "variants": [
+    "cabibihan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Jamorawon",
+   "variants": [
+    "jamorawon"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Villa Caneja",
+   "variants": [
+    "villa caneja"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Madao",
+   "variants": [
+    "madao"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Ungale",
+   "variants": [
+    "ungale"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Anislagan",
+   "variants": [
+    "anislagan"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Manlabang",
+   "variants": [
+    "manlabang"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Ol-og",
+   "variants": [
+    "ol-og",
+    "olog"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Bulalaco",
+   "variants": [
+    "bulalaco"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Pinanihagon",
+   "variants": [
+    "pinanihagon"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Talahid",
+   "variants": [
+    "talahid"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Calumpang",
+   "variants": [
+    "calumpang"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Uson",
+   "variants": [
+    "uson"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  },
+  {
+   "canonical": "Agutay",
+   "variants": [
+    "agutay"
+   ],
+   "type": "place",
+   "preserve": true,
+   "source": "dataset",
+   "verified": false
+  }
+ ]
+}

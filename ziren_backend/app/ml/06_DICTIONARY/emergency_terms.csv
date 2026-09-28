@@ -1,0 +1,64 @@
+term,language,normalized_term,incident_type_hint,notes
+sunog,waray,fire,FIRE,Direct category word - counts toward has_category_keyword
+kalayo,waray,fire,FIRE,Flame
+nagkakalayo,waray,fire,FIRE,Actively burning - symptom phrasing
+aso,waray,smoke,FIRE,Smoke; see hard case H3
+kalayo,cebuano,fire,FIRE,
+nagkalayo,cebuano,fire,FIRE,
+sunog,tagalog,fire,FIRE,
+usok,tagalog,smoke,FIRE,
+nabangga,waray,collision,VEHICULAR_ACCIDENT,
+banggaan,tagalog,collision,VEHICULAR_ACCIDENT,
+aksidente,tagalog,accident,VEHICULAR_ACCIDENT,Caller may misuse - label what is described
+naanod,waray,swept away,RESCUE,Flood-related; see hard case H4
+nalumos,tagalog,drowning,RESCUE,
+baha,tagalog,flood,NATURAL_HAZARD,
+tubig,waray,water,NATURAL_HAZARD,Ambiguous alone - needs context
+linog,waray,earthquake,NATURAL_HAZARD,
+tabang,waray,help,,Distress marker - no category signal
+tulong,tagalog,help,,Distress marker - no category signal
+nagdurugo,waray,bleeding,MEDICAL_EMERGENCY,
+sugatan,tagalog,injured,MEDICAL_EMERGENCY,
+ginbunoan,waray,stabbed,CRIME_SECURITY,
+nakawan,tagalog,robbed,CRIME_SECURITY,
+disgraya,cebuano,accident,VEHICULAR_ACCIDENT,Cebuano for mishap/accident
+disgrasya,tagalog,accident,VEHICULAR_ACCIDENT,
+banggaay,cebuano,collision,VEHICULAR_ACCIDENT,Variant of banggaan
+bali,cebuano,fracture,,"Broken bone - injury signal, not a category word"
+nabalian,cebuano,fracture,,Sustained a fracture
+napiang,waray,fracture,,
+samad,cebuano,wound,,
+nasamad,cebuano,wounded,,
+tiil,cebuano,foot/leg,,Body part - pairs with bali
+siki,waray,foot/leg,,
+bukton,cebuano,arm,,
+napilay,tagalog,sprained,,
+nasamdan,waray,injured,,Valid Waray - do not rewrite to Cebuano nasamad
+nagkabanggaay,cebuano,collided,VEHICULAR_ACCIDENT,
+nabungguan,cebuano,struck,VEHICULAR_ACCIDENT,
+nagdidilaab,waray,blazing,FIRE,
+nagdilaab,cebuano,blazing,FIRE,
+nakuryente,cebuano,electrocuted,ACCIDENT,
+naipit,cebuano,trapped,,Entrapment signal
+natabunan,cebuano,buried,,Entrapment signal
+makagawas,cebuano,get out,,Used in negation for entrapment
+sundang,waray,bladed weapon,CRIME,
+kutsilyo,tagalog,knife,CRIME,
+natumba,cebuano,collapsed,MEDICAL,
+nagkukuptan,waray,clutching,MEDICAL,
+luspad,cebuano,pale,MEDICAL,
+nasulod,waray,entered,,Water entering a structure
+tabangi,cebuano,help me,,Distress marker
+nahiloan,waray,poisoned,MEDICAL,
+nalason,tagalog,poisoned,MEDICAL,
+hilo,waray,poison,MEDICAL,
+lason,tagalog,poison,MEDICAL,
+nagsusuka,waray,vomiting,MEDICAL,
+nagsuka,cebuano,vomited,MEDICAL,
+naglilibang,waray,diarrhoea,MEDICAL,
+nagtatae,tagalog,diarrhoea,MEDICAL,
+kinhason,cebuano,shellfish,,Common vector in local poisoning cases
+masabay,waray,leaf oyster,,Shellfish implicated in local poisoning cases
+lindol,tagalog,earthquake,NATURAL_HAZARD,
+nag-uyog,waray,shook,NATURAL_HAZARD,
+yumanig,tagalog,shook,NATURAL_HAZARD,

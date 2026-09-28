@@ -1,0 +1,133 @@
+{
+  "agency_type": "BFP",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "rule_id": "BFP-001",
+      "description": "Structure fire with confirmed fatalities",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "dead_count_gte": 1
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — rule encodes dispatch practice for fires with confirmed deaths (immediate multi-unit response, MDRRMO coordination for mass casualty). Placeholder threshold: dead_count >= 1.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-002",
+      "description": "Structure fire with confirmed injuries (no fatalities)",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "casualty_mentioned": true,
+        "injured_count_gte": 1
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — rule encodes minimum response level when injuries are confirmed in a structure fire. Placeholder: any injured_count >= 1 triggers critical.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-003",
+      "description": "Structure fire, actively spreading, no confirmed casualties",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "fire_type_in": ["structural", "residential"],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — rule encodes response level for spreading fires without confirmed casualties. fire_type values ('structural','residential') are placeholders pending final fire_type vocabulary from BFP interviews.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-004",
+      "description": "HAZMAT incident with fire component",
+      "conditions": {
+        "incident_type_in": ["hazmat", "fire"],
+        "multi_agency_needed": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — HAZMAT+fire typically requires BFP lead with MDRRMO evacuation support. multi_agency_needed flag is set by wizard overlap step. Confirm escalation protocol with BFP.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-005",
+      "description": "Vehicle fire (non-structural)",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "fire_type_in": ["vehicle"],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — vehicle fires without casualties. Placeholder severity=high; confirm whether BFP differentiates vehicle vs. structure fire response levels.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-006",
+      "description": "Vehicle fire with injuries",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "fire_type_in": ["vehicle"],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — vehicle fire with trapped/injured occupants. Placeholder severity=critical; confirm entrapment response protocol.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-007",
+      "description": "Wildfire / grass fire near residential area",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "fire_type_in": ["grass", "wildfire"],
+        "structure_type_in": ["residential_area", "barangay"]
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — grass/wildfire near housing. fire_type and structure_type values are placeholders; confirm BFP vocabulary for these incident subtypes.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-008",
+      "description": "Grass fire, remote location, no structures threatened",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "fire_type_in": ["grass", "wildfire"],
+        "structure_type_in": ["open_field", "forest"]
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — open-field or forest fire without immediate structure threat. Placeholder severity=medium. Confirm with BFP whether MDRRMO is co-dispatched for large grass fires.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-009",
+      "description": "Fire report, type unspecified, no other escalating signals",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "casualty_mentioned": false,
+        "multi_agency_needed": false
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — catch-all for fire reports with no detail. Placeholder severity=medium (conservative, not low, because fire is inherently time-sensitive). Confirm minimum default response level with BFP.",
+      "active": true
+    },
+    {
+      "rule_id": "BFP-010",
+      "description": "Fire report with children mentioned as present or at-risk",
+      "conditions": {
+        "incident_type_in": ["fire"],
+        "children_involved": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "BFP",
+      "provenance": "TODO: cite BFP field interview date/station — children present at a fire scene is a universal escalating factor in dispatch triage. Confirm whether this matches BFP's own CAP weighting.",
+      "active": true
+    }
+  ]
+}

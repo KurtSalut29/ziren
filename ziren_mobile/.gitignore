@@ -1,0 +1,76 @@
+# ============================================================
+# ziren_mobile — Flutter .gitignore
+# ============================================================
+
+# ----- Secrets & environment variables (NEVER commit these) -----
+.env
+.env.*
+!.env.example
+*.env
+dart_defines.json
+google-services.json
+GoogleService-Info.plist
+*.pem
+*.key
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# JVM crash artefacts from Gradle.
+#
+# `flutter build apk` on this machine has run the Dart frontend out of memory
+# more than once ("allocation.cc: 30: error: Out of memory"), and the JVM
+# writes a full heap dump beside the build when it does. android/ already has
+# one at 1.4 GB. Ignored rather than deleted here — a heap dump is diagnostic
+# evidence, and whether to keep it is the developer's call, not a build file's.
+*.hprof
+hs_err_pid*.log
+replay_pid*.log
+
+# `flutter test` writes master/test/diff images here for any golden that
+# fails, so a developer can see why — regenerated on every failing run and
+# never itself a fixture.
+test/failures/

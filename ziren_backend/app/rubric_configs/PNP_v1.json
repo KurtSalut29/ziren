@@ -1,0 +1,202 @@
+{
+  "agency_type": "PNP",
+  "version": "2.0.0",
+  "rules": [
+    {
+      "rule_id": "PNP-001",
+      "description": "Weapon present with confirmed fatality",
+      "conditions": {
+        "weapon_mentioned": true,
+        "dead_count_gte": 1
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — armed incident with confirmed death. Placeholder: any dead_count >= 1 with weapon = critical. Confirm whether specific weapon types (firearm vs. bladed) change the response level.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-002",
+      "description": "Weapon (firearm) present with injuries",
+      "conditions": {
+        "weapon_mentioned": true,
+        "weapon_type_in": [
+          "firearm",
+          "baril",
+          "gun",
+          "pistol",
+          "rifle"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — firearm discharge with injured party. weapon_type values are placeholder vocabulary; confirm PNP's actual signal vocabulary from the NLP team or from interviews. Per PNP field interview pattern: firearms + casualty = immediate critical.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-003",
+      "description": "Weapon (bladed) present with injuries",
+      "conditions": {
+        "weapon_mentioned": true,
+        "weapon_type_in": [
+          "knife",
+          "bolo",
+          "itak",
+          "bladed",
+          "sundang"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — bladed weapon + injury. Placeholder severity=high (vs. critical for firearm). Confirm whether PNP differentiates bladed vs. firearm response level or treats all weapon+injury as critical.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-004",
+      "description": "Weapon mentioned, no confirmed injury",
+      "conditions": {
+        "weapon_mentioned": true,
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — armed individual reported, no injury yet. Placeholder severity=high (preventive response). Confirm whether threat-level reporting differs between PNP Cabucgayan and PNP Naval interviews.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-005",
+      "description": "Domestic dispute with weapon and children involved",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "domestic_dispute"
+        ],
+        "weapon_mentioned": true,
+        "children_involved": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — domestic violence with weapon + children. Child safety is a universal escalating factor. Confirm PNP protocol for coordinating with DSWD in these cases (may affect recommended_agency).",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-006",
+      "description": "Domestic dispute with confirmed injury, no weapon",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "domestic_dispute"
+        ],
+        "casualty_mentioned": true,
+        "weapon_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — domestic violence + injury, no weapon reported. Placeholder severity=high. Confirm PNP Culaba and Cabucgayan practice for unarmed DV with injuries.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-007",
+      "description": "Domestic dispute, no injury, no weapon",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "domestic_dispute"
+        ],
+        "casualty_mentioned": false,
+        "weapon_mentioned": false
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — reported domestic dispute with no injury or weapon. Placeholder severity=medium. Confirm whether PNP treats non-injury DV reports as medium or low.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-008",
+      "description": "Crime in progress (robbery, assault) with injuries",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "crime"
+        ],
+        "why_category_in": [
+          "robbery",
+          "assault",
+          "holdup",
+          "pangingikil"
+        ],
+        "casualty_mentioned": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — active crime with injured victim. why_category values are placeholder vocabulary. Confirm NLP signal vocabulary for crime type with the Phase 4 team.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-009",
+      "description": "Crime in progress, no injury",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "crime"
+        ],
+        "why_category_in": [
+          "robbery",
+          "assault",
+          "holdup",
+          "pangingikil"
+        ],
+        "casualty_mentioned": false
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — active crime, no injury yet. Placeholder severity=high. Confirm whether PNP differentiates 'in progress' vs. 'after the fact' in their dispatch priority.",
+      "active": true
+    },
+    {
+      "rule_id": "PNP-010",
+      "description": "Missing person: child — RETIRED in taxonomy v2.0 — the 'missing_person' incident category was merged out when the Phase 4 triage model was integrated (the model has no class for it), so this rule's incident_type condition can no longer match. Kept inactive rather than deleted: past evaluations reference this rule_id. Reactivate if 'missing_person' is ever restored as a category.",
+      "conditions": {
+        "incident_type_in": [
+          "missing_person"
+        ],
+        "children_involved": true
+      },
+      "severity_contribution": "high",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — missing child is a higher-priority missing person case per standard PNP protocol (CIDG involvement threshold). Confirm whether naval station differentiates missing child vs. missing adult response.",
+      "active": false
+    },
+    {
+      "rule_id": "PNP-011",
+      "description": "Missing person: adult — RETIRED in taxonomy v2.0 — the 'missing_person' incident category was merged out when the Phase 4 triage model was integrated (the model has no class for it), so this rule's incident_type condition can no longer match. Kept inactive rather than deleted: past evaluations reference this rule_id. Reactivate if 'missing_person' is ever restored as a category.",
+      "conditions": {
+        "incident_type_in": [
+          "missing_person"
+        ],
+        "children_involved": false
+      },
+      "severity_contribution": "medium",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — missing adult. Placeholder severity=medium. Confirm PNP minimum reporting period before a missing adult becomes a high-priority case.",
+      "active": false
+    },
+    {
+      "rule_id": "PNP-012",
+      "description": "Crowd disorder / public disturbance with weapons",
+      "conditions": {
+        "incident_type_in": [
+          "domestic_dispute_crime",
+          "crime"
+        ],
+        "weapon_mentioned": true,
+        "multi_agency_needed": true
+      },
+      "severity_contribution": "critical",
+      "recommended_agency": "PNP",
+      "provenance": "TODO: cite PNP field interview date/station — mass disturbance with weapons. multi_agency_needed is set by the Resident's overlap step. Confirm whether this triggers MDRRMO or BFP co-dispatch in PNP practice.",
+      "active": true
+    }
+  ]
+}

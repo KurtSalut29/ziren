@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+.env
+.env.bak.*
+*.log
+ngrok.exe
+ngrok.err.log
+ngrok.out.log
+cloudflared.exe
+uvicorn.out.log
+uvicorn.err.log
+ziren_dashboard/
+app/ml/asr_models/

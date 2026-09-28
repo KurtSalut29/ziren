@@ -1,0 +1,25 @@
+# Localisation config for `flutter gen-l10n`, run automatically because
+# pubspec.yaml sets `flutter: generate: true`.
+#
+# Template is app_en.arb: English is the language every string is authored in
+# first, so a missing translation falls back to something readable rather than
+# to a key name.
+#
+# Only en and fil are shipped. The Settings picker used to offer Bisaya and
+# Waray as well and none of the four did anything — the preference was saved
+# to the backend and never read. Waray in particular is the language of
+# Biliran and belongs here, but machine-drafted Waray in an emergency app is
+# not safe to ship: a wrong word in "may naipit ha sulod" is not a typo, it is
+# a misread emergency. Those two return when a native speaker has reviewed
+# them. See docs/DEMO_SCRIPT.md and the backend's preferred_language validator.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+
+# Generate into lib/l10n/ instead of the synthetic `package:flutter_gen`.
+# The synthetic package is deprecated, and having the generated Dart next to
+# the .arb files means the imports are ordinary relative ones and the output
+# is visible in review rather than hidden in .dart_tool.
+synthetic-package: false

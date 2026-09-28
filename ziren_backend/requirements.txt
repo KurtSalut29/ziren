@@ -1,0 +1,77 @@
+# ============================================================
+# ziren_backend — Python dependencies (pinned versions)
+# ============================================================
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+
+# Settings / env management
+pydantic-settings==2.7.0
+pydantic[email]==2.11.7
+python-dotenv==1.0.1
+email-validator==2.2.0
+
+# Supabase client
+supabase==2.11.0
+
+# Auth / security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.20
+
+# HTTP client (for external calls: Claude API)
+httpx==0.28.1
+
+# Rate limiting
+slowapi==0.1.9
+
+# Geospatial (PostGIS queries)
+shapely==2.0.6
+geoalchemy2==0.16.0
+psycopg2-binary==2.9.10
+
+# NLP pipeline (Phase 4) — the Ziren triage model
+# These MUST match the versions the model in app/ml/07_MODELS was trained
+# with (see app/ml/VERSION). A mismatch still unpickles and still passes
+# startup — it only fails later, inside predict_proba, on a real report.
+# triage_service.load() runs a smoke prediction to catch that at startup.
+scikit-learn==1.9.0
+joblib==1.5.3
+
+# predict.py's normalise() fuzzy-matches unrecognised words against the
+# emergency vocabulary, importing rapidfuzz inside a try/except ImportError
+# that silently passes. Pinned here so that swallow can never be what decides
+# the behaviour — off by accident and off by decision are indistinguishable in
+# production and are not the same thing.
+#
+# The fuzzy pass itself is DISABLED. Measured on the release's own test split,
+# it downgrades severity more often than it raises it — see the note on
+# triage_service.FUZZY_NORMALISATION for the numbers.
+rapidfuzz==3.14.1
+
+# Speech-to-text for the resident's voice note (optional).
+#
+# Optional on purpose. transcription_service treats a missing engine as a
+# supported state, so a deployment that does not want to carry model weights
+# can leave ASR_ENGINE empty and drop this line. CTranslate2 runs on CPU and
+# does not pull torch.
+#
+# Whisper's languages include Tagalog but NOT Cebuano or Waray. On Waray it
+# returns confident Tagalog rather than failing, which is why it is a baseline
+# here and not an answer — see tools/measure_asr.py.
+faster-whisper==1.2.1
+
+# Logging (structured, no PII)
+structlog==25.1.0
+
+# Reports & Export (Super Admin plan) — CSV uses the stdlib csv module,
+# these two cover Excel and PDF generation. Both install with prebuilt
+# wheels on Windows/Linux, no C compiler required.
+openpyxl==3.1.5
+reportlab==4.2.5
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.3
+httpx==0.28.1

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ZirenTokens.surfaceBase — light theme -->
+    <color name="zirenBackground">#FAFAFA</color>
+    <color name="zirenBackgroundWhite">#FFFFFF</color>
+</resources>

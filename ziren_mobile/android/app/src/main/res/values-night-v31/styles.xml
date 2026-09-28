@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Same treatment in dark mode, and deliberately identical to values-v31.
+
+    Ziren runs themeMode.light, so the app is a light surface whatever the
+    device is set to. Letting the launch screen go dark would flash black and
+    then hand over to a white app — and the mark's neutral ink is near-black,
+    so it would be close to invisible for that moment.
+
+    values-night/styles.xml already makes the same choice for older devices;
+    this file exists because a -night qualifier outranks a -v31 one, so
+    without it a device in dark mode on Android 12+ would fall back to
+    values-night and lose the splash icon fix.
+-->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/zirenBackground</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ziren_splash_mark</item>
+        <item name="android:windowBackground">@color/zirenBackground</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">@color/zirenBackground</item>
+    </style>
+</resources>

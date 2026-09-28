@@ -1,0 +1,1322 @@
+@import "tailwindcss";
+@import "tw-animate-css";        /* shadcn registry components */
+@import "shadcn/tailwind.css";  /* shadcn registry components */
+
+/* Dark mode uses the `class` strategy — `.dark` is set on <html> by the
+   inline bootstrap script in app/layout.tsx before first paint. Tailwind v4
+   has no `darkMode` config key; the variant is declared here instead. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   Ziren Design Tokens — Dashboard (Next.js / Tailwind)
+   Light is the default theme; dark is a supported variant.
+   Single source of truth for the web surface.
+
+   Keep in sync with:
+     ziren_mobile/lib/shared/theme/app_tokens.dart
+     (EXCEPTION: --font-sans. The dashboard moved to Inter on
+      2026-08-08 — see the typography note below. Mobile keeps
+      its own face; the two surfaces intentionally diverge.)
+
+   COLOR RULES (hard — do not override silently):
+   - brand (#FC5A05) = CTAs, active nav, primary actions ONLY.
+     Never for severity or generic errors.
+   - Red reserved strictly for severityCritical — using it for
+     errors or branding destroys its emergency-signal meaning.
+     This is why negative KPI deltas use amber, not red: a red
+     pixel anywhere on this dashboard means "critical incident"
+     and nothing else.
+   - Severity scale = 4 tiers, always icon + label (a11y).
+   - Workflow status = separate from severity.
+   - Agency colors = BFP/PNP/MDRRMO locked hues.
+   - aiSuggested purple = machine output ONLY.
+
+   HOW DARK MODE WORKS HERE:
+   Every component in this codebase reads colors through arbitrary
+   values — bg-[var(--color-surface-card)] — never through theme-
+   generated utilities. So the dark theme is implemented purely by
+   re-pointing these custom properties under `.dark` further down
+   this file. No component needs a `dark:` variant to follow.
+   ============================================================ */
+
+@theme inline {
+
+  /* ── Brand / Primary ─────────────────────────────────── */
+  --color-brand:            #FC5A05;
+  --color-brand-dim:        #E04E04;   /* hover / pressed       */
+  --color-brand-active:     #C94600;   /* active nav / selected state */
+  --color-brand-subtle:     #FFF0E8;   /* tinted surface        */
+  --color-brand-container:  #FFE4D0;   /* banner / card tint    */
+
+  /* ── Active navigation ───────────────────────────────── */
+  /* The colour rule above reserves brand orange for CTAs and active
+     nav, and the sidebar was spending only the grey hover fill on it —
+     so the page you are on looked exactly like the row under the
+     cursor. These two tokens are what makes "you are here" a different
+     statement from "you are hovering", and they are separate from the
+     shared brand tints because a nav row sits on --color-sidebar,
+     not on a card, and needs its own step to read at the same weight
+     in both themes.
+
+     Text on an active row stays a text token; the tint and the icon
+     carry the hue. That is the same rule the charts follow, and it is
+     what keeps 13.5px nav labels above 4.5:1 — brand orange on its own
+     tint does not clear that floor at this size. */
+  --color-nav-active-bg:    #FFE8DA;   /* 14.8:1 under text-primary  */
+  --color-nav-active-icon:  #C94600;   /*  4.1:1 on the tint above   */
+
+  /* ── Surfaces (light) ────────────────────────────────── */
+  /* Off-white restyle (original Super Admin plan, later repointed to
+     Provincial Admin; spec Section 17): the previous
+     values were literal #FFFFFF for every "white" surface (card, overlay,
+     frame) against a barely-different #FAFAFA page background — visually
+     harsh over a long shift, per the spec's own framing. Warmed and
+     stepped very slightly (a handful of luminance points, a touch of warm
+     hue) rather than redesigned: this is still unmistakably "light mode",
+     just not clinical white. Severity/status/agency tokens below this
+     block are completely untouched — those are read as safety signals,
+     not style, and are out of scope for this change.
+     Text colors (--color-text-primary etc., below) are also left as they
+     were: #1A1A1A already reads as dark gray rather than pure black, and
+     their contrast ratios are measured and commented — changing them
+     without re-measuring would be a real accessibility risk for a cosmetic
+     gain the spec didn't actually ask for on the text side. */
+  --color-surface-base:     #F7F6F3;   /* page background       */
+  --color-surface-card:     #FDFCFA;   /* card / panel          */
+  --color-surface-raised:   #F0EEEA;   /* input fill, sections  */
+  --color-surface-overlay:  #FDFCFA;   /* modal / sheet         */
+  --color-surface-border:   #E4E1D9;   /* dividers, outlines    */
+
+  /* ── App-frame surfaces (2026-08-08 restyle) ─────────── */
+  /* The shell is a rounded frame floating on a darker backdrop.
+     That needs two surfaces the old flat layout never had:
+     the backdrop (canvas) and the frame interior (frame).      */
+  --color-canvas:           #EFEDE8;   /* backdrop behind the frame  */
+  --color-frame:            #FDFCFA;   /* frame interior             */
+  /* NOT a literal, unlike its neighbours. `@theme inline` substitutes a
+     literal straight into the generated utility, so `--color-sidebar: #FAFAFA`
+     compiled to `.bg-sidebar { background-color: #FAFAFA }` — a hardcoded
+     light value no `.dark` rule could reach. Ziren's own components were
+     immune because they read `bg-[var(--color-sidebar)]`, but the shadcn
+     sidebar uses the generated `bg-sidebar`, and `variant="inset"` paints the
+     ground behind the entire app with it. Result: a white frame in dark mode.
+
+     Pointing at a var() makes the utility compile to `var(--sidebar)`, which
+     the theme CAN re-point. The value now lives in :root/.dark at the bottom
+     of this file. Any future colour consumed by a generated utility needs the
+     same treatment. */
+  --color-sidebar:          var(--sidebar);   /* sidebar column        */
+  --color-surface-hover:    #ECE9E2;   /* hover fill (nav active: see below) */
+  /* "Emphasis borders" by name, but the dark value below was never actually
+     measured — see that block for the real number and why 2026-09-26's
+     button redesign is what surfaced it. Light mode's value already read
+     fine against a near-white card and is untouched. */
+  --color-border-strong:    #D8D4C9;   /* emphasis borders           */
+
+  /* ── Text (on light surfaces) ───────────────────────── */
+  /* Ratios below are the WORST case across the four grounds text actually
+     lands on here — card #FFFFFF, base #FAFAFA, sidebar #FAFAFA and raised
+     #F4F4F5 — not the flattering white-only number. Measuring against white
+     is how the previous values passed review and still failed on screen.
+
+     --color-text-muted was #A1A1AA, annotated "3.5:1". Measured, it was
+     2.33:1 on a raised surface: not merely under the 4.5:1 floor for normal
+     text but under the 3:1 floor for large text and for graphics, which is
+     to say it did not legally clear anything. It is the second most used
+     colour in this codebase (235 call sites) and almost none of those are
+     the "hints, large text" the comment scoped it to — they are 11px and
+     12px labels. --color-text-tertiary had the same shape of problem at
+     4.31:1, annotated 5.0:1.
+
+     Both are re-stepped along the same zinc hue the neutral family already
+     uses, so the four tiers stay visually ordered and nothing changes hue.
+     Re-pointing the token rather than editing 257 call sites is the whole
+     reason this file declares colour as custom properties.
+
+     The binding ground is --color-brand-container #FFE4D0, not the page
+     background: the tinted surfaces are darker than #F4F4F5, so a value
+     solved against the page passes everywhere except the banners. Re-solve
+     against the tints too if these ever move. */
+  --color-text-primary:     #1A1A1A;   /* headings, key values  15.8:1 */
+  --color-text-secondary:   #52525B;   /* labels, secondary      7.0:1 */
+  --color-text-muted:       #67676F;   /* meta, hints            4.6:1 */
+  --color-text-disabled:    #D4D4D8;   /* non-text by definition       */
+  --color-text-inverse:     #FFFFFF;   /* on brand / dark bg    */
+
+  /* Sits between --color-text-secondary and --color-text-muted.
+     The restyle spec called this tier "text-muted", but that name
+     is already taken here by the #A1A1AA hint tier — adopting the
+     spec's name would have silently darkened every existing
+     text-[var(--color-text-muted)] in the app. New name instead. */
+  --color-text-tertiary:    #5A5A62;   /* section labels, meta   5.6:1 */
+
+  /* ── Chart neutrals ──────────────────────────────────── */
+  /* Bars carry no semantic meaning, so they stay neutral. Only
+     the single selected bar is emphasised, and it is emphasised
+     by VALUE (near-black), not by hue — no color is spent here. */
+  /* Was #EDEDED — 1.17:1 against the #FFFFFF card, i.e. a one-unit column
+     was invisible and the chart silently dropped its quiet days. This is
+     the same defect the dark theme already fixed and documented below; it
+     was only ever fixed on that side. Lifted to sit at dark's 1.58:1
+     parity, which is still unmistakably recessive next to the near-black
+     active bar but is actually present on screen. */
+  --color-chart-bar:        #D1D1D6;   /* unselected bars  1.53:1 */
+  --color-chart-bar-active: #1E293B;   /* selected bar          */
+  --color-chart-baseline:   #D4D4D8;   /* dashed average line   */
+
+  /* The sparkline's stroke and area wash. Previously read from
+     --color-text-muted, which was fine while that token was a pale grey and
+     wrong the moment it was corrected to a legible one: a trend line is not
+     text, has no contrast floor to meet, and is supposed to stay recessive
+     behind the figure it sits under. This holds the old value so lifting
+     the text tier does not quietly thicken every sparkline on the console. */
+  --color-chart-line:       #A1A1AA;   /* recessive — NOT a text colour */
+
+  /* NOTE: the KPI delta aliases are deliberately NOT declared in this
+     block — see the :root rule below @theme for why. */
+
+  /* ── Severity (4-tier, ≥4.5:1 on #FAFAFA) ──────────── */
+  /* RULE: always pair with icon + label — never color alone */
+  --color-severity-critical:         #DC2626;   /* 5.9:1 fire, mass casualty  */
+  --color-severity-critical-bg:      #FEF2F2;
+  --color-severity-critical-border:  #FECACA;
+
+  --color-severity-high:             #D97706;   /* 4.7:1 injury, armed        */
+  --color-severity-high-bg:          #FFFBEB;
+  --color-severity-high-border:      #FDE68A;
+
+  --color-severity-medium:           #CA8A04;   /* 4.6:1 property, minor      */
+  --color-severity-medium-bg:        #FEFCE8;
+  --color-severity-medium-border:    #FEF08A;
+
+  --color-severity-low:              #16A34A;   /* 5.2:1 informational        */
+  --color-severity-low-bg:           #F0FDF4;
+  --color-severity-low-border:       #BBF7D0;
+
+  /* ── Workflow status (incident lifecycle) ────────────── */
+  /* RULE: status ≠ severity. A low-severity incident can   */
+  /* be "processing"; a critical one can be "resolved".     */
+  --color-status-received:           #6B7280;
+  --color-status-received-bg:        #F9FAFB;
+
+  /* processing = indigo, NOT sky-blue (#0EA5E9 = PNP only) */
+  --color-status-processing:         #4F46E5;
+  --color-status-processing-bg:      #EEF2FF;
+
+  --color-status-dispatched:         #FC5A05;   /* brand orange — key action  */
+  --color-status-dispatched-bg:      #FFF0E8;
+
+  --color-status-resolved:           #16A34A;
+  --color-status-resolved-bg:        #F0FDF4;
+
+  --color-status-cancelled:          #9CA3AF;
+  --color-status-cancelled-bg:       #F3F4F6;
+
+  /* ── System / validation ─────────────────────────────── */
+  --color-system-success:            #16A34A;
+  --color-system-success-bg:         #F0FDF4;
+  --color-system-warning:            #D97706;
+  --color-system-warning-bg:         #FFFBEB;
+  --color-system-error:              #DC2626;
+  --color-system-error-bg:           #FEF2F2;
+  /* The text/icon colour for a SOLID --color-system-success fill (Accept,
+     Mark resolved). White here, same as --color-text-inverse — this hue is
+     dark enough in light mode that white reads fine. Split into its own
+     token because dark mode's success green is much lighter (see below) and
+     needs the opposite text colour on the exact same fill. */
+  --color-on-success:                #FFFFFF;
+  --color-system-info:               #0EA5E9;
+  --color-system-info-bg:            #F0F9FF;
+
+  /* ── Connectivity mode ───────────────────────────────── */
+  --color-connectivity-online:       #16A34A;
+  --color-connectivity-sms:          #D97706;
+  --color-connectivity-offline:      #9CA3AF;
+
+  /* ── Status aliases (semantic names for the design prompt) ─ */
+  /* Maps prompt's status-critical/pending/progress/resolved to   */
+  /* the canonical severity/workflow tokens above. Components     */
+  /* should prefer these over the raw severity/status tokens when */
+  /* expressing incident state in a status-pill context.          */
+  --color-status-critical:    var(--color-severity-critical);
+  --color-status-critical-bg: var(--color-severity-critical-bg);
+  --color-status-pending:     var(--color-severity-high);
+  --color-status-pending-bg:  var(--color-severity-high-bg);
+  --color-status-progress:    var(--color-status-processing);
+  --color-status-progress-bg: var(--color-status-processing-bg);
+  --color-status-resolved-alias:    var(--color-status-resolved);
+  --color-status-resolved-alias-bg: var(--color-status-resolved-bg);
+
+  /* ── AI-suggested vs human-confirmed ─────────────────── */
+  /* RULE: purple = machine output ONLY. Never decorative.  */
+  --color-ai-suggested:              #7C3AED;
+  --color-ai-suggested-bg:           #F5F3FF;
+  --color-confirmed:                 #FC5A05;
+  --color-confirmed-bg:              #FFF0E8;
+
+  /* ── Agency identity (LOCKED) ────────────────────────── */
+  /* Do NOT repurpose for severity or workflow status.       */
+  --color-agency-bfp:                #EF4444;   /* fire/rescue coral-red     */
+  --color-agency-bfp-bg:             #FEF2F2;
+  --color-agency-pnp:                #0EA5E9;   /* police sky-blue           */
+  --color-agency-pnp-bg:             #F0F9FF;
+  --color-agency-mdrrmo:             #10B981;   /* disaster emerald          */
+  --color-agency-mdrrmo-bg:          #ECFDF5;
+
+  /* ── Typography ──────────────────────────────────────── */
+  /* Inter (2026-08-08). Supersedes Plus Jakarta Sans on the WEB
+     DASHBOARD ONLY. Rationale: this surface is a dense data console —
+     13.5px table rows, tabular figures, 11px section labels. Inter's
+     narrower advance width and larger x-height hold up at those sizes
+     where PJS's geometric widths start to crowd table columns.
+     ziren_mobile keeps its own face; the surfaces now diverge on
+     purpose, so do NOT "fix" app_tokens.dart to match this.
+     (IBM Plex Sans + Plex Mono were tried on 2026-09-19 and reverted at
+     the product owner's request.)
+
+     The family is injected by next/font (app/layout.tsx) as
+     --font-inter, then aliased here.
+
+     Both use var() FALLBACK syntax — `var(--x, fallback)`, not a bare
+     `var(--x), fallback`. A bare reference to an undefined property makes
+     the whole declaration invalid at computed-value time, which would drop
+     the entire font stack rather than falling through to the next family. */
+  --font-sans: var(--font-inter, ui-sans-serif), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono-face, ui-monospace), 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* ── Spacing ──────────────────────────────────────────── */
+  /* Intentionally NOT redefining --spacing-2/4/8/etc here — Tailwind v4
+     generates every numeric spacing utility (p-4, gap-2, px-10, ...) from
+     the single --spacing base multiplier below. Defining named keys like
+     --spacing-4 or --spacing-10 would shadow Tailwind's own numeric scale
+     for that exact number (e.g. --spacing-10 previously hijacked `pl-10`
+     down to a literal 10px instead of the intended 2.5rem/40px), silently
+     corrupting spacing on any component using that number anywhere in the
+     app. Leave Tailwind's default 4px-based scale alone; reach for an
+     arbitrary value (`p-[10px]`) for the rare one-off that needs a
+     non-scale pixel value instead of overriding the shared scale.       */
+
+  /* ── Border radius ───────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   8px;    /* chips, icon badges                */
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  24px;   /* nav rows, pillowy cards           */
+  --radius-3xl:  24px;   /* hero cards                        */
+  --radius-full: 9999px; /* pill buttons, FAB                 */
+
+  /* Restyle geometry (2026-08-08). Named by ROLE rather than by
+     t-shirt size, because the reference design assigns a specific
+     radius per component class and the numeric scale above was
+     already spoken for by existing components. */
+  --radius-frame:   20px;  /* the floating app frame            */
+  --radius-card:    14px;  /* cards                             */
+  --radius-control: 10px;  /* inputs, pills, buttons            */
+
+  /* ── Shadows ─────────────────────────────────────────── */
+  /* RESTYLE RULE, superseded 2026-09-18: the 2026-08-08 restyle above
+     specified flat, 1px-bordered cards with no elevation anywhere.
+     Reworked at the user's request to match a shadcn-admin reference
+     whose cards carry a soft, consistently-sized lift — --shadow-card is
+     the one new token that direction needed, sized to read as a gentle
+     surface separation rather than the heavier, popover-only --shadow-md/
+     lg below (those two keep their original, larger values and stay
+     popover-only; --shadow-card is the only one cards should use). Border
+     stays too — the reference's cards are shadow AND a hairline border
+     together, not shadow instead of one.
+     --shadow-sm is unused by new work; retained for pre-restyle callers. */
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);   /* popovers only */
+  /* One step above --shadow-lg: dialogs and sheets are the highest,
+     most attention-demanding surface in the app (2026-09-25 modal
+     restyle), so they need to read as unmistakably lifted above
+     everything else, popovers included. Two layers, same recipe as
+     --shadow-card: a tight contact shadow plus a large, soft, negative-
+     spread ambient one, just scaled up for a much bigger lift. */
+  --shadow-modal: 0 2px 4px rgba(0,0,0,0.06), 0 24px 48px -12px rgba(0,0,0,0.18);
+}
+
+/* ── Semantic aliases — deliberately outside @theme ───────────────
+ *
+ * These are pure indirections onto tokens that CHANGE between light and
+ * dark, so they must resolve at use time, not at authoring time.
+ *
+ * Verified against Tailwind 4 before relying on it: a var() reference
+ * inside @theme (inline or not) IS emitted verbatim into :root — it is
+ * NOT flattened to the referenced token's literal value. So either
+ * placement would in fact keep these theme-reactive.
+ *
+ * They live here anyway for a different reason: @theme entries also mint
+ * utility classes, and `bg-delta-up` / `text-inverse-surface` are not
+ * utilities anyone should be reaching for. These are semantic aliases for
+ * component authors to read through var(), not additions to the scale. */
+:root {
+  /* KPI deltas. Aliases, not new hues. Down is AMBER, not red — see the
+     red reservation rule in the header. Always paired with an arrow glyph
+     so direction never depends on color alone. */
+  --color-delta-up:   var(--color-system-success);
+  --color-delta-down: var(--color-system-warning);
+
+  /* "Inverse" = a fill that opposes the current theme, with text to match.
+     Used by chart tooltips, the skip link, and any dark-pill-on-light
+     pattern. Before this pair existed those places hardcoded
+     `background: var(--color-text-primary); color: #fff`, which inverts
+     correctly in light and renders white-on-white in dark. */
+  --color-inverse-surface: #1A1A1A;
+  --color-inverse-text:    #FAFAFA;
+}
+
+/* ============================================================
+   DARK THEME
+   ============================================================
+   Re-points the custom properties above. Because every component
+   reads them through var(), the whole app follows without any
+   per-component dark: variants.
+
+   WHAT IS AND ISN'T REDEFINED HERE — read before editing:
+
+   NOT redefined (identical in both themes):
+     brand, and every agency hue except none — BFP #EF4444,
+     PNP #0EA5E9, MDRRMO #10B981 and brand #FC5A05 all clear
+     4.5:1 against the dark surface unchanged, so they are left
+     exactly as they are. Agency identity is theme-invariant.
+
+   Redefined, and why it was unavoidable:
+     a) The *-bg tint tokens. Light tints (#FEF2F2, #EEF2FF, …) are
+        near-white; on a #171717 card each badge would read as a
+        glowing white block. Dark values are low-alpha washes of
+        the SAME hue, so the hue itself is untouched.
+     b) Severity / status / ai FOREGROUND hues. #DC2626 on #171717
+        is 3.7:1 and #4F46E5 is 2.85:1 — both below the 4.5:1 floor
+        this restyle commits to. Each is lifted to the next tint of
+        the SAME hue (red→red-400, indigo→indigo-400, …). Ordering,
+        meaning and hue family are all preserved; only luminance
+        moves, and only in dark.
+     Light-theme values are untouched in both cases.               */
+
+.dark {
+  color-scheme: dark;
+
+  /* ── Surfaces ──────────────────────────────────────────── */
+  --color-canvas:           #0A0A0A;
+  --color-frame:            #141414;
+  --color-surface-base:     #0A0A0A;
+  --color-surface-card:     #171717;
+  --color-surface-raised:   #1F1F1F;
+  --color-surface-overlay:  #1F1F1F;
+  --color-surface-hover:    #262626;
+  --color-surface-border:   #262626;
+  /* Was #3A3A3A, ~1.6:1 against this theme's #171717 card — below the 3:1
+     floor WCAG 1.4.11 sets for an interactive control's own boundary, and in
+     practice invisible: every outline/ghost button in a dark dialog (the
+     dispatch modal, every Cancel/Close, this component's own DataTable
+     header rule and NavTabs' underline) read as plain unbordered content
+     until hover. Also the value .a11y-high-contrast swaps --color-surface-
+     border TO, which meant that toggle did nothing for a dark-mode reader —
+     an accessibility control that was accidentally a no-op on this theme.
+     #71717A (zinc-500) is ~4.2:1, comfortably past the floor, without going
+     all the way to a text-contrast tone that would make a border compete
+     with the label or content sitting inside it. 2026-09-26. */
+  --color-border-strong:    #71717A;
+
+  /* ── Text ──────────────────────────────────────────────── */
+  --color-text-primary:     #FAFAFA;   /* 16.8:1 on #171717 */
+  --color-text-secondary:   #A1A1AA;   /*  7.0:1            */
+  --color-text-tertiary:    #A1A1AA;   /*  7.0:1            */
+  /* Was #71717A at 3.41:1 on --color-surface-raised — the same failure as
+     light, and on the same 235 call sites. Lifted along the zinc hue. */
+  --color-text-muted:       #8F8F98;   /*  4.7:1            */
+  --color-text-disabled:    #3F3F46;
+  /* --color-text-inverse stays #FFFFFF in BOTH themes. Its meaning is
+     "text sitting on a brand-orange fill", and brand orange does not
+     change between themes, so neither may this. */
+
+  /* The inverse PAIR does flip — see the :root declaration above. */
+  --color-inverse-surface:  #FAFAFA;
+  --color-inverse-text:     #171717;
+
+  /* ── Charts ────────────────────────────────────────────── */
+  /* The active bar inverts to near-white. The reference's dark
+     treatment is a white→transparent vertical gradient, applied in
+     the chart component; this token is the gradient's top stop.
+
+     The unselected bar was #242424, which is only 1.1:1 against the
+     #171717 card — a one-unit column was effectively invisible, so
+     the chart silently dropped its low days. Lifted to the same value
+     as --color-border-strong: still unmistakably recessive next to a
+     near-white active bar, but actually present. Light theme's
+     #EDEDED is untouched; it never had this problem. */
+  --color-chart-bar:        #3A3A3A;
+  --color-chart-bar-active: #FFFFFF;
+  --color-chart-baseline:   #3F3F46;
+  --color-chart-line:       #71717A;   /* recessive — NOT a text colour */
+
+  /* ── Severity — hue preserved, luminance lifted (see note a/b) ── */
+  --color-severity-critical:         #F87171;   /* 6.5:1  */
+  --color-severity-critical-bg:      rgba(248, 113, 113, 0.12);
+  --color-severity-critical-border:  rgba(248, 113, 113, 0.28);
+
+  --color-severity-high:             #FBBF24;   /* 10.4:1 */
+  --color-severity-high-bg:          rgba(251, 191, 36, 0.12);
+  --color-severity-high-border:      rgba(251, 191, 36, 0.28);
+
+  --color-severity-medium:           #FACC15;   /* 11.6:1 */
+  --color-severity-medium-bg:        rgba(250, 204, 21, 0.12);
+  --color-severity-medium-border:    rgba(250, 204, 21, 0.28);
+
+  --color-severity-low:              #4ADE80;   /* 9.7:1  */
+  --color-severity-low-bg:           rgba(74, 222, 128, 0.12);
+  --color-severity-low-border:       rgba(74, 222, 128, 0.28);
+
+  /* ── Workflow status ───────────────────────────────────── */
+  --color-status-received:           #A1A1AA;
+  --color-status-received-bg:        rgba(161, 161, 170, 0.12);
+  --color-status-processing:         #818CF8;   /* 6.0:1 — indigo, still NOT sky-blue */
+  --color-status-processing-bg:      rgba(129, 140, 248, 0.12);
+  --color-status-dispatched:         #FC5A05;   /* brand — unchanged, 5.6:1 */
+  --color-status-dispatched-bg:      rgba(252, 90, 5, 0.14);
+  --color-status-resolved:           #4ADE80;
+  --color-status-resolved-bg:        rgba(74, 222, 128, 0.12);
+  --color-status-cancelled:          #9CA3AF;
+  --color-status-cancelled-bg:       rgba(156, 163, 175, 0.12);
+
+  /* ── System / validation ───────────────────────────────── */
+  --color-system-success:            #4ADE80;
+  --color-system-success-bg:         rgba(74, 222, 128, 0.12);
+  /* White-on-#4ADE80 is ~1.7:1 — fails WCAG entirely, reported 2026-09-23
+     ("gusto ko yung salitang Accept is black"). This green is light enough
+     in dark mode that it needs DARK text, the opposite of light mode's
+     darker #16A34A. Near-black reaches ~11:1. */
+  --color-on-success:                #0A0A0A;
+  --color-system-warning:            #FBBF24;
+  --color-system-warning-bg:         rgba(251, 191, 36, 0.12);
+  --color-system-error:              #F87171;
+  --color-system-error-bg:           rgba(248, 113, 113, 0.12);
+  --color-system-info:               #38BDF8;
+  --color-system-info-bg:            rgba(56, 189, 248, 0.12);
+
+  /* ── Connectivity ──────────────────────────────────────── */
+  --color-connectivity-online:       #4ADE80;
+  --color-connectivity-sms:          #FBBF24;
+  --color-connectivity-offline:      #9CA3AF;
+
+  /* ── AI-suggested ──────────────────────────────────────── */
+  --color-ai-suggested:              #A78BFA;   /* 6.4:1 — violet, machine output only */
+  --color-ai-suggested-bg:           rgba(167, 139, 250, 0.12);
+  --color-confirmed:                 #FC5A05;
+  --color-confirmed-bg:              rgba(252, 90, 5, 0.14);
+
+  /* ── Agency identity — hues UNCHANGED, tints only ──────── */
+  --color-agency-bfp-bg:             rgba(239, 68, 68, 0.12);
+  --color-agency-pnp-bg:             rgba(14, 165, 233, 0.12);
+  --color-agency-mdrrmo-bg:          rgba(16, 185, 129, 0.12);
+
+  /* ── Brand tints ───────────────────────────────────────── */
+  --color-brand-subtle:              rgba(252, 90, 5, 0.12);
+  --color-brand-container:           rgba(252, 90, 5, 0.22);
+
+  /* ── Active navigation ─────────────────────────────────── */
+  /* A wash rather than the light theme's opaque step: the #101010
+     sidebar is dark enough that 16% orange lands at the same visual
+     weight #FFE8DA has on #FAFAFA, and an opaque orange would read as
+     a lit button instead of a marked row.
+
+     The icon lifts to full brand. #C94600 is only 2.8:1 against this
+     ground — below the 3:1 floor for a meaningful graphic — which is
+     the same luminance correction every severity hue gets in dark. */
+  --color-nav-active-bg:             rgba(252, 90, 5, 0.16);
+  --color-nav-active-icon:           #FC5A05;   /* 5.0:1 on the wash */
+
+  /* Popover shadow needs far more opacity to read on a dark ground. */
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.55);
+  /* Same reasoning as --shadow-lg above: a light-mode shadow's opacity is
+     tuned against a near-white card, and is nearly invisible against a
+     dark card sitting on an even-darker canvas. Darker, tighter spread
+     reads as the same gentle lift rather than vanishing. */
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 2px 10px rgba(0,0,0,0.28);
+  --shadow-modal: 0 2px 4px rgba(0,0,0,0.4), 0 24px 48px -12px rgba(0,0,0,0.65);
+}
+
+/* ── Global form element base styles ─────────────────────────── */
+/* Applies to ALL native inputs/selects/textareas across every page —
+   wrapped in @layer base so Tailwind utility classes (pl-10, pr-9, etc.,
+   emitted in @layer utilities) can override these defaults normally.
+   Without this layer, these unlayered rules would beat utility classes
+   regardless of specificity, which is why earlier components resorted
+   to inline styles to win the cascade. New components should just use
+   Tailwind classes — no inline-style workaround needed. */
+
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-card);
+    border: 1px solid var(--color-surface-border);
+    border-radius: var(--radius-control);
+    padding: 0 12px;
+    height: 42px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  textarea {
+    height: auto;
+    padding: 10px 12px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-brand-container);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  /* A <input type="search"> owner is expected to draw its own clear button —
+     the barangay search does, positioned in its padding. WebKit/Blink also
+     draw a native one in the same corner regardless: `display` on a
+     `[type=search]::-webkit-search-cancel-button` does not take it out of
+     layout when set through a Tailwind arbitrary variant (confirmed via
+     getComputedStyle — it stayed `inline-block` there), only through an
+     ordinary stylesheet rule like this one. Left un-set, the native icon sits
+     underneath the custom one, invisible but still part of the DOM. */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    display: none;
+  }
+
+  /* ── Keyboard focus ──────────────────────────────────────
+   *
+   * Form fields already carry the focus ring above, but everything else
+   * that can be focused — buttons, links, nav items, tabs, table row
+   * actions — had no indicator at all. A dispatcher driving this console
+   * from the keyboard had no way to tell what was selected before pressing
+   * Enter, which on the Live Queue means dispatching to the wrong incident.
+   *
+   * :focus-visible, not :focus — the ring appears for keyboard and
+   * assistive-tech navigation but not on mouse click, so pointer users see
+   * no change.
+   *
+   * Two layers (white gap, then brand) so the ring stays visible whether it
+   * lands on a light card, the raised surface, or a coloured button. */
+  :where(a, button, [role="button"], [role="tab"], [role="menuitem"],
+         summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-surface-card),
+      0 0 0 4px var(--color-brand);
+    border-radius: 8px;
+  }
+
+  /* On a brand-filled control the brand ring would disappear into it, so
+   * invert to a dark ring instead. */
+  :where(.btn-primary, [data-focus-ring="inverse"]):focus-visible {
+    box-shadow:
+      0 0 0 2px var(--color-surface-card),
+      0 0 0 4px var(--color-text-primary);
+  }
+
+  /* Skip link — hidden until tabbed to. The dashboard has a long sidebar,
+   * and without this a keyboard user tabs through every nav item on every
+   * page before reaching the content. */
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 100;
+    padding: 10px 16px;
+    border-radius: var(--radius-control);
+    /* Was `background: var(--color-text-primary); color: #fff`. That pairing
+       is only coincidentally correct in light mode — under the dark theme
+       text-primary becomes #FAFAFA, and the link rendered white-on-white,
+       i.e. an invisible skip link, which is worse than none at all. The
+       inverse pair flips together and stays legible in both themes. */
+    background-color: var(--color-inverse-surface);
+    color: var(--color-inverse-text);
+    font-size: 14px;
+    font-weight: 600;
+    transition: top 0.15s;
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
+}
+
+/* ── Base reset ───────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Fixed on purpose. This used to be `calc(16px * var(--user-font-scale))`,
+     which scales only what is sized in rem — spacing and a few Tailwind text
+     sizes — while most of this console is sized in px (text-[13px] and so on).
+     "Extra large" therefore grew the gaps and left the text the size it was.
+     The scale is now applied to the whole shell as `zoom`, below, which
+     scales everything alike. */
+  font-size: 16px;
+}
+
+/* ── Interface scale ───────────────────────────────────────────────────────
+   PrefsApplier sets --user-font-scale on <html> (1, 0.9, 1.15 or 1.3) on every
+   page. `zoom` is the only way to scale a UI that is written in px, and it
+   brings one trap: a full-height layout written as 100svh becomes 100svh × zoom
+   tall and spills off the bottom of the screen. --app-h divides the zoom back
+   out, so the shell always fills the viewport exactly. At scale 1 it is plain
+   100svh and nothing changes.
+
+   The shell only. Dialogs, menus and selects render in portals outside it and
+   stay at their own size — positioning a popover measures the page in
+   unzoomed pixels, and scaling those would put them in the wrong place. */
+:root {
+  --app-h: calc(100svh / var(--user-font-scale, 1));
+}
+
+.shadcn-scope {
+  zoom: var(--user-font-scale, 1);
+}
+
+.shadcn-scope [class*="h-svh"],
+.shadcn-scope [class*="min-h-svh"] {
+  height: var(--app-h);
+  min-height: var(--app-h);
+}
+
+/* ============================================================
+   Accessibility preferences (spec Section 17) — three toggles, applied as
+   classes on <html> by useAccessibilityPrefs. Font scale above covers size/
+   interface-scaling/text-spacing together; these three classes are the
+   remaining independent switches: high contrast, reduced motion, larger
+   controls.
+   ============================================================ */
+
+/* Sharpens text and borders without touching the emergency-signal colors
+   above — severity/status/agency hues are exempt on purpose, since darkening
+   or saturating them would be exactly the "colour now means something
+   different" mistake the design tokens section at the top of this file warns
+   against. */
+.a11y-high-contrast {
+  --color-text-secondary: var(--color-text-primary);
+  --color-text-muted:     var(--color-text-secondary);
+  --color-surface-border: var(--color-border-strong);
+}
+
+.a11y-reduced-motion *,
+.a11y-reduced-motion *::before,
+.a11y-reduced-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Bigger hit targets on the controls people actually click/tap, without
+   reflowing every layout on the page — a global padding increase on `button`
+   would push tables and toolbars out of alignment everywhere at once. */
+.a11y-larger-controls button,
+.a11y-larger-controls [role="button"],
+.a11y-larger-controls input,
+.a11y-larger-controls select {
+  min-height: 44px;
+}
+
+/* A thick outline in the brand colour, offset from the control, on every
+   keyboard-focused element. The default ring is a 1–2px hairline at low
+   contrast that is easy to lose on a busy table; this is for the operator who
+   navigates by keyboard and needs to find the cursor at a glance. */
+.a11y-strong-focus :focus-visible {
+  outline: 3px solid var(--color-brand) !important;
+  outline-offset: 3px !important;
+  border-radius: 4px;
+}
+
+/* Links are otherwise told apart from text by colour alone, which is exactly
+   what colour-blind readers cannot rely on. */
+.a11y-underline-links a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Letter and word spacing (WCAG 1.4.12 text-spacing). Set on body so it
+   inherits everywhere; line height is deliberately left to each component,
+   because forcing one on tightly-set table rows would break their alignment. */
+html:not([data-text-spacing='normal']) body {
+  letter-spacing: var(--user-letter-spacing, 0);
+  word-spacing: var(--user-word-spacing, 0);
+}
+
+/* ── Table density (Settings → Appearance) ─────────────────────────────────
+   Compact tightens every table body row by about a third. Written against the
+   cell rather than added to each table, so a table built next year is covered
+   without anyone remembering to. */
+html[data-density='compact'] tbody td {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+body {
+  /* The canvas is the backdrop the app frame floats on, not a page
+     surface. In the pre-restyle flat layout these were the same thing. */
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
+}
+
+/* Numerals must not jitter as values tick over. Applied to every place a
+   figure is compared against another figure across rows or refreshes:
+   KPI values, table numbers, timestamps, axis and tooltip labels. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────
+ *
+ * A dispatcher with a vestibular disorder should not be paying a
+ * comfort tax to read an incident queue. Honour the OS setting: kill
+ * chart entry animations, layout transitions and page fades outright
+ * rather than merely shortening them.
+ *
+ * Deliberately NOT `* { animation: none }` — the loading skeletons'
+ * pulse and the connectivity spinner are status indicators, and
+ * freezing them would make a loading screen look like a hung one.
+ * They opt back in explicitly below. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-spin {
+    animation-duration: 1.5s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* ── Typography scale ─────────────────────────────────────── */
+/* displayLarge  — hero greetings, key stats                   */
+/* headlineMd    — screen titles                               */
+/* headlineSm    — section headers                             */
+/* titleMd       — card titles                                 */
+/* body          — body copy                                   */
+/* label         — buttons, interactive labels                 */
+/* labelSm       — UPPERCASE section/category labels only      */
+
+.text-display   { font-size: 28px; font-weight: 800; line-height: 1.2; letter-spacing: -0.3px; }
+.text-h1        { font-size: 22px; font-weight: 700; line-height: 1.3; }
+.text-h2        { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.text-h3        { font-size: 16px; font-weight: 600; line-height: 1.4; }
+.text-body-lg   { font-size: 16px; font-weight: 400; line-height: 1.5; }
+.text-body      { font-size: 14px; font-weight: 400; line-height: 1.5; }
+.text-body-sm   { font-size: 13px; font-weight: 400; line-height: 1.5; }
+.text-label     { font-size: 14px; font-weight: 700; line-height: 1.0; }
+.text-label-sm  {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.0;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;   /* ONLY site for uppercase — section labels */
+}
+.text-mono      { font-family: var(--font-mono); font-size: 13px; }
+
+/* ── Restyle typography scale (2026-08-08) ────────────────────
+ * Additive. The scale above is still in use by pre-restyle pages, so
+ * these are new class names rather than re-valued ones — changing
+ * .text-h1 out from under /queue would be a silent regression on the
+ * one surface this restyle is meant not to touch. */
+
+.text-page-title {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.text-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.text-kpi {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+.text-ui {
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.text-meta {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+/* Sidebar group headings and table column labels. Not clickable, not
+   focusable — purely a reading aid. */
+.text-section-label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Operational figures ──────────────────────────────────────
+ *
+ * Counts, clock values and shares are set in the mono face; the words
+ * around them stay in Inter. The split carries meaning rather than
+ * decoration — it separates a machine-reported quantity from the human
+ * label describing it, which is a distinction this product already makes
+ * elsewhere (see the aiSuggested / confirmed pair above). Tabular figures
+ * keep digits from shifting as values tick over on refresh.
+ *
+ * Deliberately narrow: the status line and inline figures only. The stat
+ * strip's headline figures moved back to Inter on 2026-09-19 to match the
+ * card reference the product owner supplied. Mono inside table rows would
+ * cost column density and gain nothing, and applying it everywhere would
+ * spend the contrast that makes it read.  */
+.fig {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: -0.02em;
+  /* A mono space carries the same advance width as a digit, so a two-part
+     figure like "6h 40m" opens a gap wide enough to read as two separate
+     values — and worse inside the status line, where it sits between
+     proportional words. Pulled back to roughly a proportional space. */
+  word-spacing: -0.14em;
+}
+
+/* ── Status line ──────────────────────────────────────────────
+ *
+ * The opening element of every admin page: one sentence stating what
+ * the province — or the agency — is doing right now.
+ *
+ * It replaces the per-page <h1>. Those headings ("Account Management",
+ * "Responder Management") restated the breadcrumb the topbar had already
+ * rendered two lines above, so the largest text on the page told the
+ * operator only where they had just clicked. A dispatch console opens
+ * with the situation, the way a watch handover does.
+ *
+ * Prose recedes to the tertiary tier and the figures carry the weight,
+ * so the sentence can be read either as a sentence or scanned as numbers. */
+/* Sized to stay the largest text on the page without becoming a banner.
+   The first cut topped out at 25px, which held for a short sentence but
+   turned into a three-line headline once real data pushed it past 60
+   characters — and a dispatcher reading the same sentence every shift needs
+   it scannable, not declaimed. It still outranks every other element here
+   (card titles sit at 14px and no page carries an h1). */
+.status-line {
+  font-size: clamp(15px, 1.15vw, 18.5px);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--color-text-tertiary);
+  text-wrap: pretty;
+}
+.status-line .fig {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Stat strip value. Larger than --text-kpi, because these sit in a bordered
+   strip where they are compared horizontally against each other. Set in
+   Inter with tabular figures (add `tabular-nums` at the call site). */
+.text-stat {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+/* ── Severity card pattern ────────────────────────────────── */
+/* Soft tinted bg + matching border + colored text/icon.       */
+/* Use on incident list items, alert banners.                  */
+.severity-critical {
+  background-color: var(--color-severity-critical-bg);
+  border: 1px solid var(--color-severity-critical-border);
+  color: var(--color-severity-critical);
+}
+.severity-high {
+  background-color: var(--color-severity-high-bg);
+  border: 1px solid var(--color-severity-high-border);
+  color: var(--color-severity-high);
+}
+.severity-medium {
+  background-color: var(--color-severity-medium-bg);
+  border: 1px solid var(--color-severity-medium-border);
+  color: var(--color-severity-medium);
+}
+.severity-low {
+  background-color: var(--color-severity-low-bg);
+  border: 1px solid var(--color-severity-low-border);
+  color: var(--color-severity-low);
+}
+
+/* ── AI-suggested badge ───────────────────────────────────── */
+.badge-ai {
+  background-color: var(--color-ai-suggested-bg);
+  color: var(--color-ai-suggested);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.badge-confirmed {
+  background-color: var(--color-confirmed-bg);
+  color: var(--color-confirmed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+
+/* ============================================================
+   shadcn/ui compatibility layer  (added 2026-08-26)
+
+   Added so registry components — the @efferd/dashboard-3 block and the
+   shadcn primitives it depends on — resolve their semantic classes
+   (bg-background, text-muted-foreground, border-border, bg-sidebar-accent).
+   Those names do not exist in the Ziren palette above, so this is purely
+   additive: nothing here redefines a Ziren token.
+
+   THREE DELIBERATE OMISSIONS from what `shadcn init` generates:
+
+   1. The eight names Ziren already owns are dropped, so Ziren still wins:
+        --font-sans     Inter, per the typography note above. init bound this
+                        to Geist via a next/font variable on <html>; reverted.
+        --color-sidebar the live sidebar's background.
+        --radius-sm/md/lg/xl/2xl/3xl
+                        absolute px here, derived from --radius in shadcn.
+                        Registry components inherit Ziren's geometry, which is
+                        what adapting a reference into this app should mean.
+
+   2. init's `@layer base` block is NOT copied. It reads:
+          * { @apply border-border outline-ring/50; }
+          body { @apply bg-background text-foreground; }
+      `*` would repaint every border in this console — the severity chips, the
+      stat strip, the table rules — to shadcn neutral, overriding
+      --color-surface-border, and `body` would replace the page ground. That
+      is a whole-app restyle disguised as a setup step. It is scoped to
+      .shadcn-scope below instead, so registry components get their expected
+      defaults only where one is actually mounted.
+
+   3. init wrote all of this into t.css, an orphan file nothing imports.
+      components.json now points at THIS file; see the note in the summary.
+   ============================================================ */
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* The base defaults registry components assume, scoped instead of global.
+   Tailwind v4 defaults border-color to currentColor, so a shadcn component
+   rendering `border` with no colour would draw in the text colour without
+   this. Wrap any subtree containing registry components in .shadcn-scope. */
+@layer base {
+  .shadcn-scope {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  .shadcn-scope * {
+    border-color: var(--border);
+  }
+
+  /* Radix portals mount at <body>, OUTSIDE .shadcn-scope, so the rule above
+     never reaches a Dialog, AlertDialog, Select, DropdownMenu, Tooltip or
+     Sheet. Anything in one of those that wrote a bare `border` therefore drew
+     in currentColor — a near-black hairline in light mode and a white one in
+     dark. AlertDialogFooter's separator was exactly that: a hard black rule
+     across a confirmation dialog.
+     Every registry primitive stamps data-slot, so keying off it reaches the
+     portalled ones without widening this to `*` the way shadcn's own init
+     block does. Ziren's components carry no data-slot except avatar, which
+     sets its border explicitly. */
+  [data-slot],
+  [data-slot] * {
+    border-color: var(--border);
+  }
+}
+
+/* ============================================================
+   Token bridge — shadcn semantics → the Ziren palette
+
+   The block above gives registry components their token NAMES; this gives
+   them Ziren's VALUES. Without it the whole console renders in shadcn's
+   neutral greys and the design system stops being the source of truth:
+   the sidebar's active row goes grey, the primary button goes black, and
+   the emergency-dispatch colour rules survive only on the pages that had
+   not been converted yet.
+
+   Every line here is an alias. No new hue is introduced, and the rules at
+   the top of this file still decide what each hue means:
+     - brand orange = CTAs, active nav, primary actions. That is exactly
+       what --primary and --sidebar-primary are, so they map to it.
+     - --destructive maps to severityCritical, the ONLY sanctioned use of
+       red on this console.
+   ============================================================ */
+
+:root {
+  --background:                 var(--color-surface-base);
+  --foreground:                 var(--color-text-primary);
+  --card:                       var(--color-surface-card);
+  --card-foreground:            var(--color-text-primary);
+  --popover:                    var(--color-surface-overlay);
+  --popover-foreground:         var(--color-text-primary);
+  --primary:                    var(--color-brand);
+  --primary-foreground:         var(--color-text-inverse);
+  --secondary:                  var(--color-surface-raised);
+  --secondary-foreground:       var(--color-text-primary);
+  --muted:                      var(--color-surface-raised);
+  --muted-foreground:           var(--color-text-muted);
+  --accent:                     var(--color-surface-hover);
+  --accent-foreground:          var(--color-text-primary);
+  --destructive:                var(--color-severity-critical);
+  --border:                     var(--color-surface-border);
+  --input:                      var(--color-surface-border);
+  --ring:                       var(--color-brand);
+
+  /* The sidebar's own scale. --sidebar-accent is the active row, which is
+     why it points at the nav tint rather than a neutral hover grey. */
+  --sidebar:                    #F7F6F3;   /* source of truth; see note above — matches --color-surface-base's off-white shift */
+  --sidebar-foreground:         var(--color-text-secondary);
+  --sidebar-primary:            var(--color-brand);
+  --sidebar-primary-foreground: var(--color-text-inverse);
+  --sidebar-accent:             var(--color-nav-active-bg);
+  --sidebar-accent-foreground:  var(--color-text-primary);
+  --sidebar-border:             var(--color-surface-border);
+  --sidebar-ring:               var(--color-brand);
+
+  /* Chart series. Agency hues first, in the fixed order the colour rules
+     lock: BFP, PNP, MDRRMO. A registry chart that asks for --chart-1..3 is
+     almost always splitting by agency on this product, so the default
+     assignment is the correct one rather than a decorative ramp. */
+  --chart-1: var(--color-agency-bfp);
+  --chart-2: var(--color-agency-pnp);
+  --chart-3: var(--color-agency-mdrrmo);
+  --chart-4: var(--color-brand);
+  --chart-5: var(--color-text-muted);
+}
+
+/* The aliases above resolve per theme on their own — every token on their
+   right-hand side is already re-pointed under .dark — so they need no dark
+   twin, and declaring one would freeze the light values into the dark theme.
+
+   --sidebar is the exception: it is a literal, not an alias, because the
+   generated `.bg-sidebar` utility has to resolve through a var() it can reach.
+   So it, and only it, is restated here. */
+.dark {
+  --sidebar: #101010;
+}
+
+/* ============================================================
+   Slim scrollbar
+
+   The browser default is a chunky OS-coloured bar that ignores the theme
+   entirely — on the near-black dark surface it renders as a bright grey slab
+   with square corners, which is why it reads as something the page forgot to
+   style rather than part of it.
+
+   `scrollbar-width`/`scrollbar-color` is the standard property and covers
+   Firefox; the ::-webkit- rules cover Chrome, Edge and Safari, which still do
+   not implement it for a styled thumb. Both are needed, and both point at the
+   same tokens so the bar follows the theme like everything else.
+
+   Applied per element rather than to `*`. A scrollbar this quiet is right
+   inside a dialog or a panel, where the content boundary is already obvious;
+   on the main document a too-subtle bar can leave a reader unsure the page
+   scrolls at all.
+   ============================================================ */
+
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.scroll-slim::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-strong);
+  border-radius: 999px;
+  /* A transparent border with background-clip is the only way to inset a
+     webkit thumb; padding and margin do nothing to it. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scroll-slim::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted);
+  background-clip: content-box;
+}
+
+/* Nothing to grab means nothing to draw. */
+.scroll-slim::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The bell rings once when a notification arrives (see notification-center.tsx).
+   Used through Tailwind's `motion-safe:` variant, so it never plays for anyone
+   who has asked their system for reduced motion. */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-6deg); }
+}

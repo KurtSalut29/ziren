@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network security config — dev only.
+  In production this file is replaced (or removed) and HTTPS is used.
+
+  This file OVERRIDES android:usesCleartextTraffic="true" in the manifest.
+  Anything not named below is denied cleartext on Android 9+, silently, before
+  a packet leaves the app — which surfaces in Dart as a caught SocketException
+  and then as "Could not reach the server", indistinguishable from the backend
+  being down. localhost is how the app reaches the dev backend over the USB
+  tunnel (`adb reverse tcp:8000 tcp:8000`), so it has to be listed here or the
+  tunnel works at the socket level and the app still cannot use it.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- USB tunnel: adb reverse forwards these to the PC's port 8000. -->
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- Android emulator's alias for the host machine. -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Legacy LAN address, kept so an IP-based dart_define still runs. -->
+        <domain includeSubdomains="false">192.168.100.9</domain>
+    </domain-config>
+</network-security-config>
