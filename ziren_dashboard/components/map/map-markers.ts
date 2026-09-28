@@ -26,7 +26,7 @@ import type { AgencyType, MapStation } from '@/lib/api/map';
 
 /**
  * Marker art — the actual station icons provided for the project
- * (BFPIcon.png / PNPIcon.png / MDRRMOIcon.png), one per agency type. Twenty-
+ * (branding/BFPIcon.png, PNPIcon.png, MDRRMOIcon.png), one per agency type. Twenty-
  * one stations share three icons; see stationLabel() below for how a pin
  * says WHICH station on top of what kind it is.
  */

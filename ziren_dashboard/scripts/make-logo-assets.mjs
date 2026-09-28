@@ -50,7 +50,7 @@
  *     "ZIREN" set 60px wide is illegible noise that costs the monogram half
  *     its height.
  *
- * Sources: zirenlogo.png at the repo root. Outputs are committed, so this
+ * Sources: branding/zirenlogo.png. Outputs are committed, so this
  * script only needs re-running when the artwork changes.
  *
  * `sharp` is not declared in package.json — it resolves out of Next.js's own
@@ -68,7 +68,7 @@ import sharp from 'sharp';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..', '..');
-const SOURCE = resolve(REPO, 'zirenlogo.png');
+const SOURCE = resolve(REPO, 'branding', 'zirenlogo.png');
 
 const DASHBOARD_PUBLIC = resolve(REPO, 'ziren_dashboard', 'public');
 const MOBILE_IMAGES = resolve(REPO, 'ziren_mobile', 'assets', 'images');

@@ -8,6 +8,11 @@ Emergency incident reporting and dispatch for Biliran. Three apps, one backend.
 | [`ziren_dashboard`](ziren_dashboard/) | Next.js | Dispatcher console |
 | [`ziren_mobile`](ziren_mobile/) | Flutter | Residents and responders |
 
+[`branding/`](branding/) holds the source artwork: the Ziren logo and the
+BFP, PNP and MDRRMO icons. The apps do not load these files; they ship their
+own copies (the dashboard's logo files come from
+`ziren_dashboard/scripts/make-logo-assets.mjs`).
+
 A resident files a report; the trained triage model scores it inline at
 submission; the dispatcher sees a severity **with the numbered rule that
 produced it**, and validates before anyone is sent. Details in
