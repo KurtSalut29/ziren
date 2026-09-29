@@ -59,6 +59,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/reports':       { title: 'Reports & Export',  subtitle: 'Print incident records and narrative reports', section: 'Communication' },
 
   '/settings':   { title: 'Settings',             subtitle: 'Profile & preferences' },
+  '/help':       { title: 'Help',                 subtitle: 'How to use Ziren' },
 };
 
 /**

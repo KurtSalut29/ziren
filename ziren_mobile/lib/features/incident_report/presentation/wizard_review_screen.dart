@@ -12,6 +12,8 @@ import 'incident_labels.dart';
 import 'wizard_shared.dart';
 import '../domain/incident_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+
+import '../../hotlines/presentation/hotlines_view.dart';
 import '../../../shared/widgets/ziren_photo_sheet.dart';
 
 /// Step 2 of 2 — review summary before final submit.
@@ -75,11 +77,17 @@ class WizardReviewScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _ReviewValue(
-                            provider.currentPosition != null
-                                ? 'GPS: ${provider.currentPosition!.latitude.toStringAsFixed(5)}, '
-                                    '${provider.currentPosition!.longitude.toStringAsFixed(5)}'
-                                : t.reviewNoGps,
+                            provider.incidentAddress ??
+                                (provider.incidentLat != null
+                                    ? 'GPS: ${provider.incidentLat!.toStringAsFixed(5)}, '
+                                        '${provider.incidentLng!.toStringAsFixed(5)}'
+                                    : t.reviewNoGps),
                           ),
+                          if (provider.reportingElsewhere)
+                            _ReviewValue(
+                              '${t.locReviewReporterLabel}: '
+                              '${provider.locationAddress ?? t.locReviewReporterUnknown}',
+                            ),
                           if (provider.landmarkNote != null)
                             _ReviewValue('📍 ${provider.landmarkNote!}'),
                         ],
@@ -143,6 +151,27 @@ class WizardReviewScreen extends StatelessWidget {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    // Nothing reached the server: a call still gets through.
+                    if (provider.submitFailedOffline)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: ZirenTokens.space12),
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ZirenTokens.systemSuccess,
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(LucideIcons.phone, size: 18),
+                            label: Text(t.hotlinesCallInstead),
+                            onPressed: () => showHotlinesSheet(
+                              context,
+                              category: provider.incidentCategory,
+                              offline: true,
+                            ),
+                          ),
                         ),
                       ),
 
@@ -216,9 +245,12 @@ class _SubmitBar extends StatelessWidget {
     // success, and the acknowledgement below still needs them.
     final category = provider.incidentCategory;
     final stationName = provider.selectedStation?.name;
-    final hasLocation = provider.currentPosition != null;
+    final hasLocation = provider.incidentLat != null;
 
-    final success = await provider.submitIncident(reportText: reportText);
+    final success = await provider.submitIncident(
+      reportText: reportText,
+      locationAddress: provider.incidentAddress,
+    );
     if (!context.mounted) return;
 
     if (success) {

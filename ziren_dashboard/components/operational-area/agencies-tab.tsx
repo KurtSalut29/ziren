@@ -7,6 +7,8 @@ import { useAssistInboxContext } from '@/components/assist/assist-context';
 import { AG_COLOR } from '@/components/incidents/incident-vocabulary';
 import { periodLong } from './period';
 import { AgencyChip, BarList, Empty, Note, Panel, SIGNAL_LABEL, fmtInt } from './kit';
+import { HotlineLinks } from '@/components/ui/hotline-links';
+import { parseHotlines } from '@/lib/format/hotlines';
 
 // `token` is still passed by the page but no longer read here: the assist
 // requests this tab used to fetch come from the layout's shared inbox now.
@@ -54,11 +56,19 @@ export function AgenciesTab({ data }: { data: OperationalArea; token: string }) 
                     <p className="flex items-center gap-2 text-[13.5px] font-medium text-foreground"><AgencyChip type={a.agency_type} />{a.name}</p>
                     <p className="mt-0.5 text-[12px] text-muted-foreground">{a.email ?? 'No email on file'}</p>
                   </div>
-                  {a.contact_number ? (
-                    <a className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-surface-border)] px-3 py-1.5 text-[13px] font-semibold tabular-nums text-foreground hover:bg-[var(--color-surface-raised)]" href={`tel:${a.contact_number.replace(/[^\d+]/g, '')}`}>
-                      <Phone aria-hidden="true" className="size-3.5" />
-                      {a.contact_number}
-                    </a>
+                  {parseHotlines(a.contact_number).length > 0 ? (
+                    // One button per number: a station can have several lines
+                    // (Globe, Smart, landline), and one tel: link cannot dial
+                    // "0955…; 0948…".
+                    <span className="flex flex-wrap justify-end gap-1.5">
+                      {parseHotlines(a.contact_number).map(n => (
+                        <a className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-surface-border)] px-3 py-1.5 text-[13px] font-semibold tabular-nums text-foreground hover:bg-[var(--color-surface-raised)]" href={`tel:${n.dial}`} key={n.dial}>
+                          <Phone aria-hidden="true" className="size-3.5" />
+                          {n.label && <span className="text-[11.5px] font-medium text-muted-foreground">{n.label}</span>}
+                          {n.display}
+                        </a>
+                      ))}
+                    </span>
                   ) : (
                     <span className="text-[12.5px] text-muted-foreground">No number on file</span>
                   )}
@@ -92,7 +102,7 @@ function AgencyCard({ agency: a, filters }: { agency: AgencyPresence; filters: A
       <ul className="mt-3 flex flex-col gap-1.5 text-[13px]">
         <li className="flex items-center gap-2 text-[var(--color-text-secondary)]">
           <Phone aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
-          {a.contact_number ? <a className="tabular-nums hover:underline" href={`tel:${a.contact_number.replace(/[^\d+]/g, '')}`}>{a.contact_number}</a> : <span className="text-muted-foreground">No contact number on file</span>}
+          {a.contact_number ? <HotlineLinks value={a.contact_number} /> : <span className="text-muted-foreground">No contact number on file</span>}
         </li>
         <li className="flex items-center gap-2 text-[var(--color-text-secondary)]">
           <Mail aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />

@@ -40,7 +40,7 @@ function AlertDialogOverlay({
       className={cn(
         // z-[1100]: comfortably above the map overlay panels (z-[999]/z-[1000] —
         // ZirenMap.tsx, incident-location-panel.tsx), which are themselves that
-        // high only to clear Leaflet's own internal pane z-indices. A dialog
+        // high only to sit over the map canvas and its markers. A dialog
         // must always sit above page content, maps included. Below the
         // incident-interrupt alert (z-[2000]), which must break through
         // anything, dialogs included.

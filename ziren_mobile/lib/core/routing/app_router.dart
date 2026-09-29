@@ -8,7 +8,8 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/pending_approval_screen.dart';
 import '../../features/assistant/presentation/ziren_ai_screen.dart';
 import '../../features/announcements/presentation/announcements_screen.dart';
-import '../../features/safety/presentation/emergency_contacts_screen.dart';
+import '../../features/help/presentation/help_screen.dart';
+import '../../features/hotlines/presentation/hotlines_view.dart';
 import '../../features/safety/presentation/safety_guide_screen.dart';
 import '../../features/onboarding/presentation/consent_screen.dart';
 import '../../features/onboarding/presentation/language_screen.dart';
@@ -25,6 +26,7 @@ import '../../features/registration/presentation/step_selfie_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 import '../../features/home/presentation/resident_home_screen.dart';
 import '../../features/incident_report/presentation/my_reports_screen.dart';
+import '../../features/incident_report/presentation/pick_incident_location_screen.dart';
 import '../../features/incident_report/presentation/quick_report_confirm_screen.dart';
 import '../../features/incident_report/presentation/quick_report_review_screen.dart';
 import '../../features/incident_report/presentation/speech_diagnostic_screen.dart';
@@ -283,9 +285,24 @@ class ZirenRouter {
             path: '/announcements',
             builder: (_, __) => const AnnouncementsScreen(),
           ),
+          // Station hotlines — every official BFP/PNP/MDRRMO number, usable
+          // with no internet (the list ships inside the app). The old
+          // /emergency-contacts screen read them live from the database only,
+          // so it showed nothing exactly when a call was the only way left.
+          GoRoute(
+            path: '/hotlines',
+            builder: (_, __) => const HotlinesScreen(),
+          ),
           GoRoute(
             path: '/emergency-contacts',
-            builder: (_, __) => const EmergencyContactsScreen(),
+            builder: (_, __) => const HotlinesScreen(),
+          ),
+          // "How to use Ziren". ?role=responder shows the responder's topics.
+          GoRoute(
+            path: '/help',
+            builder: (_, state) => HelpScreen(
+              forResponder: state.uri.queryParameters['role'] == 'responder',
+            ),
           ),
           GoRoute(
             path: '/safety-guide',
@@ -410,6 +427,11 @@ class ZirenRouter {
               incidentId: state.pathParameters['id']!,
               stationName: state.uri.queryParameters['station'],
             ),
+          ),
+          // "The incident is somewhere else" — pops with the chosen LatLng.
+          GoRoute(
+            path: '/report/pick-location',
+            builder: (_, __) => const PickIncidentLocationScreen(),
           ),
           GoRoute(
             path: '/sos-confirm',

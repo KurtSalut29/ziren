@@ -584,9 +584,14 @@ class _SafetySection extends StatelessWidget {
           ),
           Divider(height: 1, color: ZirenTokens.surfaceBorder),
           _SafetyRow(
-            icon: LucideIcons.siren,
-            label: t.contactsTitle,
-            onTap: () => context.push('/emergency-contacts'),
+            icon: LucideIcons.phone_call,
+            label: t.hotlinesTitle,
+            onTap: () => context.push('/hotlines'),
+          ),
+          _SafetyRow(
+            icon: LucideIcons.life_buoy,
+            label: t.helpTitle,
+            onTap: () => context.push('/help'),
           ),
           _SafetyRow(
             icon: LucideIcons.shield_plus,

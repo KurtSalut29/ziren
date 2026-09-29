@@ -98,7 +98,7 @@ export async function fetchResponseRoute(
     if (!route || !Array.isArray(line) || line.length < 2) return fallback;
 
     return {
-      // Back from GeoJSON [lng, lat] to Leaflet's [lat, lng].
+      // Back from GeoJSON [lng, lat] to this module's [lat, lng].
       path: line.map(([lng, lat]) => [lat, lng] as LatLng),
       distanceKm: route.distance / 1000,
       minutes: Math.max(1, Math.ceil(route.duration / 60)),

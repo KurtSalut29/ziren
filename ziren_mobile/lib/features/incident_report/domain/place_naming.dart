@@ -186,7 +186,17 @@ class PlaceNaming {
 
     parts.add('Biliran');
 
-    final buffer = StringBuffer(parts.join(', '));
+    // A name never twice in a row: when the nearest known place IS the town
+    // ("Naval") its municipality is the same word, and "Naval, Naval,
+    // Biliran" reads like a mistake to the dispatcher.
+    final deduped = <String>[];
+    for (final part in parts) {
+      if (deduped.isEmpty || deduped.last.toLowerCase() != part.toLowerCase()) {
+        deduped.add(part);
+      }
+    }
+
+    final buffer = StringBuffer(deduped.join(', '));
     if (accuracyM != null && accuracyM > 100) {
       buffer.write(' (GPS ±${accuracyM.round()} m)');
     }

@@ -218,11 +218,11 @@ export function AboutPanel({
       <Card description="The parts Ziren is made of." title="Built with">
         <div className="grid gap-x-8 gap-y-4 sm:grid-cols-3">
           {[
-            ['This dashboard', 'Next.js 15 and React 19, Tailwind CSS, Leaflet maps, Apache ECharts, Radix UI.'],
+            ['This dashboard', 'Next.js 15 and React 19, Tailwind CSS, MapLibre GL maps, Apache ECharts, Radix UI.'],
             ['The server', 'Python and FastAPI, with scikit-learn for the classifier, faster-whisper for speech recognition and structured logging.'],
             ['Data and sign-in', 'Supabase — a PostgreSQL database, authentication and file storage.'],
             ['The mobile app', 'Flutter, for both residents and responders, with an English and a Filipino interface.'],
-            ['Maps', 'Esri World Imagery and CARTO / OpenStreetMap tiles, drawn with Leaflet.'],
+            ['Maps', 'MapLibre GL over a self-hosted OpenStreetMap extract of Biliran (OpenMapTiles), with Esri World Imagery for satellite.'],
             ['Reports', 'CSV, Excel (openpyxl) and PDF (ReportLab) exports generated on the server.'],
           ].map(([title, body]) => (
             <div key={title}>

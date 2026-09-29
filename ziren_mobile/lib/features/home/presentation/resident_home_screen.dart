@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 
 import '../../../core/network/backend_health.dart';
 import '../../../features/auth/domain/auth_provider.dart';
+import '../../../features/hotlines/data/hotlines_store.dart';
+import '../../../features/help/presentation/help_sheet.dart';
+import '../../../features/hotlines/presentation/hotlines_view.dart';
 import '../../../features/incident_report/domain/incident_category_style.dart';
 import '../../../features/incident_report/domain/incident_provider.dart';
 import '../../../features/notifications/domain/notification_provider.dart';
@@ -16,6 +19,7 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/verification_banner.dart';
 import '../../../shared/widgets/home_kit.dart';
 import '../../../shared/widgets/home_surface.dart';
+import '../../../shared/widgets/mascot_home_header.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Resident Home.
@@ -71,6 +75,9 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
       // the request now means a precise fix is more likely already ready
       // by the time they need one.
       if (incidents.currentPosition == null) incidents.fetchLocation();
+      // Refreshes the saved copy of the station numbers while there is still
+      // a connection, so the offline list is as current as it can be.
+      HotlinesStore.instance.refresh();
       _checkConnectivity();
       _connectivityTimer = Timer.periodic(
         _pingInterval,
@@ -113,6 +120,13 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   /// category was the question the wizard opens with, and it has already
   /// been answered.
   void _report(IncidentCategory category) {
+    // No connection to Ziren: a report cannot go anywhere, so the category
+    // opens the numbers of the stations that handle it instead — BFP for a
+    // fire, PNP for a crime, MDRRMO for the rest. A call needs only signal.
+    if (_connectivity == _ConnectivityMode.offline) {
+      showHotlinesSheet(context, category: category, offline: true);
+      return;
+    }
     context.read<IncidentProvider>()
       ..clearWizard()
       ..setCategory(category);
@@ -143,6 +157,10 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
             : (auth.user?.email?.split('@').first ??
                 t.homeResidentFallbackName);
 
+    // The big greeting uses the first name only - a full name at 30 px
+    // wraps onto a third line on a small phone.
+    final firstName = displayName.trim().split(RegExp(r'\s+')).first;
+
     final barangay = profile?.barangay;
     // Falls back to the registered profile barangay — never to nothing —
     // but that fallback is exactly the bug this replaces if it is ever the
@@ -158,178 +176,365 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
             : t.homeLocationUnknown;
     final locationLabel =
         incidents.locationAddress ??
-        (incidents.locationDenied
-            ? registeredLabel
-            : t.homeLocating);
+        (incidents.locationDenied ? registeredLabel : t.homeLocating);
 
     return Scaffold(
       backgroundColor: kHomeCanvas,
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          color: ZirenTokens.brandOrange,
-          onRefresh:
-              () => Future.wait([
-                incidents.loadMyIncidents(),
-                _checkConnectivity(),
-              ]),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: ZirenTokens.space24),
-            children: [
-              // ── Identity banner ──────────────────────────────
-              //
-              // Connectivity rides beside the location pill here rather
-              // than as its own band — this is the one claim the product
-              // has to land in the first seconds (it still works when the
-              // network does not), so it stays visible up top, just
-              // smaller than the old full-width strip.
-              HomeHeroBanner(
-                hasUnread: notifications.hasUnread,
-                onBellTap: () => context.push('/notifications'),
-                bellLabel: t.homeBellLabel,
-                bellLabelUnread: t.homeBellLabelUnread,
-                locationLabel: locationLabel,
-                connectivityLabel: switch (_connectivity) {
-                  _ConnectivityMode.offline => t.homeDeliveryOfflineTitle,
-                  _ConnectivityMode.online => t.homeDeliveryOnlineTitle,
-                  _ConnectivityMode.unknown => t.homeDeliveryCheckingTitle,
-                },
-                connectivityIcon: switch (_connectivity) {
-                  _ConnectivityMode.offline => LucideIcons.wifi_off,
-                  _ConnectivityMode.online => LucideIcons.radio_tower,
-                  _ConnectivityMode.unknown => LucideIcons.refresh_cw,
-                },
-                connectivityColor: switch (_connectivity) {
-                  // Neutral grey, not red: this is a plain status, and a
-                  // steady grey reads calmer under time pressure than an
-                  // alarm colour for something the resident cannot fix from
-                  // this screen anyway.
-                  _ConnectivityMode.offline => ZirenTokens.connectivityOffline,
-                  _ConnectivityMode.online => ZirenTokens.connectivityOnline,
-                  _ConnectivityMode.unknown => Colors.white,
-                },
-              ),
-
-              // ── Greeting ──────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kHomeGutter,
-                  ZirenTokens.space20,
-                  kHomeGutter,
-                  ZirenTokens.space16,
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              color: ZirenTokens.brandOrange,
+              onRefresh:
+                  () => Future.wait([
+                    incidents.loadMyIncidents(),
+                    _checkConnectivity(),
+                  ]),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                // Room under the last card for the help button, so it never
+                // covers anything the resident has to read or tap.
+                padding: const EdgeInsets.only(
+                  bottom: ZirenHelpButton.size + ZirenTokens.space24,
                 ),
+                children: [
+                  // ── Mascot header ─────────────────────────────
+                  //
+                  // Tagline, date, a large greeting, and Ziren speaking to the
+                  // resident. Connectivity still rides at the top (under the
+                  // mascot's message): the app working without the network is
+                  // the one claim that has to land in the first seconds.
+                  MascotHomeHeader(
+                    tagline: t.welcomeTagline,
+                    hasUnread: notifications.hasUnread,
+                    onBellTap: () => context.push('/notifications'),
+                    bellLabel: t.homeBellLabel,
+                    bellLabelUnread: t.homeBellLabelUnread,
+                    displayName: displayName,
+                    avatarUrl: profile?.avatarUrl,
+                    onProfileTap: () => context.go('/profile'),
+                    profileLabel: t.homeProfileButtonLabel,
+                    greeting: _greeting(t, firstName),
+                    greetingName: firstName,
+                    mascot: MascotArt.resident,
+                    mascotName: t.mascotName,
+                    message: _mascotMessage(t, incidents, firstName),
+                    locationLabel: locationLabel,
+                    connectivityLabel: switch (_connectivity) {
+                      _ConnectivityMode.offline => t.homeDeliveryOfflineTitle,
+                      _ConnectivityMode.online => t.homeDeliveryOnlineTitle,
+                      _ConnectivityMode.unknown => t.homeDeliveryCheckingTitle,
+                    },
+                    connectivityIcon: switch (_connectivity) {
+                      _ConnectivityMode.offline => LucideIcons.wifi_off,
+                      _ConnectivityMode.online => LucideIcons.radio_tower,
+                      _ConnectivityMode.unknown => LucideIcons.refresh_cw,
+                    },
+                    connectivityColor: switch (_connectivity) {
+                      // Neutral grey, not red: a plain status the resident
+                      // cannot fix from this screen anyway.
+                      _ConnectivityMode.offline =>
+                        ZirenTokens.connectivityOffline,
+                      _ConnectivityMode.online =>
+                        ZirenTokens.connectivityOnline,
+                      _ConnectivityMode.unknown => ZirenTokens.textMuted,
+                    },
+                  ),
+                  const SizedBox(height: ZirenTokens.space20),
+
+                  // ── Report an Emergency (uncategorised) ──────────
+                  EmergencyCtaCard(
+                    title: t.homeReportCtaTitle,
+                    subtitle: t.homeReportCtaSubtitle,
+                    badge: t.homeReportCtaBadge,
+                    onTap: () {
+                      if (_connectivity == _ConnectivityMode.offline) {
+                        showHotlinesSheet(context, offline: true);
+                        return;
+                      }
+                      context.push('/sos-confirm');
+                    },
+                  ),
+
+                  if (_connectivity == _ConnectivityMode.offline) ...[
+                    const SizedBox(height: ZirenTokens.space12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: _OfflineCallHint(text: t.homeOfflineCallHint),
+                    ),
+                  ],
+
+                  const SizedBox(height: ZirenTokens.space20),
+
+                  // ── Category grid ─────────────────────────────────
+                  QuickActionGrid(
+                    actions: [
+                      QuickAction(
+                        icon: LucideIcons.flame,
+                        label: t.categoryFireShort,
+                        semanticLabel: t.homeReportAction(t.categoryFireShort),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.fire,
+                        ),
+                        onTap: () => _report(IncidentCategory.fire),
+                      ),
+                      QuickAction(
+                        icon: LucideIcons.stethoscope,
+                        label: t.categoryMedicalShort,
+                        semanticLabel: t.homeReportAction(
+                          t.categoryMedicalShort,
+                        ),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.medicalTrauma,
+                        ),
+                        onTap: () => _report(IncidentCategory.medicalTrauma),
+                      ),
+                      QuickAction(
+                        icon: LucideIcons.car,
+                        label: t.categoryAccidentShort,
+                        semanticLabel: t.homeReportAction(
+                          t.categoryAccidentShort,
+                        ),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.vehicular,
+                        ),
+                        onTap: () => _report(IncidentCategory.vehicular),
+                      ),
+                      QuickAction(
+                        icon: LucideIcons.shield,
+                        label: t.categoryCrimeShort,
+                        semanticLabel: t.homeReportAction(t.categoryCrimeShort),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.domesticDisputeCrime,
+                        ),
+                        onTap:
+                            () =>
+                                _report(IncidentCategory.domesticDisputeCrime),
+                      ),
+                      // One category covers flood, landslide and storm damage in
+                      // the backend, so it is one tile in the grid.
+                      QuickAction(
+                        icon: LucideIcons.droplet,
+                        label: t.categoryCalamityShort,
+                        semanticLabel: t.homeReportAction(
+                          t.categoryCalamityShort,
+                        ),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.floodLandslideCalamity,
+                        ),
+                        onTap:
+                            () => _report(
+                              IncidentCategory.floodLandslideCalamity,
+                            ),
+                      ),
+                      QuickAction(
+                        icon: LucideIcons.ellipsis,
+                        label: t.categoryOtherShort,
+                        semanticLabel: t.homeReportAction(t.categoryOtherShort),
+                        color: IncidentCategoryStyle.color(
+                          IncidentCategory.other,
+                        ),
+                        onTap: () => _report(IncidentCategory.other),
+                      ),
+                    ],
+                  ),
+
+                  // ── Station hotlines ─────────────────────────────
+                  //
+                  // Always here, not only offline: a resident should already know
+                  // where the numbers are before the day the network is down.
+                  const SizedBox(height: ZirenTokens.space16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kHomeGutter,
+                    ),
+                    child: _HotlinesCard(
+                      title: t.hotlinesHomeCardTitle,
+                      body: t.hotlinesHomeCardBody,
+                      onTap: () => context.push('/hotlines'),
+                    ),
+                  ),
+
+                  // ── Verification nudge ─────────────────────────
+                  //
+                  // Below the emergency action, never above it. This is a chore
+                  // the app is asking of someone; it does not get to sit between
+                  // a person and the report button. Dismissable for the session,
+                  // because a nudge that cannot be silenced becomes noise the
+                  // user learns to scroll past.
+                  if (!_verificationDismissed) ...[
+                    const SizedBox(height: ZirenTokens.space20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: VerificationBanner(
+                        onDismiss:
+                            () => setState(() => _verificationDismissed = true),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: ZirenTokens.space24),
+                ],
+              ),
+            ),
+          ),
+          // ── Ziren help ─────────────────────────────────
+          //
+          // Bottom-right, just above the navigation bar (the shell already
+          // lifts this screen clear of it): "How to use Ziren" as a modal.
+          Positioned(
+            right: kHomeGutter,
+            bottom: ZirenTokens.space16,
+            child: ZirenHelpButton(
+              label: t.helpButtonLabel,
+              onPressed: () => showHelpSheet(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// What the mascot says: what the resident can do right now, or how their
+  /// reports are doing.
+  String _mascotMessage(
+    AppLocalizations t,
+    IncidentProvider incidents,
+    String name,
+  ) {
+    if (_connectivity == _ConnectivityMode.offline) {
+      return t.mascotResidentOffline;
+    }
+    final mine = incidents.myIncidents;
+    if (mine.isEmpty) return t.mascotResidentIntro(name);
+    final open =
+        mine
+            .where((i) => i.status != 'resolved' && i.status != 'cancelled')
+            .length;
+    if (open > 0) return t.mascotResidentOpen('$open', name);
+    return t.mascotResidentThanks('${mine.length}', name);
+  }
+}
+
+enum _ConnectivityMode { unknown, online, offline }
+
+/// Shown under the report button while offline: says what the tiles do now.
+class _OfflineCallHint extends StatelessWidget {
+  const _OfflineCallHint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(ZirenTokens.space12),
+      decoration: BoxDecoration(
+        color: ZirenTokens.systemWarning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+        border: Border.all(
+          color: ZirenTokens.systemWarning.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            LucideIcons.phone_call,
+            size: 18,
+            color: ZirenTokens.systemWarning,
+          ),
+          const SizedBox(width: ZirenTokens.space10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: ZirenTokens.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HotlinesCard extends StatelessWidget {
+  const _HotlinesCard({
+    required this.title,
+    required this.body,
+    required this.onTap,
+  });
+
+  final String title;
+  final String body;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: ZirenTokens.surfaceCard,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
+        side: BorderSide(color: ZirenTokens.surfaceBorder),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(ZirenTokens.space16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: ZirenTokens.systemSuccess.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  LucideIcons.phone,
+                  size: 20,
+                  color: ZirenTokens.systemSuccess,
+                ),
+              ),
+              const SizedBox(width: ZirenTokens.space12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _greeting(t, displayName),
+                      title,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                         color: ZirenTokens.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      t.homeStayAlertBody,
+                      body,
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 12.5,
+                        height: 1.35,
                         color: ZirenTokens.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              // ── Report an Emergency (uncategorised) ──────────
-              EmergencyCtaCard(
-                title: t.homeReportCtaTitle,
-                subtitle: t.homeReportCtaSubtitle,
-                badge: t.homeReportCtaBadge,
-                onTap: () => context.push('/sos-confirm'),
+              Icon(
+                LucideIcons.chevron_right,
+                size: 18,
+                color: ZirenTokens.textMuted,
               ),
-
-              const SizedBox(height: ZirenTokens.space20),
-
-              // ── Category grid ─────────────────────────────────
-              QuickActionGrid(
-                actions: [
-                  QuickAction(
-                    icon: LucideIcons.flame,
-                    label: t.categoryFireShort,
-                    semanticLabel: t.homeReportAction(t.categoryFireShort),
-                    color: IncidentCategoryStyle.color(IncidentCategory.fire),
-                    onTap: () => _report(IncidentCategory.fire),
-                  ),
-                  QuickAction(
-                    icon: LucideIcons.stethoscope,
-                    label: t.categoryMedicalShort,
-                    semanticLabel: t.homeReportAction(t.categoryMedicalShort),
-                    color: IncidentCategoryStyle.color(
-                      IncidentCategory.medicalTrauma,
-                    ),
-                    onTap: () => _report(IncidentCategory.medicalTrauma),
-                  ),
-                  QuickAction(
-                    icon: LucideIcons.car,
-                    label: t.categoryAccidentShort,
-                    semanticLabel: t.homeReportAction(t.categoryAccidentShort),
-                    color: IncidentCategoryStyle.color(
-                      IncidentCategory.vehicular,
-                    ),
-                    onTap: () => _report(IncidentCategory.vehicular),
-                  ),
-                  QuickAction(
-                    icon: LucideIcons.shield,
-                    label: t.categoryCrimeShort,
-                    semanticLabel: t.homeReportAction(t.categoryCrimeShort),
-                    color: IncidentCategoryStyle.color(
-                      IncidentCategory.domesticDisputeCrime,
-                    ),
-                    onTap: () => _report(IncidentCategory.domesticDisputeCrime),
-                  ),
-                  // One category covers flood, landslide and storm damage in
-                  // the backend, so it is one tile in the grid.
-                  QuickAction(
-                    icon: LucideIcons.droplet,
-                    label: t.categoryCalamityShort,
-                    semanticLabel: t.homeReportAction(t.categoryCalamityShort),
-                    color: IncidentCategoryStyle.color(
-                      IncidentCategory.floodLandslideCalamity,
-                    ),
-                    onTap:
-                        () => _report(IncidentCategory.floodLandslideCalamity),
-                  ),
-                  QuickAction(
-                    icon: LucideIcons.ellipsis,
-                    label: t.categoryOtherShort,
-                    semanticLabel: t.homeReportAction(t.categoryOtherShort),
-                    color: IncidentCategoryStyle.color(IncidentCategory.other),
-                    onTap: () => _report(IncidentCategory.other),
-                  ),
-                ],
-              ),
-
-              // ── Verification nudge ─────────────────────────
-              //
-              // Below the emergency action, never above it. This is a chore
-              // the app is asking of someone; it does not get to sit between
-              // a person and the report button. Dismissable for the session,
-              // because a nudge that cannot be silenced becomes noise the
-              // user learns to scroll past.
-              if (!_verificationDismissed) ...[
-                const SizedBox(height: ZirenTokens.space20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                  child: VerificationBanner(
-                    onDismiss:
-                        () => setState(() => _verificationDismissed = true),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: ZirenTokens.space24),
             ],
           ),
         ),
@@ -337,5 +542,3 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
     );
   }
 }
-
-enum _ConnectivityMode { unknown, online, offline }

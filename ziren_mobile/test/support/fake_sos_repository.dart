@@ -16,6 +16,8 @@ class FakeSosRepository extends SosRepository {
     double? longitude,
     String? description,
     String? incidentCategory,
+    String? locationAddress,
+    String? landmarkNote,
   }) {
     calls++;
     return _outcome();

@@ -22,6 +22,7 @@ import {
   ToggleRow,
 } from '@/components/settings/kit';
 import { useNotice } from '@/lib/toast';
+import { hotlineProblem } from '@/lib/format/hotlines';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -231,11 +232,9 @@ function AgencyPanels({
 // ── Agency Information ───────────────────────────────────────────────────
 
 /** Plausible phone digits, or empty. */
-function phoneProblem(raw: string): string | null {
-  const v = raw.trim();
-  if (v === '') return null;
-  return /^\+?\d{7,15}$/.test(v.replace(/[\s\-().]/g, '')) ? null : 'Use digits, for example (053) 500-9911.';
-}
+// A station may list several lines — see lib/format/hotlines.ts. The mobile
+// app shows each one as its own Call button, online and offline.
+const phoneProblem = hotlineProblem;
 
 function emailProblem(raw: string): string | null {
   const v = raw.trim();
@@ -395,8 +394,15 @@ function AgencyInformation({
           <Field error={problems.municipality} id="agency-municipality" label="Municipality">
             <Input aria-invalid={!!problems.municipality} className="max-w-[380px]" id="agency-municipality" onChange={e => set('municipality', e.target.value)} value={form.municipality} />
           </Field>
-          <Field error={problems.contact_number} id="agency-contact" label="Contact number">
-            <Input aria-invalid={!!problems.contact_number} className="max-w-[380px]" id="agency-contact" inputMode="tel" onChange={e => set('contact_number', e.target.value)} placeholder="(053) 500-9911" value={form.contact_number} />
+          <Field error={problems.contact_number} id="agency-contact" label="Hotline numbers">
+            <Input aria-invalid={!!problems.contact_number} className="max-w-[460px]" id="agency-contact" inputMode="tel" onChange={e => set('contact_number', e.target.value)} placeholder="Globe: 0955-723-6300; Smart: 0948-024-3466" value={form.contact_number} />
+            {/* Residents see these in the app, and can call them with no
+                internet — so every number here has to be dialable. */}
+            {!problems.contact_number && (
+              <span className="mt-1.5 block text-[12px] text-muted-foreground">
+                Shown to residents in the app as Call buttons, even offline. Separate several numbers with “;”, and add a label if you like — “Globe:”, “Smart:”, “Landline:”.
+              </span>
+            )}
           </Field>
           <Field error={problems.email} id="agency-email" label="Email address">
             <Input aria-invalid={!!problems.email} className="max-w-[380px]" id="agency-email" onChange={e => set('email', e.target.value)} placeholder="agency@biliran.gov.ph" type="email" value={form.email} />

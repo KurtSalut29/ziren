@@ -13,6 +13,8 @@ import 'incident_labels.dart';
 import 'widgets/quick_report_kit.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
+import '../../hotlines/presentation/hotlines_view.dart';
+
 /// Quick report — step 2 of 2. Everything collected on the previous screen,
 /// echoed back for a last look before it becomes a real dispatch.
 ///
@@ -69,7 +71,7 @@ class _QuickReportReviewScreenState extends State<QuickReportReviewScreen> {
 
     final ok = await p.submitIncident(
       reportText: reportText,
-      locationAddress: p.locationAddress,
+      locationAddress: p.incidentAddress,
     );
 
     if (!mounted) return;
@@ -122,7 +124,7 @@ class _QuickReportReviewScreenState extends State<QuickReportReviewScreen> {
     // separate network call from the report submit itself, and requiring it
     // to succeed first means one slow call can block a report the actual
     // submit would have gotten through fine.
-    final canSend = nearest != null || p.currentPosition != null;
+    final canSend = nearest != null || p.incidentLat != null;
     final agencyName = switch (nearest?.station.agencyType) {
       'BFP' => t.agencyBfp,
       'PNP' => t.agencyPnp,
@@ -234,12 +236,22 @@ class _QuickReportReviewScreenState extends State<QuickReportReviewScreen> {
                           icon: LucideIcons.map_pin,
                           label: t.reviewLocation,
                           value:
-                              p.locationAddress ??
-                              (p.currentPosition != null
-                                  ? '${p.currentPosition!.latitude.toStringAsFixed(5)}, '
-                                      '${p.currentPosition!.longitude.toStringAsFixed(5)}'
+                              p.incidentAddress ??
+                              (p.incidentLat != null
+                                  ? '${p.incidentLat!.toStringAsFixed(5)}, '
+                                      '${p.incidentLng!.toStringAsFixed(5)}'
                                   : t.reviewNoGps),
                         ),
+                        // Said out loud, so a resident who placed the incident
+                        // elsewhere sees that the station will know it.
+                        if (p.reportingElsewhere) ...[
+                          const _ReviewDivider(),
+                          _ReviewRow(
+                            icon: LucideIcons.user_round,
+                            label: t.locReviewReporterLabel,
+                            value: p.locationAddress ?? t.locReviewReporterUnknown,
+                          ),
+                        ],
                         if (p.landmarkNote != null) ...[
                           const _ReviewDivider(),
                           _ReviewRow(
@@ -361,7 +373,7 @@ class _QuickReportReviewScreenState extends State<QuickReportReviewScreen> {
                                     // "Your location is needed" only when it
                                     // really is missing; a GPS fix with no
                                     // station list is a different situation.
-                                    : p.currentPosition != null
+                                    : p.incidentLat != null
                                     ? t.quickStationAuto
                                     : t.quickStationUnknown,
                                 style: TextStyle(
@@ -408,6 +420,28 @@ class _QuickReportReviewScreenState extends State<QuickReportReviewScreen> {
                         ),
                       ),
                     ),
+                    // Nothing reached the server. A call still gets through
+                    // where this did not — offer the stations for this kind
+                    // of emergency right here, nearest first.
+                    if (p.submitFailedOffline) ...[
+                      const SizedBox(height: ZirenTokens.space10),
+                      SizedBox(
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ZirenTokens.systemSuccess,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(LucideIcons.phone, size: 18),
+                          label: Text(t.hotlinesCallInstead),
+                          onPressed: () => showHotlinesSheet(
+                            context,
+                            category: p.incidentCategory,
+                            offline: true,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
 
                   const SizedBox(height: ZirenTokens.space16),

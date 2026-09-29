@@ -3,7 +3,7 @@
  * paint them.
  *
  * It lives beside the map rather than inside it because the page's toolbar and
- * the Leaflet surface must agree on every one of these. They previously did
+ * the map surface must agree on every one of these. They previously did
  * not: the page hard-coded a legend of four severity swatches while the map
  * hard-coded its own copy of the same four hexes, and neither knew whether the
  * other was showing anything. A legend that can disagree with its map is worse
@@ -100,7 +100,7 @@ export const LAYER_MARK: Record<MapLayerKey, LayerMark> = {
 };
 
 /**
- * Token names the Leaflet surface resolves to concrete colours.
+ * Token names the map surface resolves to concrete colours.
  *
  * Severity paints incidents; agency paints responders and coverage. The two
  * sets never cross — an incident is never drawn in an agency colour, because
@@ -160,7 +160,7 @@ export const AGENCY_KEYS: readonly AgencyKey[] = ['BFP', 'PNP', 'MDRRMO'] as con
  * Every municipality's three agencies were seeded with byte-identical
  * geometry — BFP/Naval, PNP/Naval and MDRRMO/Naval are the same rectangle —
  * so the map stacks twenty-four polygons into eight visible boxes. Three
- * consequences, all bad: the colour of a box is whichever agency Leaflet drew
+ * consequences, all bad: the colour of a box is whichever agency the map drew
  * last rather than anything meaningful, the 10% fill reads as ~27% because it
  * is painted three times, and only the topmost tooltip can ever be hovered.
  *

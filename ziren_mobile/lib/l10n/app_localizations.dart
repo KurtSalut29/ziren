@@ -4771,6 +4771,12 @@ abstract class AppLocalizations {
   /// **'No location yet. Check if your GPS is turned on.'**
   String get mapNoLocationYet;
 
+  /// Label under the viewer's own pin on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get mapYouLabel;
+
   /// No description provided for @mapLoading.
   ///
   /// In en, this message translates to:
@@ -6498,6 +6504,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SOS'**
   String get respNearbySosChip;
+
+  /// No description provided for @hotlinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency hotlines'**
+  String get hotlinesTitle;
+
+  /// Title of the hotlines sheet opened from a category tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotlines for {category}'**
+  String hotlinesForCategory(String category);
+
+  /// No description provided for @hotlinesSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a number to open your phone\'s dialer. The nearest town is listed first.'**
+  String get hotlinesSheetSubtitle;
+
+  /// No description provided for @hotlinesOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet — call a station directly'**
+  String get hotlinesOfflineTitle;
+
+  /// No description provided for @hotlinesOfflineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report can\'t be sent right now. A regular call still works with just a phone signal.'**
+  String get hotlinesOfflineBody;
+
+  /// No description provided for @hotlinesNearest.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest'**
+  String get hotlinesNearest;
+
+  /// No description provided for @hotlinesCallNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Call now'**
+  String get hotlinesCallNow;
+
+  /// No description provided for @hotlinesCallSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {number}'**
+  String hotlinesCallSemantics(String number);
+
+  /// No description provided for @hotlinesCallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the dialer. Dial {number} yourself.'**
+  String hotlinesCallFailed(String number);
+
+  /// No description provided for @hotlinesNational.
+  ///
+  /// In en, this message translates to:
+  /// **'National Emergency Hotline'**
+  String get hotlinesNational;
+
+  /// No description provided for @hotlinesNationalScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Anywhere in the Philippines'**
+  String get hotlinesNationalScope;
+
+  /// No description provided for @hotlinesRhu.
+  ///
+  /// In en, this message translates to:
+  /// **'Rural Health Unit'**
+  String get hotlinesRhu;
+
+  /// No description provided for @hotlinesSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all station hotlines'**
+  String get hotlinesSeeAll;
+
+  /// No description provided for @hotlinesScreenIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Official numbers of every BFP, PNP and MDRRMO station in Biliran. They work without internet — only a phone signal is needed.'**
+  String get hotlinesScreenIntro;
+
+  /// No description provided for @hotlinesFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get hotlinesFilterAll;
+
+  /// No description provided for @hotlinesHomeCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Station hotlines'**
+  String get hotlinesHomeCardTitle;
+
+  /// No description provided for @hotlinesHomeCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Call BFP, PNP or MDRRMO directly — works even without internet.'**
+  String get hotlinesHomeCardBody;
+
+  /// No description provided for @hotlinesCallInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Call a station instead'**
+  String get hotlinesCallInstead;
+
+  /// No description provided for @hotlinesStationCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get hotlinesStationCall;
+
+  /// No description provided for @homeOfflineCallHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet. Tap a category below to see the station numbers to call.'**
+  String get homeOfflineCallHint;
+
+  /// No description provided for @locWhereTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is the incident?'**
+  String get locWhereTitle;
+
+  /// No description provided for @locHere.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m at the incident'**
+  String get locHere;
+
+  /// No description provided for @locElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Somewhere else'**
+  String get locElsewhere;
+
+  /// No description provided for @locPickedPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Location placed on the map'**
+  String get locPickedPoint;
+
+  /// No description provided for @locElsewhereNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The station will be told you are reporting from somewhere else.'**
+  String get locElsewhereNote;
+
+  /// Shown under a location the resident placed on the map; {place} is where their phone is.
+  ///
+  /// In en, this message translates to:
+  /// **'The station will be told you are reporting from {place}.'**
+  String locElsewhereNoteFrom(String place);
+
+  /// No description provided for @locChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get locChange;
+
+  /// No description provided for @locRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh location'**
+  String get locRefresh;
+
+  /// No description provided for @locDeniedPickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No GPS? Choose \"Somewhere else\" and place the incident on the map.'**
+  String get locDeniedPickHint;
+
+  /// No description provided for @locLandmarkRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark (required)'**
+  String get locLandmarkRequired;
+
+  /// No description provided for @locLandmarkMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a landmark so the responders can find the place.'**
+  String get locLandmarkMissing;
+
+  /// No description provided for @locLandmarkAutoFilled.
+  ///
+  /// In en, this message translates to:
+  /// **'Filled in from the nearest landmark on the map — check that it is right.'**
+  String get locLandmarkAutoFilled;
+
+  /// No description provided for @locPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is the incident?'**
+  String get locPickTitle;
+
+  /// No description provided for @locPickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the map until the pin is on the incident, or search a barangay or landmark.'**
+  String get locPickHint;
+
+  /// No description provided for @locPickConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location'**
+  String get locPickConfirm;
+
+  /// No description provided for @locSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search barangay or landmark'**
+  String get locSearchHint;
+
+  /// No description provided for @locSearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get locSearchClear;
+
+  /// No description provided for @locKindLandmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark'**
+  String get locKindLandmark;
+
+  /// No description provided for @locKindPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Barangay / place'**
+  String get locKindPlace;
+
+  /// No description provided for @locNearLandmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Near {landmark}'**
+  String locNearLandmark(String landmark);
+
+  /// No description provided for @locReviewReporterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'You are reporting from'**
+  String get locReviewReporterLabel;
+
+  /// No description provided for @locReviewReporterUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location is unknown'**
+  String get locReviewReporterUnknown;
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to use Ziren'**
+  String get helpTitle;
+
+  /// No description provided for @helpIntroResident.
+  ///
+  /// In en, this message translates to:
+  /// **'Short guides to the things you will do in Ziren. Tap a topic to open its steps.'**
+  String get helpIntroResident;
+
+  /// No description provided for @helpIntroResponder.
+  ///
+  /// In en, this message translates to:
+  /// **'Short guides for responders: duty, assignments, status updates and your own safety. Tap a topic to open its steps.'**
+  String get helpIntroResponder;
+
+  /// No description provided for @helpStillStuck.
+  ///
+  /// In en, this message translates to:
+  /// **'Still need help? Call your station'**
+  String get helpStillStuck;
+
+  /// No description provided for @helpHomeLink.
+  ///
+  /// In en, this message translates to:
+  /// **'How to use Ziren?'**
+  String get helpHomeLink;
+
+  /// The mascot introducing itself above its message on Home; typed out letter by letter on a loop.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi! I\'m Ziren'**
+  String get mascotName;
+
+  /// No description provided for @mascotResidentIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, in an emergency, tap the big button below and I\'ll get your report to the nearest station.'**
+  String mascotResidentIntro(String name);
+
+  /// No description provided for @mascotResidentOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of your reports are still being handled. I\'m right here with you, {name}.'**
+  String mascotResidentOpen(String count, String name);
+
+  /// No description provided for @mascotResidentThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve sent {count} reports so far. Thank you for looking out for your community, {name}!'**
+  String mascotResidentThanks(String count, String name);
+
+  /// No description provided for @mascotResidentOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re offline right now. Tap an emergency type below to see the station numbers you can call.'**
+  String get mascotResidentOffline;
+
+  /// No description provided for @mascotResponderOffDuty.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re off duty, {name}. Turn on Duty Status below to receive dispatches.'**
+  String mascotResponderOffDuty(String name);
+
+  /// No description provided for @mascotResponderQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {count} assigned incidents, {critical} critical. Stay safe out there, {name}!'**
+  String mascotResponderQueue(String count, String critical, String name);
+
+  /// No description provided for @mascotResponderReady.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on duty and ready, {name}. Nothing is assigned to you right now.'**
+  String mascotResponderReady(String name);
+
+  /// Label beside the floating Ziren help button on Home (also its screen-reader name); opens How to use Ziren.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Ziren for help'**
+  String get helpButtonLabel;
+
+  /// No description provided for @helpSheetClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get helpSheetClose;
+
+  /// No description provided for @homeProfileButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open your profile'**
+  String get homeProfileButtonLabel;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

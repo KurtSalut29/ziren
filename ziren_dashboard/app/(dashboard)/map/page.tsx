@@ -22,7 +22,7 @@ import {
   type SeverityKey,
 } from '@/components/map/map-legend';
 
-// Leaflet reads `window` on mount — must be client-only, no SSR.
+// MapLibre reads `window` on mount — must be client-only, no SSR.
 const ZirenMap = dynamic(() => import('@/components/map/ZirenMap'), {
   ssr: false,
   loading: () => (

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/errors/failures.dart';
 import '../../incident_report/domain/incident_provider.dart' show IncidentCategory;
+import '../../incident_report/domain/landmark_index.dart';
 import '../../incident_report/domain/location_naming.dart';
 import '../data/sos_repository.dart';
 import 'sos_result.dart';
@@ -179,12 +180,33 @@ class SosProvider extends ChangeNotifier {
 
   // ── Submit ────────────────────────────────────────────────
 
+  bool _failedOffline = false;
+
+  /// The last SOS reached nobody — no connection. The screen then offers the
+  /// station hotlines, since a call still works with only a signal.
+  bool get failedOffline => _failedOffline;
+
   /// Submit the SOS report.
   /// [description] is optional — the server stores "SOS" if omitted.
   Future<bool> submit({String? description}) async {
     _status = SosStatus.submitting;
     _errorMessage = null;
+    _failedOffline = false;
     notifyListeners();
+
+    // The landmark nearest the fix, from the map data bundled in the app — no
+    // typing and no network, so it costs the SOS nothing. Stations asked for
+    // a landmark on every report; this is how SOS carries one.
+    String? landmark;
+    final pos = _position;
+    if (pos != null) {
+      try {
+        final index = await LandmarkIndex.load();
+        landmark = index.nearestLandmark(pos.latitude, pos.longitude)?.name;
+      } catch (_) {
+        landmark = null;
+      }
+    }
 
     try {
       _lastResult = await _repo.submitSos(
@@ -192,6 +214,8 @@ class SosProvider extends ChangeNotifier {
         longitude: _position?.longitude,
         description: description,
         incidentCategory: _category?.value,
+        locationAddress: _locationAddress,
+        landmarkNote: landmark == null ? null : 'Near $landmark',
       );
 
       _lastSubmittedAt = DateTime.now();
@@ -203,6 +227,7 @@ class SosProvider extends ChangeNotifier {
     } on NetworkFailure catch (e) {
       _status = SosStatus.error;
       _errorMessage = e.message;
+      _failedOffline = true;
       notifyListeners();
       return false;
     } on ServerFailure catch (e) {

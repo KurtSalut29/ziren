@@ -961,6 +961,12 @@ export interface IncidentDetail extends QueueIncident, Partial<AfterAction> {
   wizard_answers: Record<string, unknown> | null;
   landmark_note: string | null;
   victim_relationship: string | null;
+  /** Migration 042. The resident placed the incident on the map because they
+   *  are not at it — `location` is the incident, these are where THEY were.
+   *  Absent (undefined) until the migration is applied. */
+  reported_from_elsewhere?: boolean | null;
+  reporter_location?: { type?: string; coordinates?: [number, number] } | null;
+  reporter_address?: string | null;
   stations: {
     name: string;
     address: string | null;

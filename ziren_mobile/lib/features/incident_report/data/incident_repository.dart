@@ -65,6 +65,12 @@ class IncidentRepository {
     List<String>? overlapAgencies,
     String? landmarkNote,
     String? victimRelationship,
+    // The incident is somewhere else: [latitude]/[longitude] are where it is,
+    // and these are where the reporter stood (migration 042).
+    bool reportedFromElsewhere = false,
+    double? reporterLatitude,
+    double? reporterLongitude,
+    String? reporterAddress,
   }) async {
     final http.Response response;
     try {
@@ -91,6 +97,13 @@ class IncidentRepository {
                 if (landmarkNote != null) 'landmark_note': landmarkNote,
                 if (victimRelationship != null)
                   'victim_relationship': victimRelationship,
+                if (reportedFromElsewhere) ...{
+                  'reported_from_elsewhere': true,
+                  if (reporterLatitude != null) 'reporter_latitude': reporterLatitude,
+                  if (reporterLongitude != null)
+                    'reporter_longitude': reporterLongitude,
+                  if (reporterAddress != null) 'reporter_address': reporterAddress,
+                },
               }),
             )
             .timeout(submitTimeout),

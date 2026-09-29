@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+5
+version: 1.0.0+7
 
 environment:
   sdk: ^3.7.2
@@ -183,6 +183,12 @@ flutter:
   assets:
     - assets/images/
     - assets/map/
+    # Label fonts for the map (Latin glyph ranges), served to MapLibre by
+    # OfflineMapService. Listed one by one: asset directories are not recursive.
+    - assets/map/fonts/noto-regular/
+    - assets/map/fonts/noto-medium/
+    # Landmark icons (sprite sheet), same as the web dashboard's.
+    - assets/map/sprite/
     # Map pin artwork — one per agency, plus the person markers. Registered
     # with MapLibre at style load; see map_screen.dart.
     - assets/markers/

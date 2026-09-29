@@ -13,6 +13,7 @@ import {
   Callout, Card, PanelHeader, Row, RowList, SaveBar, StatusDot,
 } from '@/components/settings/kit';
 import { useNotice } from '@/lib/toast';
+import { HotlineLinks } from '@/components/ui/hotline-links';
 
 interface MyProfile {
   id: string;
@@ -248,7 +249,7 @@ export function ProfilePanel({ token }: { token: string }) {
               )}
               {profile.agency_contact_number && (
                 <Row icon={Phone} label="Agency phone">
-                  <span className="text-[13.5px] font-medium text-foreground">{profile.agency_contact_number}</span>
+                  <HotlineLinks className="text-[13.5px] font-medium text-foreground" value={profile.agency_contact_number} />
                 </Row>
               )}
               <Row icon={Mail} label="Sign-in email">

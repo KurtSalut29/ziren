@@ -81,6 +81,16 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: AppLocalizations.of(context).hotlinesTitle,
+            icon: const Icon(LucideIcons.phone_call),
+            onPressed: () => context.push('/hotlines'),
+          ),
+          IconButton(
+            tooltip: AppLocalizations.of(context).helpTitle,
+            icon: const Icon(LucideIcons.life_buoy),
+            onPressed: () => context.push('/help?role=responder'),
+          ),
+          IconButton(
             icon: const Icon(LucideIcons.settings),
             onPressed: () => context.push('/settings'),
           ),

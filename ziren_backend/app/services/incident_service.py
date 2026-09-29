@@ -130,6 +130,7 @@ def submit_incident(
         overlap_agencies=[f.value for f in request.overlap_agencies] if request.overlap_agencies else None,
         landmark_note=request.landmark_note,
         victim_relationship=request.victim_relationship.value if request.victim_relationship else None,
+        reporter_location=_reporter_location(request),
     )
     return _row_to_response(row)
 
@@ -232,6 +233,7 @@ def submit_sos(
         submitted_via=SubmissionChannel.sos,
         is_sos_flagged=is_flagged,
         incident_category=request.incident_category,
+        landmark_note=request.landmark_note,
     )
 
     # ── 8. Update sos_last_submitted_at (marks cooldown start) ────────────────
@@ -672,6 +674,31 @@ def confirm_transcript(
 # Internal helpers
 # =============================================================================
 
+# Columns added by migration 042 — where the REPORTER stood when the incident
+# is somewhere else. See IncidentSubmitRequest.reported_from_elsewhere.
+REPORTER_LOCATION_COLUMNS = ("reported_from_elsewhere", "reporter_location", "reporter_address")
+
+
+def _reporter_location(request: IncidentSubmitRequest) -> dict | None:
+    """The reporter's own position, as incident columns — or None when the
+    reporter is at the incident (the usual case), so nothing extra is written."""
+    if not request.reported_from_elsewhere:
+        return None
+    cols: dict = {"reported_from_elsewhere": True}
+    if request.reporter_latitude is not None and request.reporter_longitude is not None:
+        cols["reporter_location"] = f"POINT({request.reporter_longitude} {request.reporter_latitude})"
+    if request.reporter_address:
+        cols["reporter_address"] = request.reporter_address
+    return cols
+
+
+def _is_missing_reporter_column(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(c in text for c in REPORTER_LOCATION_COLUMNS) and (
+        "column" in text or "pgrst204" in text or "42703" in text or "schema cache" in text
+    )
+
+
 def _create_incident_row(
     *,
     db: Client,
@@ -690,6 +717,7 @@ def _create_incident_row(
     overlap_agencies: list[str] | None = None,
     landmark_note: str | None = None,
     victim_relationship: str | None = None,
+    reporter_location: dict | None = None,
 ) -> dict:
     """
     Single DB-write function for all incident submissions.
@@ -776,15 +804,33 @@ def _create_incident_row(
         "victim_relationship": victim_relationship,
         "nlp_review_needed":   nlp_review_needed,
     }
+    if reporter_location:
+        insert_payload.update(reporter_location)
 
     try:
         result = db.table("incidents").insert(insert_payload).execute()
     except Exception as e:
-        log.error("incident.create_failed", reporter_id=reporter_id, error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to save incident report. Please try again.",
-        )
+        if reporter_location and _is_missing_reporter_column(e):
+            # Migration 042 not applied yet. The incident itself is what
+            # matters; save it without the reporter's position rather than
+            # lose the report over a column that does not exist yet.
+            log.warning("incident.reporter_location_columns_missing", reporter_id=reporter_id)
+            for key in reporter_location:
+                insert_payload.pop(key, None)
+            try:
+                result = db.table("incidents").insert(insert_payload).execute()
+            except Exception as e2:
+                log.error("incident.create_failed", reporter_id=reporter_id, error=str(e2))
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to save incident report. Please try again.",
+                )
+        else:
+            log.error("incident.create_failed", reporter_id=reporter_id, error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to save incident report. Please try again.",
+            )
 
     if not result.data:
         raise HTTPException(

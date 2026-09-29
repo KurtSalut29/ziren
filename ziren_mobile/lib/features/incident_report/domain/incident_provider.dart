@@ -13,6 +13,7 @@ import '../../../core/config/locale_provider.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/network/backend_health.dart';
 import 'biliran_places.dart';
+import 'landmark_index.dart';
 import 'place_naming.dart';
 import '../data/incident_repository.dart';
 import '../data/media_upload_service.dart';
@@ -190,6 +191,13 @@ class IncidentProvider extends ChangeNotifier {
     _victimRelationship = null;
     _landmarkNote = null;
     _quickNote = null;
+    // A report placed somewhere else belongs to that one report only; the
+    // next one starts from "I am at the incident" again.
+    _incidentPoint = null;
+    _incidentAddress = null;
+    _incidentLandmark = null;
+    _deviceLandmark = null;
+    _landmarkForPoint = null;
     // Including the recording. Home calls this before every report, and a
     // voice note surviving into the next one would attach one emergency's
     // audio to a different emergency.
@@ -270,6 +278,11 @@ class IncidentProvider extends ChangeNotifier {
   /// there.
   int _lastSubmitMediaCount = 0;
 
+  bool _submitFailedOffline = false;
+
+  /// The last send failed because nothing answered — no connection.
+  bool get submitFailedOffline => _submitFailedOffline;
+
   SubmitStatus get submitStatus => _submitStatus;
   String? get submitError => _submitError;
   IncidentModel? get lastSubmitted => _lastSubmitted;
@@ -322,6 +335,110 @@ class IncidentProvider extends ChangeNotifier {
   /// A fix good enough to act on without qualification.
   bool get locationIsPrecise =>
       _currentPosition != null && _currentPosition!.accuracy <= 100;
+
+  // ── Where the incident is (when it is not where the phone is) ─────────
+  //
+  // A report used to be pinned to the phone's GPS, full stop. That is wrong
+  // whenever the person reporting is not at the incident — a relative in
+  // Larrazabal calls someone in Kawayan and asks them to report it — and the
+  // crew would drive to Kawayan. The resident can now say "the incident is
+  // somewhere else" and put it on the map. Then:
+  //
+  //   incidentLat/incidentLng   the point they placed — sent as the incident
+  //                             location, routes the report, is where a crew
+  //                             goes;
+  //   currentPosition           still the phone — sent as reporter_location,
+  //                             so the dispatcher sees the two differ.
+  //
+  // With no point placed everything behaves exactly as before.
+  (double, double)? _incidentPoint;
+  String? _incidentAddress;
+  String? _incidentLandmark;
+  String? _deviceLandmark;
+
+  /// Which point [_deviceLandmark] was computed for, so a new GPS fix
+  /// recomputes it instead of reusing a landmark from where the phone was.
+  (double, double)? _landmarkForPoint;
+
+  /// True once the resident has placed the incident somewhere other than
+  /// where they are.
+  bool get reportingElsewhere => _incidentPoint != null;
+
+  double? get incidentLat => _incidentPoint?.$1 ?? _currentPosition?.latitude;
+  double? get incidentLng => _incidentPoint?.$2 ?? _currentPosition?.longitude;
+
+  /// The address of the incident: the placed point's, or the phone's.
+  String? get incidentAddress => reportingElsewhere ? _incidentAddress : _locationAddress;
+
+  /// The landmark nearest the incident, from the map data bundled in the app
+  /// (no network needed), or OpenStreetMap's building at the phone's position
+  /// when the bundled data has nothing within reach. Null when neither knows
+  /// one — the resident then types it.
+  String? get suggestedLandmark =>
+      reportingElsewhere ? _incidentLandmark : (_deviceLandmark ?? nearbyLandmark);
+
+  /// Place the incident at [lat],[lng] — somewhere other than the phone.
+  Future<void> setIncidentPoint(double lat, double lng) async {
+    _incidentPoint = (lat, lng);
+    _incidentLandmark = null;
+    // Named from Ziren's own table at once, so a lost network downgrades the
+    // detail rather than removing the address.
+    _incidentAddress = PlaceNaming.compose(
+      osm: const ResolvedPlace(),
+      nearest: BiliranPlaces.nearest(lat, lng),
+    );
+    notifyListeners();
+
+    final index = await LandmarkIndex.load();
+    if (_incidentPoint != (lat, lng)) return; // moved again meanwhile
+    _incidentLandmark = index.nearestLandmark(lat, lng)?.name;
+    notifyListeners();
+
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+        'lat': lat.toString(),
+        'lon': lng.toString(),
+        'format': 'json',
+        'addressdetails': '1',
+      });
+      final response = await http
+          .get(uri, headers: {'User-Agent': 'ZirenEmergencyApp/1.0'})
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200 || _incidentPoint != (lat, lng)) return;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final osm = PlaceNaming.fromOsm(data['address'] as Map<String, dynamic>?);
+      _incidentAddress = PlaceNaming.compose(
+        osm: osm,
+        nearest: BiliranPlaces.nearest(lat, lng),
+      );
+      _incidentLandmark ??= osm.landmark;
+      notifyListeners();
+    } catch (_) {
+      // Offline or slow: the local name already stands.
+    }
+  }
+
+  /// Back to "I am at the incident".
+  void clearIncidentPoint() {
+    if (_incidentPoint == null) return;
+    _incidentPoint = null;
+    _incidentAddress = null;
+    _incidentLandmark = null;
+    notifyListeners();
+  }
+
+  /// Names the landmark nearest the phone from the bundled map data. Runs on
+  /// every new fix; cheap (a few hundred distance checks).
+  Future<void> _refreshDeviceLandmark() async {
+    final pos = _currentPosition;
+    if (pos == null) return;
+    final point = (pos.latitude, pos.longitude);
+    if (_landmarkForPoint == point) return;
+    _landmarkForPoint = point;
+    final index = await LandmarkIndex.load();
+    _deviceLandmark = index.nearestLandmark(point.$1, point.$2)?.name;
+    notifyListeners();
+  }
 
   // ── Speech state ─────────────────────────────────────────
   bool _speechAvailable = false;
@@ -608,6 +725,7 @@ class IncidentProvider extends ChangeNotifier {
     if (pos == null || _geocoding) return;
 
     _geocoding = true;
+    unawaited(_refreshDeviceLandmark());
     await _ensureHomeBarangay();
     // Name it from the local table immediately, so a lost network downgrades
     // the detail rather than removing the address.
@@ -903,7 +1021,7 @@ class IncidentProvider extends ChangeNotifier {
     // fail the whole report just because a SEPARATE call (the station list)
     // did not come back in time. Only a report with neither a station nor a
     // position has nowhere to go.
-    if (_selectedStation == null && _currentPosition == null) {
+    if (_selectedStation == null && incidentLat == null) {
       _submitStatus = SubmitStatus.error;
       _submitError =
           'We could not find your location. Turn on GPS, or choose a station, '
@@ -914,6 +1032,7 @@ class IncidentProvider extends ChangeNotifier {
 
     _submitStatus = SubmitStatus.submitting;
     _submitError = null;
+    _submitFailedOffline = false;
     _lastSubmitMediaCount = 0;
     notifyListeners();
 
@@ -1020,9 +1139,14 @@ class IncidentProvider extends ChangeNotifier {
       _lastSubmitted = await _repo.submitIncident(
         reportText: reportText,
         stationId: _selectedStation?.id,
-        latitude: _currentPosition?.latitude,
-        longitude: _currentPosition?.longitude,
-        locationAddress: locationAddress,
+        // Where the INCIDENT is — the placed point when there is one.
+        latitude: incidentLat,
+        longitude: incidentLng,
+        locationAddress: reportingElsewhere ? _incidentAddress : locationAddress,
+        reportedFromElsewhere: reportingElsewhere,
+        reporterLatitude: reportingElsewhere ? _currentPosition?.latitude : null,
+        reporterLongitude: reportingElsewhere ? _currentPosition?.longitude : null,
+        reporterAddress: reportingElsewhere ? _locationAddress : null,
         mediaUrls: mediaPaths,
         incidentCategory: _incidentCategory?.value,
         wizardAnswers: _wizardAnswers.isEmpty ? null : _wizardAnswers,
@@ -1045,6 +1169,9 @@ class IncidentProvider extends ChangeNotifier {
     } on NetworkFailure catch (e) {
       _submitStatus = SubmitStatus.error;
       _submitError = e.message;
+      // Nothing reached the server: the screen offers the station hotlines,
+      // because a phone call still works where this did not.
+      _submitFailedOffline = true;
       notifyListeners();
       return false;
     } on ServerFailure catch (e) {
@@ -1063,6 +1190,7 @@ class IncidentProvider extends ChangeNotifier {
   void resetSubmitStatus() {
     _submitStatus = SubmitStatus.idle;
     _submitError = null;
+    _submitFailedOffline = false;
     clearMedia();
     clearWizard();
     notifyListeners();

@@ -21,8 +21,13 @@ abstract final class NearestStationResolver {
     _ => null, // "Iba pa" — nearest station of any agency
   };
 
+  /// Nearest to the INCIDENT — the point the resident placed when they are
+  /// reporting from somewhere else, the phone otherwise. Measuring from the
+  /// phone would hand a Larrazabal fire to Kawayan because that is where the
+  /// caller happened to be.
   static NearestStation? resolve(IncidentProvider p) {
-    final pos = p.currentPosition;
+    final lat = p.incidentLat;
+    final lng = p.incidentLng;
     final agency = agencyFor(p.incidentCategory);
 
     var pool = p.stations.where(
@@ -34,14 +39,14 @@ abstract final class NearestStationResolver {
       // the wrong desk still reaches a dispatcher, who can reassign it.
       if (scoped.isNotEmpty) pool = scoped;
     }
-    if (pool.isEmpty || pos == null) return null;
+    if (pool.isEmpty || lat == null || lng == null) return null;
 
     StationModel? best;
     double bestM = double.infinity;
     for (final s in pool) {
       final m = Geolocator.distanceBetween(
-        pos.latitude,
-        pos.longitude,
+        lat,
+        lng,
         s.latitude!,
         s.longitude!,
       );

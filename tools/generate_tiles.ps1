@@ -19,11 +19,14 @@ $PlanetilerUrl     = "https://github.com/onthegomap/planetiler/releases/download
 $PbfFile = "$CacheDir\philippines-latest.osm.pbf"
 $PbfUrl  = "https://download.geofabrik.de/asia/philippines-latest.osm.pbf"
 
-# Biliran Island bounding box
-$MinLon = "124.30"
-$MinLat = "11.48"
-$MaxLon = "124.58"
-$MaxLat = "11.72"
+# Biliran Province bounding box: the whole main island, Maripipi and
+# Higatangan, and the strait to Leyte. Widened 2026-09-29 - the old box
+# (124.30-124.58, 11.48-11.72) cut off the east coast (Caibiran, Culaba) at
+# street zoom and left Maripipi out entirely.
+$MinLon = "124.20"
+$MinLat = "11.40"
+$MaxLon = "124.70"
+$MaxLat = "11.86"
 
 function Download-File($url, $dest, $label) {
     if ((Test-Path $dest) -and (Get-Item $dest).Length -gt 1KB) {
@@ -93,6 +96,13 @@ if ($proc.ExitCode -ne 0) {
 # 5. Copy to Flutter asset
 Write-Host "  [copy] $MbtilesTemp -> $AssetOut" -ForegroundColor Cyan
 Copy-Item -Force $MbtilesTemp $AssetOut
+
+# 6. The dashboard serves the same extract as a single PMTiles file (range
+#    requests, no tile server). Needs Python with the `pmtiles` package.
+$PmtilesOut = "$RepoRoot\ziren_dashboard\public\map\biliran.pmtiles"
+Write-Host "  [convert] -> $PmtilesOut" -ForegroundColor Cyan
+& python -c "from pmtiles.convert import mbtiles_to_pmtiles; mbtiles_to_pmtiles(r'$AssetOut', r'$PmtilesOut', 15)"
+if ($LASTEXITCODE -ne 0) { Write-Host "  [warn] pip install pmtiles, then re-run to refresh the dashboard copy" -ForegroundColor DarkYellow }
 
 $sizeMb = [math]::Round((Get-Item $AssetOut).Length / 1MB, 1)
 Write-Host ""

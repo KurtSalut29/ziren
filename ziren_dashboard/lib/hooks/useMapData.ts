@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * useMapData — the /map/data poll, owned above the Leaflet component.
+ * useMapData — the /map/data poll, owned above the map component.
  *
  * It used to live inside ZirenMap, which meant the counts, the refresh state
  * and the error were all trapped behind a canvas the page could not read. The

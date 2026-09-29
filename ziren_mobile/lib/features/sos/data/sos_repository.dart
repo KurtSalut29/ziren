@@ -34,6 +34,8 @@ class SosRepository {
     double? longitude,
     String? description,
     String? incidentCategory,
+    String? locationAddress,
+    String? landmarkNote,
   }) async {
     final body = <String, dynamic>{
       if (latitude != null) 'latitude': latitude,
@@ -41,6 +43,9 @@ class SosRepository {
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       if (incidentCategory != null) 'incident_category': incidentCategory,
+      if (locationAddress != null) 'location_address': locationAddress,
+      if (landmarkNote != null && landmarkNote.trim().isNotEmpty)
+        'landmark_note': landmarkNote.trim(),
     };
 
     try {

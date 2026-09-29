@@ -29,7 +29,7 @@ import { announceOpened } from '@/lib/incidents/arrivals';
 import Link from 'next/link';
 import {
   AlertTriangle, CalendarClock, Check, ClipboardCheck, Clock,
-  Flag, Handshake, HelpCircle, ListTree, MapPin, MessageSquare, Phone, Shield,
+  Flag, Handshake, HelpCircle, Landmark, ListTree, MapPin, MessageSquare, Phone, Shield,
   ShieldCheck, ShieldX, Siren, Star, UserCheck, UserRound, Users, X,
 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
@@ -60,6 +60,7 @@ import { IncidentFeedbackPanel } from '@/components/incidents/incident-feedback-
 import { IncidentVoiceNote } from '@/components/incidents/incident-voice-note';
 import { IncidentLocationPanel } from '@/components/incidents/incident-location-panel';
 import { NearbyResponders } from '@/components/incidents/nearby-responders';
+import { ReportedFromElsewhere } from '@/components/incidents/reported-from-elsewhere';
 import { geoPoint } from '@/lib/incidents/response-route';
 import { severityKey } from '@/components/map/map-legend';
 import { CATEGORY_LABELS } from '@/lib/charts/queue-series';
@@ -84,6 +85,7 @@ import { useIncidentThread } from '@/lib/hooks/useIncidentThread';
 import {
   Answers, DetailSkeleton, MaskedContact, Normalisation, Row, Section,
 } from '@/components/incidents/incident-detail-parts';
+import { HotlineLinks } from '@/components/ui/hotline-links';
 
 const SEV_COLOR: Record<string, string> = {
   critical: 'var(--color-severity-critical)',
@@ -725,11 +727,25 @@ export function IncidentDetailModal({
                   )}
 
                   <Section facet="Where" icon={MapPin} title="Where it is">
+                    {/* The resident placed this incident on the map because
+                        they are not at it (a relative called them, say). The
+                        address above the fold is the INCIDENT; this says the
+                        caller is elsewhere, so the dispatcher calls back to
+                        confirm instead of trusting either blindly. */}
+                    {detail.reported_from_elsewhere && (
+                      <ReportedFromElsewhere
+                        incident={geoPoint(detail.location)}
+                        reporter={geoPoint(detail.reporter_location ?? null)}
+                        reporterAddress={detail.reporter_address ?? null}
+                      />
+                    )}
                     <Row icon={MapPin} label="Address">
                       {detail.location_address ?? 'No address resolved'}
                     </Row>
-                    {view.showLocationDetail && detail.landmark_note && (
-                      <Row label="Landmark given">{detail.landmark_note}</Row>
+                    {/* Required on every report since 2026-09-30 — the name a
+                        crew can actually find, so it is always shown. */}
+                    {detail.landmark_note && (
+                      <Row icon={Landmark} label="Landmark">{detail.landmark_note}</Row>
                     )}
                     {/* Coordinates are exact; the address is a NAME derived from
                         them, and naming is the part that fails — OpenStreetMap
@@ -755,12 +771,7 @@ export function IncidentDetailModal({
                         belong next to the other ones. */}
                     {detail.stations?.agencies?.contact_number && (
                       <Row icon={Phone} label="Station contact">
-                        <a
-                          className="underline underline-offset-2"
-                          href={`tel:${detail.stations.agencies.contact_number}`}
-                        >
-                          {detail.stations.agencies.contact_number}
-                        </a>
+                        <HotlineLinks className="underline-offset-2" value={detail.stations.agencies.contact_number} />
                       </Row>
                     )}
                   </Section>

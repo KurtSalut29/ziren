@@ -2443,6 +2443,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get mapNoLocationYet => 'Wala pang lokasyon. Tingnan kung naka-on ang GPS.';
 
   @override
+  String get mapYouLabel => 'Ikaw';
+
+  @override
   String get mapLoading => 'Naglo-load ng mapa…';
 
   @override
@@ -3351,4 +3354,200 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get respNearbySosChip => 'SOS';
+
+  @override
+  String get hotlinesTitle => 'Mga emergency hotline';
+
+  @override
+  String hotlinesForCategory(String category) {
+    return 'Mga hotline para sa $category';
+  }
+
+  @override
+  String get hotlinesSheetSubtitle => 'I-tap ang numero para buksan ang dialer ng phone mo. Nauuna ang pinakamalapit na bayan.';
+
+  @override
+  String get hotlinesOfflineTitle => 'Walang internet — tumawag nang direkta sa station';
+
+  @override
+  String get hotlinesOfflineBody => 'Hindi maipadala ang report ngayon. Gumagana pa rin ang tawag kahit signal lang ang meron ka.';
+
+  @override
+  String get hotlinesNearest => 'Pinakamalapit';
+
+  @override
+  String get hotlinesCallNow => 'Tumawag';
+
+  @override
+  String hotlinesCallSemantics(String number) {
+    return 'Tawagan ang $number';
+  }
+
+  @override
+  String hotlinesCallFailed(String number) {
+    return 'Hindi mabuksan ang dialer. I-dial nang manual ang $number.';
+  }
+
+  @override
+  String get hotlinesNational => 'National Emergency Hotline';
+
+  @override
+  String get hotlinesNationalScope => 'Kahit saan sa Pilipinas';
+
+  @override
+  String get hotlinesRhu => 'Rural Health Unit';
+
+  @override
+  String get hotlinesSeeAll => 'Tingnan lahat ng hotline';
+
+  @override
+  String get hotlinesScreenIntro => 'Opisyal na numero ng bawat BFP, PNP at MDRRMO station sa Biliran. Gumagana kahit walang internet — signal lang ang kailangan.';
+
+  @override
+  String get hotlinesFilterAll => 'Lahat';
+
+  @override
+  String get hotlinesHomeCardTitle => 'Hotline ng mga station';
+
+  @override
+  String get hotlinesHomeCardBody => 'Tawagan nang direkta ang BFP, PNP o MDRRMO — gumagana kahit walang internet.';
+
+  @override
+  String get hotlinesCallInstead => 'Tumawag na lang sa station';
+
+  @override
+  String get hotlinesStationCall => 'Tawagan';
+
+  @override
+  String get homeOfflineCallHint => 'Walang internet. Pindutin ang category sa ibaba para makita ang mga numero ng station na tatawagan.';
+
+  @override
+  String get locWhereTitle => 'Nasaan ang insidente?';
+
+  @override
+  String get locHere => 'Nandito ako mismo';
+
+  @override
+  String get locElsewhere => 'Sa ibang lugar';
+
+  @override
+  String get locPickedPoint => 'Lokasyong pinili sa mapa';
+
+  @override
+  String get locElsewhereNote => 'Sasabihin sa station na nasa ibang lugar ka habang nagre-report.';
+
+  @override
+  String locElsewhereNoteFrom(String place) {
+    return 'Sasabihin sa station na nagre-report ka mula sa $place.';
+  }
+
+  @override
+  String get locChange => 'Baguhin';
+
+  @override
+  String get locRefresh => 'I-refresh ang lokasyon';
+
+  @override
+  String get locDeniedPickHint => 'Walang GPS? Piliin ang \"Sa ibang lugar\" at ilagay ang insidente sa mapa.';
+
+  @override
+  String get locLandmarkRequired => 'Landmark (kailangan)';
+
+  @override
+  String get locLandmarkMissing => 'Maglagay ng landmark para mahanap ng responder ang lugar.';
+
+  @override
+  String get locLandmarkAutoFilled => 'Kinuha sa pinakamalapit na landmark sa mapa — pakitiyak kung tama.';
+
+  @override
+  String get locPickTitle => 'Nasaan ang insidente?';
+
+  @override
+  String get locPickHint => 'Igalaw ang mapa hanggang nasa insidente ang pin, o maghanap ng barangay o landmark.';
+
+  @override
+  String get locPickConfirm => 'Gamitin ang lokasyong ito';
+
+  @override
+  String get locSearchHint => 'Maghanap ng barangay o landmark';
+
+  @override
+  String get locSearchClear => 'I-clear ang search';
+
+  @override
+  String get locKindLandmark => 'Landmark';
+
+  @override
+  String get locKindPlace => 'Barangay / lugar';
+
+  @override
+  String locNearLandmark(String landmark) {
+    return 'Malapit sa $landmark';
+  }
+
+  @override
+  String get locReviewReporterLabel => 'Nagre-report ka mula sa';
+
+  @override
+  String get locReviewReporterUnknown => 'Hindi alam ang lokasyon mo';
+
+  @override
+  String get helpTitle => 'Paano gamitin ang Ziren';
+
+  @override
+  String get helpIntroResident => 'Maiikling gabay sa mga gagawin mo sa Ziren. Pindutin ang topic para makita ang mga hakbang.';
+
+  @override
+  String get helpIntroResponder => 'Maiikling gabay para sa responder: duty, assignment, pag-update ng status at kaligtasan mo. Pindutin ang topic para makita ang mga hakbang.';
+
+  @override
+  String get helpStillStuck => 'Kailangan pa ng tulong? Tawagan ang station';
+
+  @override
+  String get helpHomeLink => 'Paano gamitin ang Ziren?';
+
+  @override
+  String get mascotName => 'Hi! Ako si Ziren';
+
+  @override
+  String mascotResidentIntro(String name) {
+    return '$name, kapag may emergency, pindutin ang malaking button sa ibaba at dadalhin ko ang ulat mo sa pinakamalapit na station.';
+  }
+
+  @override
+  String mascotResidentOpen(String count, String name) {
+    return 'May $count ulat kang inaasikaso pa. Nandito lang ako, $name.';
+  }
+
+  @override
+  String mascotResidentThanks(String count, String name) {
+    return 'Nakapagpadala ka na ng $count ulat. Salamat sa pagmamalasakit sa komunidad, $name!';
+  }
+
+  @override
+  String get mascotResidentOffline => 'Wala kang koneksyon ngayon. Pindutin ang uri ng emergency sa ibaba para makita ang numero ng station na matatawagan.';
+
+  @override
+  String mascotResponderOffDuty(String name) {
+    return 'Off duty ka ngayon, $name. I-on ang Duty Status sa ibaba para makatanggap ng dispatch.';
+  }
+
+  @override
+  String mascotResponderQueue(String count, String critical, String name) {
+    return 'May $count incident na naka-assign sa iyo, $critical ang critical. Mag-ingat ka, $name!';
+  }
+
+  @override
+  String mascotResponderReady(String name) {
+    return 'On duty ka at handa, $name. Wala pang naka-assign sa iyo ngayon.';
+  }
+
+  @override
+  String get helpButtonLabel => 'Magpatulong kay Ziren';
+
+  @override
+  String get helpSheetClose => 'Isara';
+
+  @override
+  String get homeProfileButtonLabel => 'Buksan ang iyong profile';
 }

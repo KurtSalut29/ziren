@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../shared/theme/app_tokens.dart';
 import 'wizard_shared.dart';
+import 'widgets/incident_location_section.dart';
 import '../domain/incident_category_style.dart';
 import '../domain/incident_provider.dart';
 import '../../../l10n/app_localizations.dart';
@@ -15,7 +16,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 /// No forced-choice questions are asked — text/voice is the only free-form
 /// detail input. Layout:
 ///   1. Category grid (WHAT) — tapping a category reveals the rest inline
-///   2. Landmark note (WHERE detail, optional) + GPS status
+///   2. Where: the incident (here, or placed on the map) + landmark (required)
 ///   3. Optional catch-all free text / voice
 class WizardReportScreen extends StatefulWidget {
   const WizardReportScreen({super.key});
@@ -28,6 +29,9 @@ class _WizardReportScreenState extends State<WizardReportScreen> {
   final _catchAllController = TextEditingController();
   final _landmarkController = TextEditingController();
   final _scrollController = ScrollController();
+
+  /// Set when the resident tried to continue without a landmark.
+  bool _landmarkMissing = false;
 
   @override
   void initState() {
@@ -124,9 +128,19 @@ class _WizardReportScreenState extends State<WizardReportScreen> {
                     // ── Rest revealed after category pick ──
                     if (category != null) ...[
                       const SizedBox(height: ZirenTokens.space24),
-                      _LocationSection(
-                        provider: provider,
+                      IncidentLocationSection(
                         landmarkController: _landmarkController,
+                        showLandmarkError: _landmarkMissing,
+                        header: (text) => _SectionHeader(
+                          icon: LucideIcons.map_pin,
+                          label: text,
+                        ),
+                        onLandmarkChanged: (v) {
+                          provider.setLandmarkNote(v);
+                          if (_landmarkMissing) {
+                            setState(() => _landmarkMissing = false);
+                          }
+                        },
                       ),
 
                       const SizedBox(height: ZirenTokens.space24),
@@ -155,6 +169,16 @@ class _WizardReportScreenState extends State<WizardReportScreen> {
             _NextBar(
               enabled: _canProceed,
               onNext: () {
+                // Required — see IncidentLocationSection.
+                if (_landmarkController.text.trim().isEmpty) {
+                  setState(() => _landmarkMissing = true);
+                  _scrollController.animateTo(
+                    0,
+                    duration: ZirenTokens.motionEntrance,
+                    curve: Curves.easeOut,
+                  );
+                  return;
+                }
                 final text = _catchAllController.text.trim();
                 if (text.isNotEmpty) {
                   provider.mergeWizardAnswer('catch_all', text);
@@ -305,217 +329,6 @@ class _CategoryGrid extends StatelessWidget {
               ),
             );
           }).toList(),
-    );
-  }
-}
-
-// ── Location section ───────────────────────────────────────────
-
-class _LocationSection extends StatelessWidget {
-  const _LocationSection({
-    required this.provider,
-    required this.landmarkController,
-  });
-  final IncidentProvider provider;
-  final TextEditingController landmarkController;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    final pos = provider.currentPosition;
-    final denied = provider.locationDenied;
-    final address = provider.locationAddress;
-    final geocoding = provider.geocoding;
-
-    final Color statusColor;
-    final IconData statusIcon;
-    final String statusLabel;
-
-    if (denied) {
-      statusColor = ZirenTokens.systemWarning;
-      statusIcon = LucideIcons.map_pin_off;
-      statusLabel = t.reportNoGps;
-    } else if (pos == null) {
-      statusColor = ZirenTokens.textMuted;
-      statusIcon = LucideIcons.locate;
-      statusLabel = t.reportFindingLocation;
-    } else {
-      statusColor = ZirenTokens.systemSuccess;
-      statusIcon = LucideIcons.map_pin;
-      statusLabel = t.reportGpsAcquired;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          icon: LucideIcons.map_pin,
-          label: t.reportLocation,
-          badge: t.badgeAuto,
-          badgeColor: ZirenTokens.statusProcessing,
-        ),
-        const SizedBox(height: ZirenTokens.space10),
-
-        // GPS status chip
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ZirenTokens.space12,
-            vertical: ZirenTokens.space8,
-          ),
-          decoration: BoxDecoration(
-            color: statusColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(ZirenTokens.radius8),
-            border: Border.all(color: statusColor.withValues(alpha: 0.35)),
-          ),
-          child: Row(
-            children: [
-              Icon(statusIcon, size: 15, color: statusColor),
-              const SizedBox(width: ZirenTokens.space8),
-              Flexible(child: Text(
-                statusLabel,
-                style: TextStyle(fontSize: 12, color: statusColor),
-              )),
-            ],
-          ),
-        ),
-
-        // Address card — only shown when GPS is captured
-        if (pos != null) ...[
-          const SizedBox(height: ZirenTokens.space10),
-          Container(
-            padding: const EdgeInsets.all(ZirenTokens.space12),
-            decoration: BoxDecoration(
-              color: ZirenTokens.surfaceCard,
-              borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-              border: Border.all(color: ZirenTokens.surfaceBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Address row with refresh button
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      LucideIcons.map_pin,
-                      size: 16,
-                      color: ZirenTokens.brandOrange,
-                    ),
-                    const SizedBox(width: ZirenTokens.space8),
-                    Expanded(
-                      child:
-                          geocoding
-                              ? Row(
-                                children: [
-                                  SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: ZirenTokens.textMuted,
-                                    ),
-                                  ),
-                                  const SizedBox(width: ZirenTokens.space8),
-                                  Flexible(child: Text(
-                                    t.reportFindingAddress,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: ZirenTokens.textMuted,
-                                    ),
-                                  )),
-                                ],
-                              )
-                              : address != null
-                              ? Text(
-                                address,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: ZirenTokens.textPrimary,
-                                  height: 1.4,
-                                ),
-                              )
-                              : Text(
-                                '${pos.latitude.toStringAsFixed(5)}, '
-                                '${pos.longitude.toStringAsFixed(5)}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: ZirenTokens.textSecondary,
-                                ),
-                              ),
-                    ),
-                    if (!geocoding)
-                      GestureDetector(
-                        onTap: () => provider.reverseGeocode(),
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: ZirenTokens.space8),
-                          child: Icon(
-                            LucideIcons.refresh_cw,
-                            size: 18,
-                            color: ZirenTokens.brandOrange,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                // Raw coords as secondary reference
-                const SizedBox(height: ZirenTokens.space6),
-                Text(
-                  '${pos.latitude.toStringAsFixed(6)}, '
-                  '${pos.longitude.toStringAsFixed(6)}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: ZirenTokens.textMuted,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-
-                const SizedBox(height: ZirenTokens.space6),
-                Text(
-                  'Mali ang location? Idagdag ang landmark sa ibaba.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: ZirenTokens.textMuted,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-
-        const SizedBox(height: ZirenTokens.space12),
-        TextFormField(
-          controller: landmarkController,
-          maxLength: 300,
-          onChanged: (v) => provider.setLandmarkNote(v),
-          style: TextStyle(fontSize: 14, color: ZirenTokens.textPrimary),
-          decoration: InputDecoration(
-            hintText: 'Landmark o tanda ng lugar (optional)…',
-            hintStyle: TextStyle(
-              color: ZirenTokens.textMuted,
-              fontSize: 13,
-            ),
-            prefixIcon: Icon(
-              LucideIcons.map_pin,
-              color: ZirenTokens.textMuted,
-              size: 20,
-            ),
-            filled: true,
-            fillColor: ZirenTokens.surfaceCard,
-            counterText: '',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-              borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-              borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

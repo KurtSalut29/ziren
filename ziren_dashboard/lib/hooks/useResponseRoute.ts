@@ -3,7 +3,7 @@
 /**
  * useResponseRoute — the drive from the responding station to the incident.
  *
- * Owned above the Leaflet surface, for the same reason useMapData is: the
+ * Owned above the map surface, for the same reason useMapData is: the
  * panel around the map has to state the distance and the ETA in words, and a
  * number trapped inside a canvas is a number the panel has to invent a second
  * copy of. Two copies of a distance is two distances that can disagree.

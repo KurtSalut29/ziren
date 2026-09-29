@@ -14,6 +14,7 @@ Routes:
   PATCH  /{station_id}/activate       — Provincial Admin: reactivate a deactivated station of their own agency_type
 """
 
+import re
 from datetime import datetime, timezone
 
 import structlog
@@ -287,6 +288,35 @@ class AgencyProfileUpdateRequest(BaseModel):
     contact_number:     Optional[str]        = None
     email:              Optional[str]        = None
     notification_rules: Optional[dict[str, Any]] = None
+
+    @field_validator("contact_number")
+    @classmethod
+    def validate_hotlines(cls, v: Optional[str]) -> Optional[str]:
+        """
+        The station's hotlines (migration 042): one number, or several
+        separated by ";" each optionally labelled — "Globe: 0955-723-6300;
+        Smart: 0948-024-3466". Residents call these from the app, offline
+        included, so every part must be a dialable 7–15 digit number. Empty
+        clears it. Same rule as the dashboard (lib/format/hotlines.ts) and
+        the app (station_hotlines.dart).
+        """
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return v
+        if len(v) > 200:
+            raise ValueError("Keep the hotline numbers under 200 characters.")
+        parts = [p.strip() for p in re.split(r"[;\n|]|(?<=\d)\s*/\s*(?=[\d(+])", v) if p.strip()]
+        for part in parts:
+            head, sep, rest = part.partition(":")
+            number = rest if sep and not re.search(r"\d", head) else part
+            if not re.fullmatch(r"\+?\d{7,15}", re.sub(r"[\s\-().]", "", number)):
+                raise ValueError(
+                    f"'{part}' is not a phone number. Use digits, and separate several numbers "
+                    "with ';' — e.g. Globe: 0955-723-6300; Smart: 0948-024-3466."
+                )
+        return v
 
     @field_validator("notification_rules")
     @classmethod

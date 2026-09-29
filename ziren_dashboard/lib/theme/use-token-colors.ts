@@ -3,7 +3,9 @@
 /**
  * Resolve design tokens to concrete colour strings, and follow the theme.
  *
- * Needed because Leaflet paints its vectors through SVG *presentation
+ * Needed because map marks are painted outside the CSS cascade — MapLibre
+ * layer paint properties and marker HTML strings — and historically because
+ * Leaflet painted its vectors through SVG *presentation
  * attributes* (`fill="…"`, `stroke="…"`), and a presentation attribute is not
  * a CSS declaration — `var(--color-severity-critical)` in one is simply
  * invalid and the mark renders black. That is why the map component carried

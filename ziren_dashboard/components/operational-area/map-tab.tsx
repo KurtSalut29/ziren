@@ -20,7 +20,7 @@ import {
 import { mapPrefs } from '@/lib/prefs/definitions';
 import { periodLong } from './period';
 
-// Leaflet reads `window` on mount — client-only, no SSR.
+// MapLibre reads `window` on mount — client-only, no SSR.
 const ZirenMap = dynamic(() => import('@/components/map/ZirenMap'), {
   ssr: false,
   loading: () => (

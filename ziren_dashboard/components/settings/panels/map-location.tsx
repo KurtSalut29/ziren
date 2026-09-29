@@ -16,13 +16,13 @@ const BASEMAPS: ChoiceOption<MapPrefs['basemap']>[] = [
     value: 'satellite',
     label: 'Satellite',
     icon: Layers,
-    hint: 'Esri aerial photography with place names on top. Best for judging what is on the ground.',
+    hint: 'Esri aerial photography with our roads and place names on top. Falls back to the street map if the imagery cannot load.',
   },
   {
     value: 'streets',
     label: 'Street map',
     icon: MapPin,
-    hint: 'OpenStreetMap drawn as roads and places. Best for reading street and sitio names.',
+    hint: 'Ziren’s own copy of the OpenStreetMap map of Biliran — no outside server needed. Best for reading street and sitio names.',
   },
 ];
 

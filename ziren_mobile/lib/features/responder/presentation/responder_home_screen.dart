@@ -8,12 +8,13 @@ import 'package:provider/provider.dart';
 
 import '../../../core/network/backend_health.dart';
 import '../../../features/auth/domain/auth_provider.dart';
+import '../../../features/help/presentation/help_sheet.dart';
 import '../../../features/incident_report/domain/incident_provider.dart';
 import '../../../features/settings/domain/profile_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/home_kit.dart';
-import '../../../shared/widgets/ziren_logo.dart';
+import '../../../shared/widgets/mascot_home_header.dart';
 import '../domain/nearby_incident.dart';
 import '../domain/responder_incident_model.dart';
 import '../domain/responder_notification_provider.dart';
@@ -330,6 +331,9 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
     });
 
     final criticalCount = queue.where((i) => i.severity == 'critical').length;
+    // The big greeting uses the first name only - a full name at 30 px
+    // wraps onto a third line on a small phone.
+    final firstName = displayName.trim().split(RegExp(r'\s+')).first;
 
     // Newest-first, closed by when it closed. Capped at four rows — this is
     // a glance at the dashboard, not the record; the full list with filters
@@ -343,339 +347,381 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
 
     return Scaffold(
       backgroundColor: kHomeCanvas,
-      body: SafeArea(
-        bottom: false,
-        child: RefreshIndicator(
-          color: ZirenTokens.brandOrange,
-          onRefresh: () => _refresh(provider),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: ZirenTokens.space24),
-            children: [
-              _ResponderTopBar(
-                hasUnread: notifications.hasUnread,
-                onBellTap: () => context.push('/notifications'),
-                bellLabel: t.homeBellLabel,
-                bellLabelUnread: t.homeBellLabelUnread,
-                locationLabel: locationLabel,
-                connectivityLabel: switch (_connectivity) {
-                  _ConnectivityMode.offline => t.homeDeliveryOfflineTitle,
-                  _ConnectivityMode.online => t.homeDeliveryOnlineTitle,
-                  _ConnectivityMode.unknown => t.homeDeliveryCheckingTitle,
-                },
-                connectivityIcon: switch (_connectivity) {
-                  _ConnectivityMode.offline => LucideIcons.wifi_off,
-                  _ConnectivityMode.online => LucideIcons.radio_tower,
-                  _ConnectivityMode.unknown => LucideIcons.refresh_cw,
-                },
-                connectivityColor: switch (_connectivity) {
-                  _ConnectivityMode.offline => ZirenTokens.connectivityOffline,
-                  _ConnectivityMode.online => ZirenTokens.connectivityOnline,
-                  _ConnectivityMode.unknown => Colors.white,
-                },
-              ),
-
-              // ── Greeting ───────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kHomeGutter,
-                  ZirenTokens.space16,
-                  kHomeGutter,
-                  ZirenTokens.space16,
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: RefreshIndicator(
+              color: ZirenTokens.brandOrange,
+              onRefresh: () => _refresh(provider),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                // Room under the last card for the help button.
+                padding: const EdgeInsets.only(
+                  bottom: ZirenHelpButton.size + ZirenTokens.space24,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _greeting(t, displayName),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: ZirenTokens.textPrimary,
-                      ),
+                children: [
+                  // ── Mascot header ─────────────────────────────
+                  //
+                  // Same layout as the resident Home, with the responder mascot:
+                  // tagline, date, greeting, and a message about the queue.
+                  MascotHomeHeader(
+                    tagline:
+                        profile?.agencyName?.isNotEmpty == true
+                            ? 'Responder · ${profile!.agencyName}'
+                            : 'Responder',
+                    hasUnread: notifications.hasUnread,
+                    onBellTap: () => context.push('/notifications'),
+                    bellLabel: t.homeBellLabel,
+                    bellLabelUnread: t.homeBellLabelUnread,
+                    displayName: displayName,
+                    avatarUrl: profile?.avatarUrl,
+                    onProfileTap: () => context.go('/responder/profile'),
+                    profileLabel: t.homeProfileButtonLabel,
+                    greeting: _greeting(t, firstName),
+                    greetingName: firstName,
+                    mascot: MascotArt.responder,
+                    mascotName: t.mascotName,
+                    message:
+                        !onDuty
+                            ? t.mascotResponderOffDuty(firstName)
+                            : queue.isEmpty
+                            ? t.mascotResponderReady(firstName)
+                            : t.mascotResponderQueue(
+                              '${queue.length}',
+                              '$criticalCount',
+                              firstName,
+                            ),
+                    locationLabel: locationLabel,
+                    connectivityLabel: switch (_connectivity) {
+                      _ConnectivityMode.offline => t.homeDeliveryOfflineTitle,
+                      _ConnectivityMode.online => t.homeDeliveryOnlineTitle,
+                      _ConnectivityMode.unknown => t.homeDeliveryCheckingTitle,
+                    },
+                    connectivityIcon: switch (_connectivity) {
+                      _ConnectivityMode.offline => LucideIcons.wifi_off,
+                      _ConnectivityMode.online => LucideIcons.radio_tower,
+                      _ConnectivityMode.unknown => LucideIcons.refresh_cw,
+                    },
+                    connectivityColor: switch (_connectivity) {
+                      _ConnectivityMode.offline =>
+                        ZirenTokens.connectivityOffline,
+                      _ConnectivityMode.online =>
+                        ZirenTokens.connectivityOnline,
+                      _ConnectivityMode.unknown => ZirenTokens.textMuted,
+                    },
+                  ),
+                  const SizedBox(height: ZirenTokens.space20),
+
+                  // ── Duty status ────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kHomeGutter,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      t.respHomeGreetingSubtitle,
+                    child: Text(
+                      'Duty Status',
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.4,
                         color: ZirenTokens.textSecondary,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                  const SizedBox(height: ZirenTokens.space8),
+                  DutyStatusCard(
+                    onDuty: onDuty,
+                    busy: provider.togglingAvailability,
+                    onChanged: (_) => _toggleDuty(provider),
+                    displayName: displayName,
+                    rank:
+                        profile?.badgeId != null
+                            ? '#${profile!.badgeId}'
+                            : null,
+                    agencyLabel: profile?.agencyName,
+                    avatarUrl: profile?.avatarUrl,
+                    onTap: () => context.go('/responder/profile'),
+                  ),
 
-              // ── Duty status ────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                child: Text(
-                  'Duty Status',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.4,
-                    color: ZirenTokens.textSecondary,
+                  // ── The figures ────────────────────────────────
+                  //
+                  // Every number is one the backend actually reports for THIS
+                  // responder — see get_dashboard in responder_service.py, which
+                  // scopes every query to assigned_responder_id. None of them is
+                  // an agency total: a figure a responder can neither act on nor
+                  // affect is a figure that measures them without telling them
+                  // anything. Three cells, not the prototype's four — "Duty
+                  // Schedule" in the reference design has no backing data (shift
+                  // scheduling is not a feature of this product yet), and a
+                  // placeholder that never reads anything but "—" is a worse use
+                  // of the slot than a number that is real every time. Oldest
+                  // waiting replaces the median-response-time cell that used to
+                  // sit here: that number answers "how am I doing generally",
+                  // which belongs on Reports/Profile, not on the one screen built
+                  // for "what needs me right now" — see
+                  // docs/specs/2026-09-11-responder-redesign-design.md §4.
+                  ResponderStatBand(
+                    cells: [
+                      ResponderStat(
+                        icon: LucideIcons.clipboard_list,
+                        value: '${queue.length}',
+                        label: t.respStatAssigned,
+                        color: ZirenTokens.brandOrange,
+                        onTap: queue.isEmpty ? null : _scrollToQueue,
+                      ),
+                      ResponderStat(
+                        icon: LucideIcons.triangle_alert,
+                        value: '$criticalCount',
+                        label: t.respStatCritical,
+                        color: ZirenTokens.severityCritical,
+                        onTap: criticalCount == 0 ? null : _scrollToQueue,
+                      ),
+                      ResponderStat(
+                        icon: LucideIcons.hourglass,
+                        // Oldest waiting, not median response time — this row is
+                        // about what needs attention right now, and a
+                        // retrospective "how am I doing" number belongs on
+                        // Reports/Profile instead. Null (nothing open) reads as
+                        // "—" via ResponderVocabulary.waiting, same as every
+                        // other empty figure in this app.
+                        value: ResponderVocabulary.waiting(
+                          provider.oldestWaitingMinutes,
+                        ),
+                        label: t.respStatOldest,
+                        onTap: queue.isEmpty ? null : _scrollToQueue,
+                        color: ZirenTokens.severityHigh,
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: ZirenTokens.space8),
-              DutyStatusCard(
-                onDuty: onDuty,
-                busy: provider.togglingAvailability,
-                onChanged: (_) => _toggleDuty(provider),
-                displayName: displayName,
-                rank: profile?.badgeId != null ? '#${profile!.badgeId}' : null,
-                agencyLabel: profile?.agencyName,
-                avatarUrl: profile?.avatarUrl,
-                onTap: () => context.go('/responder/profile'),
-              ),
 
-              // ── The figures ────────────────────────────────
-              //
-              // Every number is one the backend actually reports for THIS
-              // responder — see get_dashboard in responder_service.py, which
-              // scopes every query to assigned_responder_id. None of them is
-              // an agency total: a figure a responder can neither act on nor
-              // affect is a figure that measures them without telling them
-              // anything. Three cells, not the prototype's four — "Duty
-              // Schedule" in the reference design has no backing data (shift
-              // scheduling is not a feature of this product yet), and a
-              // placeholder that never reads anything but "—" is a worse use
-              // of the slot than a number that is real every time. Oldest
-              // waiting replaces the median-response-time cell that used to
-              // sit here: that number answers "how am I doing generally",
-              // which belongs on Reports/Profile, not on the one screen built
-              // for "what needs me right now" — see
-              // docs/specs/2026-09-11-responder-redesign-design.md §4.
-              ResponderStatBand(
-                cells: [
-                  ResponderStat(
-                    icon: LucideIcons.clipboard_list,
-                    value: '${queue.length}',
-                    label: t.respStatAssigned,
-                    color: ZirenTokens.brandOrange,
-                    onTap: queue.isEmpty ? null : _scrollToQueue,
-                  ),
-                  ResponderStat(
-                    icon: LucideIcons.triangle_alert,
-                    value: '$criticalCount',
-                    label: t.respStatCritical,
-                    color: ZirenTokens.severityCritical,
-                    onTap: criticalCount == 0 ? null : _scrollToQueue,
-                  ),
-                  ResponderStat(
-                    icon: LucideIcons.hourglass,
-                    // Oldest waiting, not median response time — this row is
-                    // about what needs attention right now, and a
-                    // retrospective "how am I doing" number belongs on
-                    // Reports/Profile instead. Null (nothing open) reads as
-                    // "—" via ResponderVocabulary.waiting, same as every
-                    // other empty figure in this app.
-                    value: ResponderVocabulary.waiting(
-                      provider.oldestWaitingMinutes,
+                  // ── Quick action ───────────────────────────────
+                  //
+                  // One shortcut, not three. "View My Tasks" used to open the
+                  // Reports tab — a bottom-nav icon directly below this — and
+                  // "Report Unit Status" used to toggle duty, which is the card
+                  // directly above this. Both were shortcuts to something already
+                  // one tap away or already on screen; under an alert-glance
+                  // read, three saturated colour tiles that mostly duplicate
+                  // visible controls cost scan time for no real gain. Only
+                  // "Awaiting Dispatch" survives: it is a genuine shortcut,
+                  // jumping straight into the worst-ranked open assignment
+                  // without a scroll — the same job the deleted
+                  // PendingResponseCard used to do. See
+                  // docs/specs/2026-09-11-responder-redesign-design.md §4.
+                  if (sorted.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        kHomeGutter,
+                        ZirenTokens.space16,
+                        kHomeGutter,
+                        0,
+                      ),
+                      child: ResponderQuickActionTile(
+                        icon: LucideIcons.bell_ring,
+                        label: t.respHomeAwaitingDispatch,
+                        color: ZirenTokens.brandOrange,
+                        badgeCount: queue.length,
+                        onTap:
+                            () => context.push(
+                              '/responder/incident/${sorted.first.id}',
+                            ),
+                      ),
                     ),
-                    label: t.respStatOldest,
-                    onTap: queue.isEmpty ? null : _scrollToQueue,
-                    color: ZirenTokens.severityHigh,
+
+                  if (provider.availabilityError != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        kHomeGutter,
+                        ZirenTokens.space12,
+                        kHomeGutter,
+                        0,
+                      ),
+                      child: _InlineError(message: provider.availabilityError!),
+                    ),
+
+                  // ── Incidents near you ──────────────────────────
+                  //
+                  // An invitation to help, not a command — nothing here is assigned
+                  // to this responder, and answering never bypasses the dispatcher.
+                  // See ResponderProvider.loadNearby / app.services.proximity for
+                  // the ranking this mirrors. Hidden entirely once empty: an
+                  // "all clear" card here would compete with the queue below for a
+                  // state that is already the normal one.
+                  if (provider.nearby.isNotEmpty) ...[
+                    ResponderSectionHeading(t.respNearbyTitle),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        kHomeGutter,
+                        0,
+                        kHomeGutter,
+                        ZirenTokens.space10,
+                      ),
+                      child: Text(
+                        t.respNearbySubtitle,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          height: 1.4,
+                          color: ZirenTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: Column(
+                        children: [
+                          for (final n in provider.nearby) ...[
+                            NearbyIncidentCard(
+                              incident: n,
+                              answering: _answeringNearbyId == n.incidentId,
+                              onRespond:
+                                  () =>
+                                      _answerNearby(provider, n, 'can_respond'),
+                              onUnavailable:
+                                  () =>
+                                      _answerNearby(provider, n, 'unavailable'),
+                            ),
+                            const SizedBox(height: ZirenTokens.space10),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ── Recent activity ────────────────────────────
+                  //
+                  // The reference design's dashboard feed — what has actually
+                  // happened lately, closed and current mixed together, newest
+                  // first. Reuses ReportRow verbatim from the Reports tab rather
+                  // than a second implementation of the same card, so a report
+                  // looks identical whichever screen it is seen from.
+                  if (recentActivityTop.isNotEmpty) ...[
+                    ResponderSectionHeading(
+                      t.respHomeRecentActivity,
+                      action: t.respHomeViewAll,
+                      onAction: () => context.go('/responder/reports'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: Column(
+                        children: [
+                          for (final incident in recentActivityTop) ...[
+                            ReportRow(
+                              incident: incident,
+                              onTap:
+                                  () => context.push(
+                                    '/responder/incident/${incident.id}',
+                                  ),
+                            ),
+                            const SizedBox(height: ZirenTokens.space10),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // ── Queue ──────────────────────────────────────
+                  KeyedSubtree(
+                    key: _queueSectionKey,
+                    child: ResponderSectionHeading(
+                      t.respHomeQueueTitle,
+                      action: queue.isEmpty ? null : t.respTabMap,
+                      onAction: () => context.go('/responder/map'),
+                    ),
                   ),
+
+                  if (provider.loadingQueue && queue.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: ZirenTokens.space32,
+                      ),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (provider.queueError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: _InlineError(message: provider.queueError!),
+                    )
+                  else if (queue.isEmpty)
+                    HomeActivityCard(
+                      title:
+                          onDuty
+                              ? t.respHomeNoAssignmentsTitle
+                              : t.respHomeOffDutyTitle,
+                      emptyIcon:
+                          onDuty ? LucideIcons.circle_check : LucideIcons.moon,
+                      emptyTitle:
+                          onDuty
+                              ? t.respHomeQueueClear
+                              : t.respHomeNotAccepting,
+                      emptyBody:
+                          onDuty
+                              ? t.respHomeQueueClearBody
+                              : t.respHomeOffDutyBody,
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kHomeGutter,
+                      ),
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < sorted.length; i++) ...[
+                            ResponderQueueCard(
+                              // 1-based, and assigned over the SORTED list, so the
+                              // number means place in the working order rather
+                              // than position in whatever order the API returned.
+                              rank: i + 1,
+                              incident: sorted[i],
+                              color: ResponderVocabulary.color(
+                                sorted[i].severity,
+                              ),
+                              icon: ResponderVocabulary.icon(
+                                sorted[i].severity,
+                              ),
+                              elapsed: ResponderVocabulary.elapsed(
+                                sorted[i].createdAt,
+                              ),
+                              highlighted: sorted[i].id == _highlightedId,
+                              onTap:
+                                  () => context.push(
+                                    '/responder/incident/${sorted[i].id}',
+                                  ),
+                            ),
+                            const SizedBox(height: ZirenTokens.space10),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                  // The shift figures (en route/on scene counts, the closed-per-
+                  // day chart, severity mix) that used to live here moved out —
+                  // see the reference design: Home is the dashboard a responder
+                  // checks mid-shift, not the full record of it. That record is
+                  // still reachable, just not stacked onto this screen — the
+                  // Reports tab ("My Mission Logs") is where it belongs.
                 ],
               ),
-
-              // ── Quick action ───────────────────────────────
-              //
-              // One shortcut, not three. "View My Tasks" used to open the
-              // Reports tab — a bottom-nav icon directly below this — and
-              // "Report Unit Status" used to toggle duty, which is the card
-              // directly above this. Both were shortcuts to something already
-              // one tap away or already on screen; under an alert-glance
-              // read, three saturated colour tiles that mostly duplicate
-              // visible controls cost scan time for no real gain. Only
-              // "Awaiting Dispatch" survives: it is a genuine shortcut,
-              // jumping straight into the worst-ranked open assignment
-              // without a scroll — the same job the deleted
-              // PendingResponseCard used to do. See
-              // docs/specs/2026-09-11-responder-redesign-design.md §4.
-              if (sorted.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    kHomeGutter,
-                    ZirenTokens.space16,
-                    kHomeGutter,
-                    0,
-                  ),
-                  child: ResponderQuickActionTile(
-                    icon: LucideIcons.bell_ring,
-                    label: t.respHomeAwaitingDispatch,
-                    color: ZirenTokens.brandOrange,
-                    badgeCount: queue.length,
-                    onTap:
-                        () => context.push(
-                          '/responder/incident/${sorted.first.id}',
-                        ),
-                  ),
-                ),
-
-              if (provider.availabilityError != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    kHomeGutter,
-                    ZirenTokens.space12,
-                    kHomeGutter,
-                    0,
-                  ),
-                  child: _InlineError(message: provider.availabilityError!),
-                ),
-
-              // ── Incidents near you ──────────────────────────
-              //
-              // An invitation to help, not a command — nothing here is assigned
-              // to this responder, and answering never bypasses the dispatcher.
-              // See ResponderProvider.loadNearby / app.services.proximity for
-              // the ranking this mirrors. Hidden entirely once empty: an
-              // "all clear" card here would compete with the queue below for a
-              // state that is already the normal one.
-              if (provider.nearby.isNotEmpty) ...[
-                ResponderSectionHeading(t.respNearbyTitle),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    kHomeGutter,
-                    0,
-                    kHomeGutter,
-                    ZirenTokens.space10,
-                  ),
-                  child: Text(
-                    t.respNearbySubtitle,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: ZirenTokens.textSecondary,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                  child: Column(
-                    children: [
-                      for (final n in provider.nearby) ...[
-                        NearbyIncidentCard(
-                          incident: n,
-                          answering: _answeringNearbyId == n.incidentId,
-                          onRespond:
-                              () => _answerNearby(provider, n, 'can_respond'),
-                          onUnavailable:
-                              () => _answerNearby(provider, n, 'unavailable'),
-                        ),
-                        const SizedBox(height: ZirenTokens.space10),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-
-              // ── Recent activity ────────────────────────────
-              //
-              // The reference design's dashboard feed — what has actually
-              // happened lately, closed and current mixed together, newest
-              // first. Reuses ReportRow verbatim from the Reports tab rather
-              // than a second implementation of the same card, so a report
-              // looks identical whichever screen it is seen from.
-              if (recentActivityTop.isNotEmpty) ...[
-                ResponderSectionHeading(
-                  t.respHomeRecentActivity,
-                  action: t.respHomeViewAll,
-                  onAction: () => context.go('/responder/reports'),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                  child: Column(
-                    children: [
-                      for (final incident in recentActivityTop) ...[
-                        ReportRow(
-                          incident: incident,
-                          onTap:
-                              () => context.push(
-                                '/responder/incident/${incident.id}',
-                              ),
-                        ),
-                        const SizedBox(height: ZirenTokens.space10),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-
-              // ── Queue ──────────────────────────────────────
-              KeyedSubtree(
-                key: _queueSectionKey,
-                child: ResponderSectionHeading(
-                  t.respHomeQueueTitle,
-                  action: queue.isEmpty ? null : t.respTabMap,
-                  onAction: () => context.go('/responder/map'),
-                ),
-              ),
-
-              if (provider.loadingQueue && queue.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: ZirenTokens.space32),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (provider.queueError != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                  child: _InlineError(message: provider.queueError!),
-                )
-              else if (queue.isEmpty)
-                HomeActivityCard(
-                  title:
-                      onDuty
-                          ? t.respHomeNoAssignmentsTitle
-                          : t.respHomeOffDutyTitle,
-                  emptyIcon:
-                      onDuty ? LucideIcons.circle_check : LucideIcons.moon,
-                  emptyTitle:
-                      onDuty ? t.respHomeQueueClear : t.respHomeNotAccepting,
-                  emptyBody:
-                      onDuty ? t.respHomeQueueClearBody : t.respHomeOffDutyBody,
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-                  child: Column(
-                    children: [
-                      for (var i = 0; i < sorted.length; i++) ...[
-                        ResponderQueueCard(
-                          // 1-based, and assigned over the SORTED list, so the
-                          // number means place in the working order rather
-                          // than position in whatever order the API returned.
-                          rank: i + 1,
-                          incident: sorted[i],
-                          color: ResponderVocabulary.color(sorted[i].severity),
-                          icon: ResponderVocabulary.icon(sorted[i].severity),
-                          elapsed: ResponderVocabulary.elapsed(
-                            sorted[i].createdAt,
-                          ),
-                          highlighted: sorted[i].id == _highlightedId,
-                          onTap:
-                              () => context.push(
-                                '/responder/incident/${sorted[i].id}',
-                              ),
-                        ),
-                        const SizedBox(height: ZirenTokens.space10),
-                      ],
-                    ],
-                  ),
-                ),
-
-              // The shift figures (en route/on scene counts, the closed-per-
-              // day chart, severity mix) that used to live here moved out —
-              // see the reference design: Home is the dashboard a responder
-              // checks mid-shift, not the full record of it. That record is
-              // still reachable, just not stacked onto this screen — the
-              // Reports tab ("My Mission Logs") is where it belongs.
-            ],
+            ),
           ),
-        ),
+          // ── Ziren help ─────────────────────────────────
+          //
+          // Bottom-right above the navigation bar; lifted over the shell's
+          // "waiting to sync" strip while that is showing.
+          Positioned(
+            right: kHomeGutter,
+            bottom: provider.hasPendingSync ? 64 : ZirenTokens.space16,
+            child: ZirenHelpButton(
+              label: t.helpButtonLabel,
+              onPressed: () => showHelpSheet(context, forResponder: true),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -950,207 +996,6 @@ class _InlineError extends StatelessWidget {
                 fontSize: 13,
                 color: ZirenTokens.systemError,
                 height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Top bar ─────────────────────────────────────────────────────
-//
-// Same photo-banner treatment as the resident Home's HomeHeroBanner, right
-// down to the same image (resident_hero.jpg) and the same
-// location/connectivity pill row pushed to the bottom edge via
-// MainAxisAlignment.spaceBetween — the user asked for full parity, not a
-// responder-side stand-in or a trimmed-down version.
-class _ResponderTopBar extends StatelessWidget {
-  const _ResponderTopBar({
-    required this.hasUnread,
-    required this.onBellTap,
-    required this.bellLabel,
-    required this.bellLabelUnread,
-    required this.locationLabel,
-    required this.connectivityLabel,
-    required this.connectivityIcon,
-    required this.connectivityColor,
-  });
-
-  final bool hasUnread;
-  final VoidCallback onBellTap;
-  final String bellLabel;
-  final String bellLabelUnread;
-  final String locationLabel;
-  final String connectivityLabel;
-  final IconData connectivityIcon;
-  final Color connectivityColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(ZirenTokens.radius24),
-        bottomRight: Radius.circular(ZirenTokens.radius24),
-      ),
-      child: SizedBox(
-        height: 210,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const Positioned.fill(
-              child: Image(
-                image: AssetImage('assets/images/resident_hero.jpg'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            const Positioned.fill(
-              child: ColoredBox(color: Color(0x8A000000)), // 0.54 black
-            ),
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  kHomeGutter,
-                  ZirenTokens.space16,
-                  kHomeGutter,
-                  ZirenTokens.space16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const ZirenLogo.mark(size: 28, onDark: true),
-                        const SizedBox(width: ZirenTokens.space10),
-                        const Text(
-                          'Ziren Responder',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const Spacer(),
-                        Semantics(
-                          button: true,
-                          label: hasUnread ? bellLabelUnread : bellLabel,
-                          child: Material(
-                            // A plain icon on a busy photo doesn't read as a
-                            // button — the same translucent-white circle the
-                            // location/connectivity pills already use below
-                            // marks it as tappable regardless of what part of
-                            // the image lands underneath.
-                            color: Colors.white.withValues(alpha: 0.16),
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              onTap: onBellTap,
-                              customBorder: const CircleBorder(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                  ZirenTokens.space8,
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(
-                                      LucideIcons.bell,
-                                      color: Colors.white,
-                                      size: 22,
-                                    ),
-                                    if (hasUnread)
-                                      Positioned(
-                                        top: -1,
-                                        right: -1,
-                                        child: Container(
-                                          width: 9,
-                                          height: 9,
-                                          decoration: BoxDecoration(
-                                            color: ZirenTokens.severityCritical,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: const Color(0xFF7A3B2E),
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Wrap(
-                      spacing: ZirenTokens.space8,
-                      runSpacing: ZirenTokens.space8,
-                      children: [
-                        _HeroPill(
-                          icon: LucideIcons.map_pin,
-                          iconColor: Colors.white,
-                          label: locationLabel,
-                        ),
-                        _HeroPill(
-                          icon: connectivityIcon,
-                          iconColor: connectivityColor,
-                          label: connectivityLabel,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Same pill as the resident hero banner's own _HeroPill — duplicated for
-/// the same reason as _ConnectivityMode above: the resident version is
-/// private to resident_home_screen.dart.
-class _HeroPill extends StatelessWidget {
-  const _HeroPill({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ZirenTokens.space12,
-        vertical: ZirenTokens.space6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(ZirenTokens.radius32),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: iconColor, size: 14),
-          const SizedBox(width: ZirenTokens.space4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
               ),
             ),
           ),

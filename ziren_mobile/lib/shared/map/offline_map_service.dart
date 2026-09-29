@@ -1,6 +1,5 @@
-/// Serves the bundled Biliran vector tiles to MapLibre when there is no
-/// internet, and decides which of the two Ziren map styles a screen should
-/// load.
+/// Serves the bundled Biliran vector tiles — and the fonts their labels need —
+/// to MapLibre, and decides which Ziren map style a screen should load.
 ///
 /// TODO 6C.1 (see the history comment on [kZirenMapStyle]) asked for an
 /// mbtiles reader wired into MapLibre. This is it: the tiles in
@@ -15,6 +14,7 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
@@ -31,17 +31,28 @@ class OfflineMapService {
   int? _port;
   Future<int>? _startingServer;
 
-  /// Whichever style a map should load right now: the real satellite view
-  /// if the internet is reachable, otherwise the offline vector style
-  /// served from the copy of `biliran.mbtiles` on disk.
+  /// Whichever style a map should load right now.
+  ///
+  /// Online: satellite photography with our own roads and labels over it and
+  /// our street map under it ([buildHybridStyle]) — the same combination the
+  /// web dashboard draws. Offline: the street map alone ([buildOfflineStyle]),
+  /// now with place and street names, since the fonts are bundled too.
   ///
   /// A resident or responder standing in a dead zone gets the offline style
-  /// immediately rather than a map that sits blank while raster tile
-  /// requests time out one by one.
+  /// immediately rather than a map that sits blank while satellite requests
+  /// time out one by one. If the local server itself cannot start, an online
+  /// phone falls back to the plain raster style rather than no map.
   Future<String> resolveStyle() async {
-    if (await _isOnlineReachable()) return kZirenMapStyle;
-    final port = await _ensureServerRunning();
-    return buildOfflineStyle(port);
+    final online = await _isOnlineReachable();
+    int? port;
+    try {
+      port = await _ensureServerRunning();
+    } catch (_) {
+      _startingServer = null;
+      if (online) return kZirenMapStyle;
+      rethrow;
+    }
+    return online ? buildHybridStyle(port) : buildOfflineStyle(port);
   }
 
   /// A short, cheap probe against the same host the satellite layer itself
@@ -109,8 +120,86 @@ class OfflineMapService {
     return sqlite3.open(file.path);
   }
 
+  /// Glyph files already read out of the asset bundle, by asset path.
+  final Map<String, Uint8List?> _fontCache = {};
+
+  /// `/fonts/{fontstack}/{range}.pbf` — a glyph range from assets/map/fonts.
+  /// Only the ranges shipped are answered; any other is a 404, which MapLibre
+  /// treats as "no glyphs in this range" and keeps drawing the rest.
+  Future<void> _handleFontRequest(HttpRequest request, List<String> segments) async {
+    final dir = segments.length == 3 ? kBundledFontDirs[segments[1]] : null;
+    final range = segments.length == 3 ? segments[2] : '';
+    if (dir == null || !RegExp(r'^\d+-\d+\.pbf$').hasMatch(range)) {
+      request.response
+        ..statusCode = HttpStatus.notFound
+        ..close();
+      return;
+    }
+    final asset = 'assets/map/fonts/$dir/$range';
+    if (!_fontCache.containsKey(asset)) {
+      try {
+        final data = await rootBundle.load(asset);
+        _fontCache[asset] = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } catch (_) {
+        _fontCache[asset] = null;
+      }
+    }
+    final bytes = _fontCache[asset];
+    if (bytes == null) {
+      request.response
+        ..statusCode = HttpStatus.notFound
+        ..close();
+      return;
+    }
+    request.response
+      ..statusCode = HttpStatus.ok
+      ..headers.set(HttpHeaders.contentTypeHeader, 'application/x-protobuf')
+      ..add(bytes)
+      ..close();
+  }
+
+  /// `/sprite/sprite[@2x].{json,png}` — the landmark icons, from
+  /// assets/map/sprite. Same cache as the fonts.
+  Future<void> _handleSpriteRequest(HttpRequest request, String file) async {
+    if (!RegExp(r'^sprite(@2x)?\.(json|png)$').hasMatch(file)) {
+      request.response
+        ..statusCode = HttpStatus.notFound
+        ..close();
+      return;
+    }
+    final asset = 'assets/map/sprite/$file';
+    if (!_fontCache.containsKey(asset)) {
+      try {
+        final data = await rootBundle.load(asset);
+        _fontCache[asset] = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      } catch (_) {
+        _fontCache[asset] = null;
+      }
+    }
+    final bytes = _fontCache[asset];
+    if (bytes == null) {
+      request.response
+        ..statusCode = HttpStatus.notFound
+        ..close();
+      return;
+    }
+    request.response
+      ..statusCode = HttpStatus.ok
+      ..headers.set(HttpHeaders.contentTypeHeader, file.endsWith('.png') ? 'image/png' : 'application/json')
+      ..add(bytes)
+      ..close();
+  }
+
   void _handleTileRequest(HttpRequest request, Database db) {
     final segments = request.uri.pathSegments;
+    if (segments.isNotEmpty && segments[0] == 'fonts') {
+      _handleFontRequest(request, segments);
+      return;
+    }
+    if (segments.length == 2 && segments[0] == 'sprite') {
+      _handleSpriteRequest(request, segments[1]);
+      return;
+    }
     // Expected shape: tiles/{z}/{x}/{y}.pbf
     if (segments.length != 4 || segments[0] != 'tiles') {
       request.response

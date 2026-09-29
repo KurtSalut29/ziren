@@ -19,11 +19,15 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Marker } from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { Crosshair, LoaderCircle, MapPin, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/efferd/ui/button';
 import { Fig } from '@/components/ui/fig';
 import { useTokenColors } from '@/lib/theme/use-token-colors';
 import { MAP_COLOR_TOKENS } from './map-legend';
+import { teardropSvg } from './map-markers';
+import { removeGeoJson, upsertGeoJson, useMapLibre } from './use-maplibre';
 
 /**
  * Biliran, generously boxed.
@@ -42,7 +46,20 @@ const inProvince = (lat: number, lng: number) =>
 /** Anything looser than this is worth saying out loud before it is committed. */
 const ACCURACY_WARN_M = 50;
 
-const BILIRAN_CENTER: [number, number] = [11.583, 124.408];
+const ACCURACY_SRC = 'z-accuracy';
+const ACCURACY_LAYERS = ['z-accuracy-fill', 'z-accuracy-line'];
+
+/** A circle of `radiusM` metres around a point, as a 64-sided polygon. */
+function circlePolygon(lat: number, lng: number, radiusM: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  const dLat = radiusM / 111_320;
+  const dLng = radiusM / (111_320 * Math.cos((lat * Math.PI) / 180));
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= 64; i++) {
+    const a = (i / 64) * 2 * Math.PI;
+    ring.push([lng + dLng * Math.cos(a), lat + dLat * Math.sin(a)]);
+  }
+  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [ring] } };
+}
 
 export interface PickedPoint {
   lat: number;
@@ -61,10 +78,15 @@ export function StationLocationPicker({
   onChange: (p: PickedPoint | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<import('leaflet').Map | null>(null);
-  const markerRef = useRef<import('leaflet').Marker | null>(null);
-  const circleRef = useRef<import('leaflet').Circle | null>(null);
-  const [ready, setReady] = useState(false);
+  // Streets, always: placing a pin on a building is a job for a map that
+  // shows buildings and road names, whatever the Incident Map is set to.
+  const { map, maplibre, styleEpoch } = useMapLibre(containerRef, {
+    center: initial ? [initial.lng, initial.lat] : undefined,
+    zoom: initial ? 16 : undefined,
+    controls: 'top-left',
+    basemap: 'streets',
+  });
+  const markerRef = useRef<Marker | null>(null);
 
   const [point, setPoint] = useState<PickedPoint | null>(
     initial ? { ...initial, accuracy: null } : null,
@@ -85,112 +107,61 @@ export function StationLocationPicker({
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { onChangeRef.current(point); }, [point]);
 
-  // ── Map init ────────────────────────────────────────────────
+  // ── Click anywhere to place ─────────────────────────────────
+  // The whole point of this control is that a coordinate is a place, not a
+  // pair of numbers.
   useEffect(() => {
-    const container = containerRef.current;
-    if (mapRef.current || !container) return;
-    let cancelled = false;
-
-    import('leaflet').then(L => {
-      if (cancelled || mapRef.current) return;
-      const map = L.map(container, {
-        center: initial ? [initial.lat, initial.lng] : BILIRAN_CENTER,
-        zoom: initial ? 16 : 11,
-        zoomControl: true,
-        attributionControl: true,
-      });
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(map);
-
-      // Click anywhere to place. The whole point of this control is that a
-      // coordinate is a place, not a pair of numbers.
-      map.on('click', (e: import('leaflet').LeafletMouseEvent) => {
-        setGeoError(null);
-        setPoint({ lat: e.latlng.lat, lng: e.latlng.lng, accuracy: null });
-      });
-
-      mapRef.current = map;
-      setReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-      mapRef.current?.remove();
-      mapRef.current = null;
-      markerRef.current = null;
-      circleRef.current = null;
-      setReady(false);
+    if (!map) return;
+    const onClick = (e: import('maplibre-gl').MapMouseEvent) => {
+      setGeoError(null);
+      setPoint({ lat: e.lngLat.lat, lng: e.lngLat.lng, accuracy: null });
     };
-    // Mount once. `initial` only seeds the opening view.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Leaflet measures its container at init. This one is born inside a dialog
-  // that may still be animating, so without this the map renders into a box of
-  // the wrong size and every click maps to the wrong coordinate.
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const ro = new ResizeObserver(() => mapRef.current?.invalidateSize());
-    ro.observe(container);
-    return () => ro.disconnect();
-  }, []);
+    map.on('click', onClick);
+    map.getCanvas().style.cursor = 'crosshair';
+    return () => { map.off('click', onClick); };
+  }, [map]);
 
   // ── Draw the pin and its accuracy ───────────────────────────
   useEffect(() => {
-    if (!ready || !mapRef.current || !point) return;
-    let cancelled = false;
+    if (!map || !maplibre) return;
+    markerRef.current?.remove();
+    markerRef.current = null;
+    removeGeoJson(map, ACCURACY_SRC, ACCURACY_LAYERS);
+    if (!point) return;
 
-    import('leaflet').then(L => {
-      const map = mapRef.current;
-      if (cancelled || !map) return;
-
-      markerRef.current?.remove();
-      circleRef.current?.remove();
-
-      const icon = L.divIcon({
-        className: '',
-        iconSize: [26, 34],
-        iconAnchor: [13, 34],
-        html: [
-          '<svg width="26" height="34" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg">',
-          '<path d="M11 27C11 27 20 16.5 20 10A9 9 0 1 0 2 10C2 16.5 11 27 11 27Z"',
-          ` fill="${pinColor}" stroke="${color.markStroke}" stroke-width="2" stroke-linejoin="round"/>`,
-          `<circle cx="11" cy="10" r="3.2" fill="${color.markStroke}"/>`,
-          '</svg>',
-        ].join(''),
-      });
-
-      // Draggable: a click gets you close, a drag gets you onto the building.
-      const marker = L.marker([point.lat, point.lng], { icon, draggable: true });
-      marker.on('dragend', () => {
-        const ll = marker.getLatLng();
-        setGeoError(null);
-        // Dragging invalidates the device's accuracy — the operator has moved
-        // the pin somewhere the GPS never claimed.
-        setPoint({ lat: ll.lat, lng: ll.lng, accuracy: null });
-      });
-      marker.addTo(map);
-      markerRef.current = marker;
-
-      // The accuracy radius, to scale. A 400m fix should LOOK like 400m.
-      if (point.accuracy && point.accuracy > 0) {
-        circleRef.current = L.circle([point.lat, point.lng], {
-          radius: point.accuracy,
-          color: pinColor,
-          fillColor: pinColor,
-          fillOpacity: 0.1,
-          weight: 1,
-        }).addTo(map);
-      }
+    const el = document.createElement('div');
+    el.style.width = '26px';
+    el.style.height = '34px';
+    el.style.cursor = 'grab';
+    // eslint-disable-next-line no-restricted-syntax -- an SVG built from two colour tokens, no user text
+    el.innerHTML = teardropSvg(pinColor, color.markStroke, 26, 34);
+    // Draggable: a click gets you close, a drag gets you onto the building.
+    const marker = new maplibre.Marker({ element: el, anchor: 'bottom', draggable: true })
+      .setLngLat([point.lng, point.lat])
+      .addTo(map);
+    marker.on('dragend', () => {
+      const p = marker.getLngLat();
+      setGeoError(null);
+      // Dragging invalidates the device's accuracy — the operator has moved
+      // the pin somewhere the GPS never claimed.
+      setPoint({ lat: p.lat, lng: p.lng, accuracy: null });
     });
+    markerRef.current = marker;
 
-    return () => { cancelled = true; };
-  }, [ready, point, pinColor, color.markStroke]);
+    // The accuracy radius, to scale. A 400 m fix should LOOK like 400 m.
+    if (point.accuracy && point.accuracy > 0) {
+      upsertGeoJson(map, ACCURACY_SRC, circlePolygon(point.lat, point.lng, point.accuracy), [
+        { id: 'z-accuracy-fill', type: 'fill', paint: { 'fill-color': pinColor, 'fill-opacity': 0.12 } },
+        { id: 'z-accuracy-line', type: 'line', paint: { 'line-color': pinColor, 'line-width': 1 } },
+      ]);
+    }
+  }, [map, maplibre, point, pinColor, color.markStroke, styleEpoch]);
+
+  useEffect(() => () => { markerRef.current?.remove(); }, []);
 
   // ── Device location ─────────────────────────────────────────
+  const mapRef = useRef(map);
+  mapRef.current = map;
   const useMyLocation = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setGeoError('This browser cannot report a location.');
@@ -207,7 +178,7 @@ export function StationLocationPicker({
           accuracy: pos.coords.accuracy ?? null,
         };
         setPoint(next);
-        mapRef.current?.setView([next.lat, next.lng], 17);
+        mapRef.current?.flyTo({ center: [next.lng, next.lat], zoom: 17, duration: 600 });
       },
       err => {
         setLocating(false);
@@ -244,13 +215,8 @@ export function StationLocationPicker({
         </span>
       </div>
 
-      <link
-        crossOrigin=""
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        rel="stylesheet"
-      />
       <div
-        className="h-[320px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)]"
+        className="relative isolate h-[320px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)]"
         ref={containerRef}
       />
 

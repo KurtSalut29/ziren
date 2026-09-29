@@ -40,7 +40,7 @@ import {
   type SeverityKey,
 } from '@/components/map/map-legend';
 
-// Leaflet reads `window` on import — client-only, no SSR, as on the map page.
+// MapLibre reads `window` on import — client-only, no SSR, as on the map page.
 const IncidentRouteMap = dynamic(
   () => import('@/components/incidents/incident-route-map'),
   {

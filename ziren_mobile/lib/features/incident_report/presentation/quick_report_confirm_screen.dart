@@ -7,6 +7,7 @@ import '../domain/incident_category_style.dart';
 import '../domain/incident_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'incident_labels.dart';
+import 'widgets/incident_location_section.dart';
 import 'widgets/media_attachment_field.dart';
 import 'widgets/quick_report_kit.dart';
 import 'widgets/voice_report_control.dart';
@@ -31,12 +32,8 @@ class _QuickReportConfirmScreenState extends State<QuickReportConfirmScreen> {
   final _noteController = TextEditingController();
   final _landmarkController = TextEditingController();
 
-  // Set once, to the exact string that was auto-filled. Compared against the
-  // live controller text (not just "did we auto-fill at some point") so the
-  // verify-this hint below the field disappears the moment a resident
-  // actually edits it, rather than nagging about a suggestion they've
-  // already dealt with.
-  String? _autoFilledLandmark;
+  /// Set when the resident tried to continue without a landmark.
+  bool _landmarkMissing = false;
 
   @override
   void initState() {
@@ -60,6 +57,12 @@ class _QuickReportConfirmScreenState extends State<QuickReportConfirmScreen> {
   }
 
   void _goToReview(IncidentProvider p) {
+    // The landmark is required: GPS inside a barangay is not an address a
+    // crew can drive to, and the stations asked for it on every report.
+    if (_landmarkController.text.trim().isEmpty) {
+      setState(() => _landmarkMissing = true);
+      return;
+    }
     p.setLandmarkNote(_landmarkController.text);
     p.setQuickNote(_noteController.text);
     context.push('/report/quick/review');
@@ -70,7 +73,6 @@ class _QuickReportConfirmScreenState extends State<QuickReportConfirmScreen> {
     final t = AppLocalizations.of(context);
     final p = context.watch<IncidentProvider>();
     final category = p.incidentCategory;
-    final locating = p.currentPosition == null && !p.locationDenied;
 
     // A category is required to get here at all — Home always sets one
     // before pushing this route. If it is somehow missing, there is
@@ -84,29 +86,7 @@ class _QuickReportConfirmScreenState extends State<QuickReportConfirmScreen> {
 
     final color = IncidentCategoryStyle.color(category);
     final bg = IncidentCategoryStyle.background(category);
-    final canReview = p.currentPosition != null || p.locationDenied;
-
-    // Auto-fill the landmark the moment OSM has one to offer, same as
-    // location — but only once, only into an empty field (a resident who
-    // has already typed something, or already cleared a suggestion they
-    // didn't want, keeps deciding that for themselves), and only on a GPS
-    // fix good enough to trust without a human glance first. A landmark
-    // built from an imprecise fix compounds two guesses — the position and
-    // Nominatim's pick from it — so an imprecise fix still gets the
-    // suggestion chip below, just not the silent auto-fill.
-    final suggestion = p.nearbyLandmark;
-    if (suggestion != null &&
-        p.locationIsPrecise &&
-        _autoFilledLandmark == null &&
-        _landmarkController.text.trim().isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        setState(() {
-          _landmarkController.text = suggestion;
-          _autoFilledLandmark = suggestion;
-        });
-      });
-    }
+    final canReview = p.incidentLat != null || p.locationDenied;
 
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
@@ -184,131 +164,15 @@ class _QuickReportConfirmScreenState extends State<QuickReportConfirmScreen> {
 
             const SizedBox(height: ZirenTokens.space20),
 
-            // ── Location ─────────────────────────────────────
-            QuickReportSectionLabel(t.quickYourLocationAuto),
-            const SizedBox(height: ZirenTokens.space8),
-            QuickReportCard(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    LucideIcons.map_pin,
-                    size: 18,
-                    color: ZirenTokens.brandOrange,
-                  ),
-                  const SizedBox(width: ZirenTokens.space10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          p.locationDenied
-                              ? t.quickLocationOff
-                              : locating
-                              ? t.quickSearching
-                              : (p.locationAddress ?? t.quickCoordinatesFound),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: ZirenTokens.textPrimary,
-                            height: 1.35,
-                          ),
-                        ),
-                        if (!locating &&
-                            !p.locationDenied &&
-                            p.locationAccuracyM != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            t.quickAccuracy(p.locationAccuracyM!.round()),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color:
-                                  p.locationIsPrecise
-                                      ? ZirenTokens.textMuted
-                                      : ZirenTokens.systemWarning,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (locating)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else if (!p.locationDenied)
-                    GestureDetector(
-                      onTap: () => p.fetchLocation(),
-                      child: Icon(
-                        LucideIcons.refresh_cw,
-                        size: 20,
-                        color: ZirenTokens.textMuted,
-                      ),
-                    ),
-                ],
-              ),
+            // ── Where: the incident, and a landmark ──────────
+            IncidentLocationSection(
+              landmarkController: _landmarkController,
+              showLandmarkError: _landmarkMissing,
+              header: (text) => QuickReportSectionLabel(text),
+              onLandmarkChanged: (_) {
+                if (_landmarkMissing) setState(() => _landmarkMissing = false);
+              },
             ),
-
-            const SizedBox(height: ZirenTokens.space20),
-
-            // ── Landmark ───────────────────────────────────────
-            QuickReportSectionLabel(t.quickLandmark),
-            const SizedBox(height: ZirenTokens.space8),
-            TextField(
-              controller: _landmarkController,
-              textInputAction: TextInputAction.done,
-              textCapitalization: TextCapitalization.sentences,
-              // Only to keep the "auto-filled, please check" hint below in
-              // sync as the resident types — nothing here needs saving on
-              // every keystroke; _goToReview reads the controller directly.
-              onChanged: (_) => setState(() {}),
-              style: const TextStyle(fontSize: 14),
-              decoration: InputDecoration(
-                hintText: t.quickLandmarkHint,
-                prefixIcon: const Icon(
-                  LucideIcons.map_pin,
-                  size: 20,
-                ),
-              ),
-            ),
-            if (_autoFilledLandmark != null &&
-                _landmarkController.text == _autoFilledLandmark)
-              Padding(
-                padding: const EdgeInsets.only(top: ZirenTokens.space6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      LucideIcons.sparkles,
-                      size: 13,
-                      color: ZirenTokens.textMuted,
-                    ),
-                    const SizedBox(width: ZirenTokens.space6),
-                    Expanded(
-                      child: Text(
-                        'Auto-filled from nearby map data — check it\'s correct before sending.',
-                        style: TextStyle(fontSize: 11.5, color: ZirenTokens.textMuted),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (p.nearbyLandmark != null &&
-                _landmarkController.text.trim().isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: ZirenTokens.space8),
-                child: ActionChip(
-                  avatar: const Icon(LucideIcons.map_pin_plus, size: 16),
-                  label: Text(p.nearbyLandmark!),
-                  onPressed:
-                      () => setState(
-                        () => _landmarkController.text = p.nearbyLandmark!,
-                      ),
-                ),
-              ),
 
             const SizedBox(height: ZirenTokens.space20),
 

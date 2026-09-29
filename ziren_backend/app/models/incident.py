@@ -224,6 +224,18 @@ class IncidentSubmitRequest(BaseModel):
     landmark_note:        str   | None = None
     victim_relationship:  VictimRelationship | None = None
 
+    # ── Reported from somewhere else (migration 042) ──
+    # latitude/longitude above are always WHERE THE INCIDENT IS — that is what
+    # routes the report and what a crew drives to. When the reporter is not
+    # standing there (a relative called them, they saw it from across the
+    # bay), the app lets them place the incident on the map and sends where
+    # THEY are here, so the dispatcher knows the two differ and can call back
+    # to confirm. All optional: absent means "I am at the incident".
+    reported_from_elsewhere: bool = False
+    reporter_latitude:    float | None = None
+    reporter_longitude:   float | None = None
+    reporter_address:     str   | None = None
+
     @field_validator("report_text")
     @classmethod
     def report_text_not_empty(cls, v: str) -> str:
@@ -235,6 +247,28 @@ class IncidentSubmitRequest(BaseModel):
         if len(v) > 5000:
             raise ValueError("Report text cannot exceed 5000 characters.")
         return v
+
+    @field_validator("reporter_latitude")
+    @classmethod
+    def validate_reporter_latitude(cls, v: float | None) -> float | None:
+        if v is not None and not (-90 <= v <= 90):
+            raise ValueError("Invalid reporter latitude.")
+        return v
+
+    @field_validator("reporter_longitude")
+    @classmethod
+    def validate_reporter_longitude(cls, v: float | None) -> float | None:
+        if v is not None and not (-180 <= v <= 180):
+            raise ValueError("Invalid reporter longitude.")
+        return v
+
+    @field_validator("reporter_address")
+    @classmethod
+    def clamp_reporter_address(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        return v[:300] or None
 
     @field_validator("landmark_note")
     @classmethod
@@ -313,6 +347,17 @@ class SosSubmitRequest(BaseModel):
     longitude:        float | None = None
     location_address: str   | None = None
     incident_category: IncidentCategory | None = None
+    # The landmark nearest the reporter, filled in by the app from its bundled
+    # map data — never typed, so SOS stays one hold of a button.
+    landmark_note:    str   | None = None
+
+    @field_validator("landmark_note")
+    @classmethod
+    def clamp_sos_landmark(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        return v[:300] or None
 
     @field_validator("description")
     @classmethod

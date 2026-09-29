@@ -29,6 +29,8 @@
 /// styles is unchanged.
 library;
 
+import 'dart:convert';
+
 /// Satellite imagery with a place-name overlay — the same two-layer
 /// combination the web dashboard's map already uses (ZirenMap.tsx), so a
 /// station or incident location reads the same way whether a dispatcher is
@@ -88,105 +90,276 @@ const String kZirenMapStyle = '''
 const double kBiliranLat = 11.5836;
 const double kBiliranLng = 124.4063;
 
+/// The glyph ranges bundled under assets/map/fonts, served by the same
+/// loopback server as the tiles. Latin only: every label uses `name:latin`.
+const Map<String, String> kBundledFontDirs = {
+  'Noto Sans Regular': 'noto-regular',
+  'Noto Sans Medium': 'noto-medium',
+};
+
 /// The offline map: OpenMapTiles-schema vector tiles read out of the bundled
 /// `assets/map/biliran.mbtiles` extract, served locally by
-/// `OfflineMapService` on [port].
+/// `OfflineMapService` on [port] — the same extract, and the same look, as
+/// the web dashboard's street map (ziren_dashboard/components/map/
+/// maplibre-style.ts).
 ///
-/// Fills and lines only — deliberately no `symbol`/text layers. The satellite
-/// style's own doc comment explains why it stays raster-only: no glyph
-/// server. A vector style needs one just as much, for the exact reason
-/// `_drawPins` in map_screen.dart already hit once — a symbol layer with a
-/// `textField` and no glyphs configured in the style silently fails to
-/// render, which for an offline map looks identical to the tiles never
-/// having loaded at all. Place names can come later behind a bundled font;
-/// until then, an offline map with legible shapes and no labels beats one
-/// that looks broken.
-String buildOfflineStyle(int port) {
-  final tileUrl = 'http://127.0.0.1:$port/tiles/{z}/{x}/{y}.pbf';
-  return '''
-{
-  "version": 8,
-  "sources": {
-    "biliran": {
-      "type": "vector",
-      "tiles": ["$tileUrl"],
-      "minzoom": 9,
-      "maxzoom": 15,
-      "bounds": [124.3, 11.48, 124.58, 11.72]
-    }
-  },
-  "layers": [
-    { "id": "background", "type": "background", "paint": { "background-color": "#eef2f0" } },
+/// Labels are included now. They used to be left out on purpose: a symbol
+/// layer with a `textField` and no glyphs configured silently fails to
+/// render. The fonts are bundled (assets/map/fonts) and served by the same
+/// loopback server as the tiles, so an offline map finally carries place and
+/// street names, with no font server to depend on.
+String buildOfflineStyle(int port) => jsonEncode(_style(port, satellite: false));
+
+/// The online map: Esri satellite imagery, with our own roads and labels over
+/// it, and our street map UNDER it — so if Esri is slow or unreachable the
+/// map shows streets instead of a grey void. Replaces the CARTO labels layer
+/// [kZirenMapStyle] used, which was one more server to depend on.
+String buildHybridStyle(int port) => jsonEncode(_style(port, satellite: true));
+
+const List<String> _kMinorRoads = ['service', 'tertiary', 'minor'];
+const List<String> _kMajorRoads = ['motorway', 'trunk', 'primary', 'secondary'];
+/// Landmarks a crew is sent by — seen from furthest out.
+const List<String> _kPoiEmergency = ['hospital', 'doctors', 'police', 'fire_station', 'town_hall', 'ferry_terminal'];
+
+/// Public places people give directions by.
+const List<String> _kPoiCivic = [
+  'school', 'college', 'kindergarten', 'university', 'place_of_worship', 'post', 'library', 'office',
+  'cemetery', 'information', 'shelter', 'bus', 'fuel', 'bank', 'atm', 'pharmacy',
+];
+
+/// OpenMapTiles poi class -> sprite icon. Must match the dashboard's POI_ICON.
+const List<dynamic> _kPoiIcon = [
+  'match', ['get', 'class'],
+  'hospital', 'poi-hospital',
+  'doctors', 'poi-doctors',
+  'police', 'poi-police',
+  'fire_station', 'poi-fire_station',
+  'town_hall', 'poi-town_hall',
+  'ferry_terminal', 'poi-ferry',
+  ['school', 'college', 'kindergarten', 'university'], 'poi-school',
+  'place_of_worship', 'poi-worship',
+  'post', 'poi-post',
+  'library', 'poi-library',
+  'office', 'poi-office',
+  'cemetery', 'poi-cemetery',
+  'information', 'poi-info',
+  'shelter', 'poi-shelter',
+  'bus', 'poi-bus',
+  'fuel', 'poi-fuel',
+  ['bank', 'atm'], 'poi-bank',
+  'pharmacy', 'poi-pharmacy',
+  ['shop', 'grocery', 'clothing_store', 'multi', 'hardware', 'convenience', 'mobile_phone', 'furniture'], 'poi-shop',
+  ['fast_food', 'restaurant', 'bakery', 'bar', 'beer', 'ice_cream'], 'poi-food',
+  'cafe', 'poi-cafe',
+  'lodging', 'poi-lodging',
+  ['attraction', 'castle', 'art_gallery', 'museum', 'monument'], 'poi-attraction',
+  ['park', 'campsite', 'garden', 'playground'], 'poi-park',
+  ['pitch', 'sports_centre', 'swimming_pool', 'basketball', 'stadium'], 'poi-sports',
+  'poi-generic',
+];
+
+Map<String, dynamic> _poiLayer(
+  String id,
+  List<dynamic> filter,
+  double minzoom,
+  String textColor,
+  String halo, {
+  required bool emergency,
+}) =>
     {
-      "id": "landcover",
-      "type": "fill",
-      "source": "biliran",
-      "source-layer": "landcover",
-      "paint": { "fill-color": "#d9e8d5", "fill-opacity": 0.6 }
-    },
-    {
-      "id": "landuse",
-      "type": "fill",
-      "source": "biliran",
-      "source-layer": "landuse",
-      "paint": { "fill-color": "#e6e2d3", "fill-opacity": 0.5 }
-    },
-    {
-      "id": "park",
-      "type": "fill",
-      "source": "biliran",
-      "source-layer": "park",
-      "paint": { "fill-color": "#c8e6c0", "fill-opacity": 0.6 }
-    },
-    {
-      "id": "water",
-      "type": "fill",
-      "source": "biliran",
-      "source-layer": "water",
-      "paint": { "fill-color": "#a8d0e6" }
-    },
-    {
-      "id": "waterway",
-      "type": "line",
-      "source": "biliran",
-      "source-layer": "waterway",
-      "paint": { "line-color": "#a8d0e6", "line-width": 1.2 }
-    },
-    {
-      "id": "building",
-      "type": "fill",
-      "source": "biliran",
-      "source-layer": "building",
-      "paint": { "fill-color": "#d8d2c4", "fill-outline-color": "#c3bcaa" }
-    },
-    {
-      "id": "boundary",
-      "type": "line",
-      "source": "biliran",
-      "source-layer": "boundary",
-      "paint": { "line-color": "#9a8f7a", "line-width": 1, "line-dasharray": [3, 2] }
-    },
-    {
-      "id": "transportation",
-      "type": "line",
-      "source": "biliran",
-      "source-layer": "transportation",
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": { "line-color": "#ffffff", "line-width": 1.4 }
-    },
-    {
-      "id": "place",
-      "type": "circle",
-      "source": "biliran",
-      "source-layer": "place",
-      "paint": {
-        "circle-color": "#8a7f6b",
-        "circle-radius": 3,
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 1
-      }
-    }
-  ]
+      'id': id,
+      'type': 'symbol',
+      'source': 'biliran',
+      'source-layer': 'poi',
+      'minzoom': minzoom,
+      // Every landmark carries a label: its name, or what it is (_kPoiLabel).
+      'filter': filter,
+      'layout': {
+        'icon-image': _kPoiIcon,
+        'icon-size': emergency ? ['interpolate', ['linear'], ['zoom'], 11.5, 0.75, 15, 1] : 1,
+        // Emergency facilities always draw; place names step around them.
+        'icon-allow-overlap': emergency,
+        // The name shows with the icon and tries every side for room; an
+        // ordinary landmark with no room is dropped whole, never left as a
+        // nameless icon. Emergency facilities always keep their icon.
+        'text-field': _kPoiLabel,
+        'text-font': [emergency ? 'Noto Sans Medium' : 'Noto Sans Regular'],
+        'text-size': emergency ? 11.5 : 10.5,
+        'text-variable-anchor': ['top', 'bottom', 'right', 'left'],
+        'text-radial-offset': emergency ? 1.1 : 0.9,
+        'text-justify': 'auto',
+        'text-max-width': 9,
+        'text-optional': emergency,
+      },
+      'paint': {'text-color': textColor, 'text-halo-color': halo, 'text-halo-width': 1.4},
+    };
+
+const List<dynamic> _kName = ['coalesce', ['get', 'name:latin'], ['get', 'name']];
+
+/// A landmark's name, or, when OpenStreetMap has none, what it is
+/// ("Police Station", "Basketball Court"), so no icon is ever drawn bare.
+/// Must match the dashboard's POI_LABEL.
+const List<dynamic> _kPoiLabel = [
+  'coalesce', ['get', 'name:latin'], ['get', 'name'],
+  ['match', ['get', 'subclass'],
+    'basketball', 'Basketball Court', 'multi', 'Multi-purpose Court', 'volleyball', 'Volleyball Court', 'tennis', 'Tennis Court',
+    'athletics', 'Track Oval', 'swimming_pool', 'Swimming Pool', 'community_centre', 'Barangay Hall', 'grave_yard', 'Cemetery',
+    'viewpoint', 'Viewpoint', 'government', 'Government Office', 'food_court', 'Food Court', 'artwork', 'Monument',
+    'convenience', 'Store', 'general', 'Store', 'confectionery', 'Bakery',
+    ['match', ['get', 'class'],
+      'hospital', 'Hospital', 'doctors', 'Health Center', 'police', 'Police Station', 'fire_station', 'Fire Station',
+      'town_hall', 'Town Hall', 'ferry_terminal', 'Port', 'pitch', 'Court', 'basketball', 'Basketball Court',
+      'multi', 'Multi-purpose Court', 'athletics', 'Track Oval', 'running', 'Track Oval', 'sports_centre', 'Sports Center',
+      'swimming_pool', 'Swimming Pool', 'cemetery', 'Cemetery', 'place_of_worship', 'Church', 'shelter', 'Shelter',
+      'gate', 'Gate', 'park', 'Park', 'playground', 'Playground', 'picnic_site', 'Picnic Area',
+      'campsite', 'Campsite', 'attraction', 'Tourist Spot', 'school', 'School', 'library', 'Library',
+      'post', 'Post Office', 'office', 'Office', 'restaurant', 'Restaurant', 'cafe', 'Cafe',
+      'fast_food', 'Eatery', 'bakery', 'Bakery', 'shop', 'Store', 'clothing_store', 'Clothing Store',
+      'pharmacy', 'Pharmacy', 'bank', 'Bank', 'atm', 'ATM', 'fuel', 'Gas Station',
+      'lodging', 'Lodging', 'parking', 'Parking', 'toilets', 'Restroom', 'reservoir', 'Reservoir',
+      'art_gallery', 'Monument',
+      'Landmark'],
+  ],
+];
+
+/// Road width by zoom, so a highway reads as one from the island view down
+/// to a street. [extra] widens it for the casing drawn underneath.
+List<dynamic> _roadWidth(double base, [double extra = 0]) => [
+      'interpolate', ['exponential', 1.5], ['zoom'],
+      10, base * 0.4 + extra,
+      14, base * 2 + extra,
+      18, base * 9 + extra,
+    ];
+
+List<Map<String, dynamic>> _roads(String prefix, double opacity) {
+  Map<String, dynamic> line(String id, List<String> classes, String color, double base, [double extra = 0]) => {
+        'id': '$prefix$id',
+        'type': 'line',
+        'source': 'biliran',
+        'source-layer': 'transportation',
+        'filter': ['in', ['get', 'class'], ['literal', classes]],
+        'layout': {'line-cap': 'round', 'line-join': 'round'},
+        'paint': {'line-color': color, 'line-width': _roadWidth(base, extra), 'line-opacity': opacity},
+      };
+  return [
+    line('road-minor-casing', _kMinorRoads, '#d3c9b8', 1.1, 1.5),
+    line('road-major-casing', _kMajorRoads, '#d3c9b8', 1.7, 1.5),
+    line('road-minor', _kMinorRoads, '#ffffff', 1.1),
+    line('road-major', _kMajorRoads, '#fcd69a', 1.7),
+  ];
 }
-''';
+
+Map<String, dynamic> _style(int port, {required bool satellite}) {
+  const src = 'biliran';
+  final base = 'http://127.0.0.1:$port';
+  // Labels over photography need white text on a dark halo; over the street
+  // map, the reverse.
+  final text = satellite ? '#ffffff' : '#2b2b2b';
+  final muted = satellite ? '#f1f1f1' : '#5c5c5c';
+  final halo = satellite ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.92)';
+
+  return {
+    'version': 8,
+    'glyphs': '$base/fonts/{fontstack}/{range}.pbf',
+    'sprite': '$base/sprite/sprite',
+    'sources': {
+      src: {
+        'type': 'vector',
+        'tiles': ['$base/tiles/{z}/{x}/{y}.pbf'],
+        'minzoom': 9,
+        'maxzoom': 15,
+        'attribution': '© OpenStreetMap contributors © OpenMapTiles',
+      },
+      if (satellite)
+        'satellite': {
+          'type': 'raster',
+          'tiles': [
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          ],
+          'tileSize': 256,
+          'maxzoom': 18,
+          'attribution': 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+        },
+    },
+    'layers': [
+      // Land is the background; OpenMapTiles draws the sea as water.
+      {'id': 'background', 'type': 'background', 'paint': {'background-color': '#f2efe9'}},
+      {
+        'id': 'landcover', 'type': 'fill', 'source': src, 'source-layer': 'landcover',
+        'paint': {'fill-color': '#d6e8c8', 'fill-opacity': 0.8},
+      },
+      {
+        'id': 'landuse', 'type': 'fill', 'source': src, 'source-layer': 'landuse',
+        'paint': {'fill-color': '#ebe6dc', 'fill-opacity': 0.8},
+      },
+      {
+        'id': 'park', 'type': 'fill', 'source': src, 'source-layer': 'park',
+        'paint': {'fill-color': '#c8e3bc', 'fill-opacity': 0.7},
+      },
+      {'id': 'water', 'type': 'fill', 'source': src, 'source-layer': 'water', 'paint': {'fill-color': '#aad3df'}},
+      {
+        'id': 'waterway', 'type': 'line', 'source': src, 'source-layer': 'waterway',
+        'paint': {
+          'line-color': '#aad3df',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.6, 16, 3],
+        },
+      },
+      {
+        'id': 'building', 'type': 'fill', 'source': src, 'source-layer': 'building', 'minzoom': 14,
+        'paint': {'fill-color': '#dcd4c6', 'fill-outline-color': '#c9bfae'},
+      },
+      ..._roads('', 1),
+      if (satellite) ...[
+        {'id': 'satellite', 'type': 'raster', 'source': 'satellite'},
+        ..._roads('photo-', 0.35),
+      ],
+      {
+        'id': 'boundary', 'type': 'line', 'source': src, 'source-layer': 'boundary',
+        'filter': ['all', ['<=', ['get', 'admin_level'], 8], ['!=', ['get', 'maritime'], 1]],
+        'paint': {'line-color': '#9c8fb4', 'line-width': 1, 'line-dasharray': [3, 2], 'line-opacity': 0.7},
+      },
+      {
+        'id': 'road-name', 'type': 'symbol', 'source': src, 'source-layer': 'transportation_name', 'minzoom': 13,
+        'layout': {
+          'symbol-placement': 'line',
+          'text-field': _kName,
+          'text-font': ['Noto Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 17, 13],
+        },
+        'paint': {'text-color': muted, 'text-halo-color': halo, 'text-halo-width': 1.5},
+      },
+      // Every landmark, with its icon (assets/map/sprite, made by the
+      // dashboard's scripts/make-map-assets.mjs — the same icons the web map
+      // draws). Emergency facilities first and from further out; the last
+      // layer's symbols win collisions, so they are listed last.
+      // Unnamed courts, chapels, sheds: labelled by what they are, street
+      // level only, and first to give way in a collision.
+      _poiLayer('poi-unnamed', ['all', ['!', ['has', 'name']], ['!', ['in', ['get', 'class'], ['literal', _kPoiEmergency]]]], 16, muted, halo, emergency: false),
+      _poiLayer('poi-other', ['all', ['has', 'name'], ['!', ['in', ['get', 'class'], ['literal', [..._kPoiEmergency, ..._kPoiCivic]]]]], 15.5, muted, halo, emergency: false),
+      _poiLayer('poi-civic', ['all', ['has', 'name'], ['in', ['get', 'class'], ['literal', _kPoiCivic]]], 14, muted, halo, emergency: false),
+      {
+        'id': 'place-small', 'type': 'symbol', 'source': src, 'source-layer': 'place', 'minzoom': 12,
+        'filter': ['in', ['get', 'class'], ['literal', ['village', 'hamlet', 'suburb', 'neighbourhood', 'isolated_dwelling']]],
+        'layout': {
+          'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+          'text-radial-offset': 0.9,'text-field': _kName, 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-max-width': 8},
+        'paint': {'text-color': text, 'text-halo-color': halo, 'text-halo-width': 1.5},
+      },
+      {
+        'id': 'place-town', 'type': 'symbol', 'source': src, 'source-layer': 'place',
+        'filter': ['in', ['get', 'class'], ['literal', ['city', 'town']]],
+        'layout': {
+          'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+          'text-radial-offset': 0.9,
+          'text-field': _kName,
+          'text-font': ['Noto Sans Medium'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 12, 14, 17],
+          'text-max-width': 8,
+        },
+        'paint': {'text-color': text, 'text-halo-color': halo, 'text-halo-width': 1.8},
+      },
+      // Last, so it is PLACED first: town names step around these icons.
+      _poiLayer('poi-emergency', ['in', ['get', 'class'], ['literal', _kPoiEmergency]], 11.5, text, halo, emergency: true),
+    ],
+  };
 }

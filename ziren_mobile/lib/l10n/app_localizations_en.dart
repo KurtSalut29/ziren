@@ -2455,6 +2455,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapNoLocationYet => 'No location yet. Check if your GPS is turned on.';
 
   @override
+  String get mapYouLabel => 'You';
+
+  @override
   String get mapLoading => 'Loading map…';
 
   @override
@@ -3363,4 +3366,200 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get respNearbySosChip => 'SOS';
+
+  @override
+  String get hotlinesTitle => 'Emergency hotlines';
+
+  @override
+  String hotlinesForCategory(String category) {
+    return 'Hotlines for $category';
+  }
+
+  @override
+  String get hotlinesSheetSubtitle => 'Tap a number to open your phone\'s dialer. The nearest town is listed first.';
+
+  @override
+  String get hotlinesOfflineTitle => 'No internet — call a station directly';
+
+  @override
+  String get hotlinesOfflineBody => 'Your report can\'t be sent right now. A regular call still works with just a phone signal.';
+
+  @override
+  String get hotlinesNearest => 'Nearest';
+
+  @override
+  String get hotlinesCallNow => 'Call now';
+
+  @override
+  String hotlinesCallSemantics(String number) {
+    return 'Call $number';
+  }
+
+  @override
+  String hotlinesCallFailed(String number) {
+    return 'Couldn\'t open the dialer. Dial $number yourself.';
+  }
+
+  @override
+  String get hotlinesNational => 'National Emergency Hotline';
+
+  @override
+  String get hotlinesNationalScope => 'Anywhere in the Philippines';
+
+  @override
+  String get hotlinesRhu => 'Rural Health Unit';
+
+  @override
+  String get hotlinesSeeAll => 'See all station hotlines';
+
+  @override
+  String get hotlinesScreenIntro => 'Official numbers of every BFP, PNP and MDRRMO station in Biliran. They work without internet — only a phone signal is needed.';
+
+  @override
+  String get hotlinesFilterAll => 'All';
+
+  @override
+  String get hotlinesHomeCardTitle => 'Station hotlines';
+
+  @override
+  String get hotlinesHomeCardBody => 'Call BFP, PNP or MDRRMO directly — works even without internet.';
+
+  @override
+  String get hotlinesCallInstead => 'Call a station instead';
+
+  @override
+  String get hotlinesStationCall => 'Call';
+
+  @override
+  String get homeOfflineCallHint => 'No internet. Tap a category below to see the station numbers to call.';
+
+  @override
+  String get locWhereTitle => 'Where is the incident?';
+
+  @override
+  String get locHere => 'I\'m at the incident';
+
+  @override
+  String get locElsewhere => 'Somewhere else';
+
+  @override
+  String get locPickedPoint => 'Location placed on the map';
+
+  @override
+  String get locElsewhereNote => 'The station will be told you are reporting from somewhere else.';
+
+  @override
+  String locElsewhereNoteFrom(String place) {
+    return 'The station will be told you are reporting from $place.';
+  }
+
+  @override
+  String get locChange => 'Change';
+
+  @override
+  String get locRefresh => 'Refresh location';
+
+  @override
+  String get locDeniedPickHint => 'No GPS? Choose \"Somewhere else\" and place the incident on the map.';
+
+  @override
+  String get locLandmarkRequired => 'Landmark (required)';
+
+  @override
+  String get locLandmarkMissing => 'Add a landmark so the responders can find the place.';
+
+  @override
+  String get locLandmarkAutoFilled => 'Filled in from the nearest landmark on the map — check that it is right.';
+
+  @override
+  String get locPickTitle => 'Where is the incident?';
+
+  @override
+  String get locPickHint => 'Move the map until the pin is on the incident, or search a barangay or landmark.';
+
+  @override
+  String get locPickConfirm => 'Use this location';
+
+  @override
+  String get locSearchHint => 'Search barangay or landmark';
+
+  @override
+  String get locSearchClear => 'Clear search';
+
+  @override
+  String get locKindLandmark => 'Landmark';
+
+  @override
+  String get locKindPlace => 'Barangay / place';
+
+  @override
+  String locNearLandmark(String landmark) {
+    return 'Near $landmark';
+  }
+
+  @override
+  String get locReviewReporterLabel => 'You are reporting from';
+
+  @override
+  String get locReviewReporterUnknown => 'Your location is unknown';
+
+  @override
+  String get helpTitle => 'How to use Ziren';
+
+  @override
+  String get helpIntroResident => 'Short guides to the things you will do in Ziren. Tap a topic to open its steps.';
+
+  @override
+  String get helpIntroResponder => 'Short guides for responders: duty, assignments, status updates and your own safety. Tap a topic to open its steps.';
+
+  @override
+  String get helpStillStuck => 'Still need help? Call your station';
+
+  @override
+  String get helpHomeLink => 'How to use Ziren?';
+
+  @override
+  String get mascotName => 'Hi! I\'m Ziren';
+
+  @override
+  String mascotResidentIntro(String name) {
+    return '$name, in an emergency, tap the big button below and I\'ll get your report to the nearest station.';
+  }
+
+  @override
+  String mascotResidentOpen(String count, String name) {
+    return '$count of your reports are still being handled. I\'m right here with you, $name.';
+  }
+
+  @override
+  String mascotResidentThanks(String count, String name) {
+    return 'You\'ve sent $count reports so far. Thank you for looking out for your community, $name!';
+  }
+
+  @override
+  String get mascotResidentOffline => 'You\'re offline right now. Tap an emergency type below to see the station numbers you can call.';
+
+  @override
+  String mascotResponderOffDuty(String name) {
+    return 'You\'re off duty, $name. Turn on Duty Status below to receive dispatches.';
+  }
+
+  @override
+  String mascotResponderQueue(String count, String critical, String name) {
+    return 'You have $count assigned incidents, $critical critical. Stay safe out there, $name!';
+  }
+
+  @override
+  String mascotResponderReady(String name) {
+    return 'You\'re on duty and ready, $name. Nothing is assigned to you right now.';
+  }
+
+  @override
+  String get helpButtonLabel => 'Ask Ziren for help';
+
+  @override
+  String get helpSheetClose => 'Close';
+
+  @override
+  String get homeProfileButtonLabel => 'Open your profile';
 }

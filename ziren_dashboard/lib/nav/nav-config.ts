@@ -38,6 +38,7 @@ import {
   Globe2,
   Handshake,
   History,
+  LifeBuoy,
   MapPinned,
   Megaphone,
   NotebookText,
@@ -215,6 +216,10 @@ const NAV: NavGroup[] = [
     label: 'Personal',
     items: [
       { href: '/settings', label: 'Settings', icon: Settings },
+      // "How to use Ziren" — step-by-step guides for the caller's own role.
+      // Asked for by the stations: a new dispatcher should not need someone
+      // beside them to find their way around.
+      { href: '/help', label: 'Help', icon: LifeBuoy },
     ],
   },
 ];

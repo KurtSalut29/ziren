@@ -96,7 +96,7 @@ function railGroupsFor(isProvincialAdmin: boolean): RailGroup[] {
     label: isProvincialAdmin ? 'Agency Tools' : 'Agency',
     icon: Building2,
     items: [
-      { key: 'agency', label: isProvincialAdmin ? 'Edit an agency' : 'Agency Information', icon: Building2, keywords: ['contact', 'municipality', 'stations', 'name', 'email', 'phone'] },
+      { key: 'agency', label: isProvincialAdmin ? 'Edit an agency' : 'Agency Information', icon: Building2, keywords: ['contact', 'municipality', 'stations', 'name', 'email', 'phone', 'hotline', 'numbers'] },
       { key: 'alerts', label: 'Alerts', icon: BellRing, keywords: ['severity', 'interrupt', 'rules', 'critical', 'response', 'targets', 'deadline'] },
       ...(isProvincialAdmin ? [] : [{ key: 'responders', label: 'Responders', icon: Users, keywords: ['approve', 'roster', 'on duty', 'pending', 'crew'] }]),
     ],

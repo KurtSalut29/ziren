@@ -13,6 +13,8 @@ import '../domain/sos_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
+import '../../hotlines/presentation/hotlines_view.dart';
+
 /// SOS confirmation screen — shown after the Resident taps the SOS button.
 ///
 /// Built on the same shell as the category-tile quick-report screen
@@ -114,6 +116,22 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
             if (provider.errorMessage != null) ...[
               const SizedBox(height: ZirenTokens.space16),
               _ErrorBanner(message: provider.errorMessage!),
+            ],
+            // The SOS reached nobody. A phone call still works on signal alone.
+            if (provider.failedOffline) ...[
+              const SizedBox(height: ZirenTokens.space10),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ZirenTokens.systemSuccess,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(LucideIcons.phone, size: 18),
+                  label: Text(AppLocalizations.of(context).hotlinesCallInstead),
+                  onPressed: () => showHotlinesSheet(context, offline: true),
+                ),
+              ),
             ],
 
             const SizedBox(height: ZirenTokens.space24),

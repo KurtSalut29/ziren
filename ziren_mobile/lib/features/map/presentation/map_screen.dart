@@ -11,9 +11,13 @@ import 'package:provider/provider.dart';
 import '../../../features/incident_report/domain/incident_model.dart';
 import '../../../features/incident_report/domain/incident_provider.dart';
 import '../../../features/incident_report/domain/station_model.dart';
+import '../../../features/hotlines/data/hotlines_store.dart';
+import '../../../features/hotlines/domain/station_hotlines.dart';
+import '../../../features/hotlines/presentation/hotlines_view.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_button.dart';
+import '../../../shared/widgets/ziren_dialogs.dart';
 import '../domain/geo_circle.dart';
 import '../../../shared/map/offline_map_service.dart';
 import '../../../shared/map/ziren_map_style.dart';
@@ -47,12 +51,18 @@ const Map<String, String> _kMarkerAssets = {
   _kMeIconResponder: 'assets/markers/responder.png',
 };
 
-/// The art is 128px tall; a station pin should draw at roughly 40.
-const double _kStationIconScale = 0.32;
+/// The art is 128 physical px tall and registered at the device pixel ratio,
+/// so at icon-size 1 it draws ~49 dp on a 420 dpi phone. That is the size
+/// users actually saw for months: every scale below was silently rejected
+/// (see [_kPinZoomStops]), so pins always drew at 1. When the rejection was
+/// fixed, the old 0.32 scale suddenly applied and pins shrank to ~9 dp —
+/// reported at once as "lumiit". Scales are now relative to that familiar
+/// size, not to a 128 px guess.
+const double _kStationIconScale = 0.9;
 
 /// The person pin draws a little larger than a station: it marks where the
 /// viewer is, which is the one position on this map they are certain about.
-const double _kMeIconScale = 0.36;
+const double _kMeIconScale = 1.0;
 
 /// The person pins stand on a glow ring rather than ending in a point. Its
 /// centre is the position, and it sits at roughly 87% of the image height —
@@ -72,32 +82,29 @@ const double _kMeTipInset = 17;
 /// up close, smaller pulled back — is what they actually want, not a
 /// perfectly fixed size.
 ///
-/// Stops chosen so "normal" size (the old fixed size) only shows up close,
-/// at 16 — a single-building view — not at the province-wide default. Two
-/// earlier versions of this curve (1.0x at 11.5, then 0.55x at 11.5) were
-/// both still reported as too big pulled back — this one cuts the whole
-/// wide-zoom half of the curve hard, down to a fifth of normal size at a
-/// regional view (7) and well under half at the province-wide default
-/// (11.5), and only ramps up to the old size and beyond once the viewer has
-/// zoomed in a good way past a town-level view. Zooming to street level (18
-/// — this style's own satellite source has no imagery closer than that)
-/// still draws pins noticeably larger without dwarfing the photography
-/// underneath.
-const List<dynamic> _kPinZoomScale = [
-  Expressions.interpolate,
-  ['linear'],
-  [Expressions.zoom],
-  7,
-  0.2,
-  9,
-  0.3,
-  11.5,
-  0.45,
-  16,
-  1.0,
-  18,
-  1.7,
-];
+/// Earlier versions of this curve were tuned against complaints while the
+/// whole expression was being rejected (below), so none of them was ever
+/// seen. This one keeps the familiar size (1.0) at a town view (14), eases
+/// down to about half at a regional view, and grows only a little up close.
+///
+/// Zoom → scale stops. Use [_pinScale], never these directly inside a
+/// `multiply`: MapLibre only accepts `["zoom"]` as the input of a TOP-LEVEL
+/// interpolate, and silently rejects the whole icon-size otherwise (logcat:
+/// `icon-size "zoom" expression may only be used as input to a top-level
+/// "step" or "interpolate" expression`) — which is how pins went unscaled.
+const List<double> _kPinZoomStops = [7, 0.5, 9, 0.65, 11.5, 0.85, 14, 1.0, 16, 1.1, 18, 1.25];
+
+/// icon-size for a pin whose normal size is [base]: the zoom curve above
+/// with every stop pre-multiplied by [base], so zoom stays top-level.
+List<dynamic> _pinScale(double base) => [
+      Expressions.interpolate,
+      ['linear'],
+      [Expressions.zoom],
+      for (var i = 0; i < _kPinZoomStops.length; i += 2) ...[
+        _kPinZoomStops[i],
+        _kPinZoomStops[i + 1] * base,
+      ],
+    ];
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, this.forResponder = false, this.focusIncidentId});
@@ -144,20 +151,32 @@ const _kRouteLineLayer = 'route-line';
 // value with no way to hand it a zoom expression.
 const _kStationSource = 'stations-src';
 const _kStationLayer = 'stations';
-const _kIncidentSource = 'incidents-src';
-const _kIncidentLayer = 'incidents';
 
 // Invisible circle layers, one per source above, whose only job is to be
 // tapped. The icon layers already carry `iconAllowOverlap`/
-// `iconIgnorePlacement`, so their icon shrinks to as little as ~18 logical
-// px at the map's default zoom (see _kPinZoomScale) — well under
+// `iconIgnorePlacement`, so their icon shrinks when zoomed out (see
+// _pinScale) — well under
 // ZirenTokens.minTouchTarget (48px), and confirmed live: taps within the
 // icon's own visible bounds routinely missed it. A circle layer hit-tests
 // against its geometric radius rather than rasterised icon pixels, so a
 // fixed-radius, zero-opacity circle on the same point gives every pin a
 // consistent, reliable touch target without changing how anything looks.
 const _kStationTapAreaLayer = 'stations-tap-area';
-const _kIncidentTapAreaLayer = 'incidents-tap-area';
+
+// Names under the pins — each station's name, and "You" under the viewer's
+// own pin. Separate text-only layers, never a textField on the pin layers
+// themselves: a symbol layer whose text cannot render (a style without
+// glyphs) drops its icon with it, and a pin must always draw.
+const _kStationLabelLayer = 'stations-label';
+const _kMeLabelLayer = 'me-label';
+
+/// Fonts for the pin labels, served by OfflineMapService like every other
+/// label. Wrapped in `literal`: a bare list is read as an expression and
+/// rejected ("invalid value for text-font").
+const List<dynamic> _kPinLabelFont = [
+  Expressions.literal,
+  ['Noto Sans Medium'],
+];
 const double _kTapAreaRadius = 24;
 
 class _MapScreenState extends State<MapScreen> {
@@ -213,11 +232,14 @@ class _MapScreenState extends State<MapScreen> {
   /// [_maybeFocusInitialIncident].
   bool _focusCardOpen = false;
 
-  /// Which station/incident sits at each feature index in [_kStationSource]
-  /// / [_kIncidentSource], in the same order the GeoJSON was built — a tap
-  /// on the shared layer comes back as a feature id, not a model, and this
-  /// is how it is turned back into one.
+  /// Which station sits at each feature index in [_kStationSource], in the
+  /// same order the GeoJSON was built — a tap on the shared layer comes back
+  /// as a feature id, not a model, and this is how it is turned back into
+  /// one.
   List<StationModel> _plottedStations = [];
+
+  /// The viewer's reports with coordinates. Not drawn (see [_drawPins]);
+  /// only searched for the one report [MapScreen.focusIncidentId] names.
   List<IncidentModel> _plottedIncidents = [];
 
   /// Whether marker art has been requested from the atlas.
@@ -261,6 +283,11 @@ class _MapScreenState extends State<MapScreen> {
   /// onStyleLoadedCallback a second time and re-run every piece of state in
   /// this class that assumes it only ever runs once.
   String? _resolvedStyle;
+
+  /// Whether the loaded style can draw text: Ziren's own styles serve fonts,
+  /// the raster fallback (kZirenMapStyle) does not. Pin labels are only
+  /// added when it can.
+  bool get _styleHasGlyphs => _resolvedStyle?.contains('"glyphs"') ?? false;
 
   @override
   void initState() {
@@ -358,7 +385,7 @@ class _MapScreenState extends State<MapScreen> {
     // one closure per pin the way the old per-symbol onSymbolTapped did —
     // there is no per-feature callback to attach to on a style layer, only
     // this controller-wide stream, so the feature id (this layer's array
-    // index into _plottedStations/_plottedIncidents at the time it was
+    // index into _plottedStations at the time it was
     // drawn) is what tells two taps on the same layer apart.
     ctrl.onFeatureTapped.add((id, point, coordinates, layerId) {
       // id arrives as a String even though the GeoJSON gave every feature a
@@ -377,11 +404,6 @@ class _MapScreenState extends State<MapScreen> {
           index >= 0 &&
           index < _plottedStations.length) {
         _onStationTap(_plottedStations[index]);
-      } else if ((layerId == _kIncidentLayer ||
-              layerId == _kIncidentTapAreaLayer) &&
-          index >= 0 &&
-          index < _plottedIncidents.length) {
-        _onIncidentTap(_plottedIncidents[index]);
       }
     });
   }
@@ -433,6 +455,7 @@ class _MapScreenState extends State<MapScreen> {
             // with it.
             'iconImage': art ?? 'marker-15',
             if (art == null) 'iconColor': _agencyHex(s.agencyType),
+            'name': s.name,
           },
           'geometry': {
             'type': 'Point',
@@ -528,11 +551,7 @@ class _MapScreenState extends State<MapScreen> {
         SymbolLayerProperties(
           iconImage: [Expressions.get, 'iconImage'],
           iconColor: haveArt ? null : [Expressions.get, 'iconColor'],
-          iconSize: [
-            Expressions.multiply,
-            haveArt ? _kStationIconScale : 1.8,
-            _kPinZoomScale,
-          ],
+          iconSize: _pinScale(haveArt ? _kStationIconScale : 1.8),
           iconAnchor: haveArt ? 'bottom' : null,
           // Never dropped for collision — see the "me" layer's own comment
           // on why. With several agency pins only ~100-150m apart
@@ -545,20 +564,42 @@ class _MapScreenState extends State<MapScreen> {
           // iconSize expression above actually addresses.
           iconAllowOverlap: true,
           iconIgnorePlacement: true,
-          // No textField, deliberately — kZirenMapStyle is a bare raster
-          // style with no `glyphs` font server configured (see its own doc
-          // comment: no glyph-server dependency, so a map still works over
-          // a barangay connection). A symbol layer with a textField and no
-          // glyphs configured in the style fails to render at all —
-          // confirmed via logcat when this was still the annotation API:
-          // MapLibre logged "invalid value for text-font... will not
-          // render text" and the ENTIRE symbol, icon included, silently
-          // failed to draw, not just the label. The station's name is
-          // still available from the bottom card (_StationDetailSheet) on
-          // tap, so nothing is actually lost.
+          // No textField here, deliberately: a symbol layer whose text cannot
+          // render (the fallback kZirenMapStyle has no `glyphs`) fails to
+          // draw ENTIRELY, icon included — confirmed via logcat. The name is
+          // its own layer below, so a missing font costs the label only.
         ),
         belowLayerId: _kMePointLayer,
       );
+      if (_styleHasGlyphs) {
+        await ctrl.addLayer(
+          _kStationSource,
+          _kStationLabelLayer,
+          const SymbolLayerProperties(
+            textField: [Expressions.get, 'name'],
+            textFont: _kPinLabelFont,
+            textSize: 11,
+            textColor: '#1A1A1A',
+            textHaloColor: '#FFFFFF',
+            textHaloWidth: 1.6,
+            // The pin stands ON the point (anchor bottom), so its name goes
+            // under the point, clear of the art.
+            textAnchor: 'top',
+            textOffset: [
+              Expressions.literal,
+              [0, 0.3],
+            ],
+            textMaxWidth: 9,
+            // Crowded town centres (BFP, PNP and MDRRMO a street apart) drop
+            // overlapping names rather than stack them; zooming in brings
+            // them back. The pins themselves never drop.
+            textAllowOverlap: false,
+          ),
+          belowLayerId: _kMePointLayer,
+          // The province view is 21 names on one island — unreadable.
+          minzoom: 12,
+        );
+      }
       // See _kStationTapAreaLayer: a fixed-size, invisible hit target on top
       // of the icon so a tap near a small or zoomed-out pin still lands.
       await ctrl.addLayer(
@@ -573,67 +614,18 @@ class _MapScreenState extends State<MapScreen> {
       debugPrint('[map] station layer FAILED: $e\n$st');
     }
 
-    try {
-      final incidentFeatures = [
-        for (var idx = 0; idx < _plottedIncidents.length; idx++)
-          {
-            'type': 'Feature',
-            'id': idx,
-            'properties': {
-              'iconColor': _incidentHex(
-                _plottedIncidents[idx].severity,
-                _plottedIncidents[idx].status,
-              ),
-            },
-            'geometry': {
-              'type': 'Point',
-              'coordinates': [
-                _plottedIncidents[idx].longitude,
-                _plottedIncidents[idx].latitude,
-              ],
-            },
-          },
-      ];
-
-      await ctrl.addSource(
-        _kIncidentSource,
-        GeojsonSourceProperties(
-          data: {'type': 'FeatureCollection', 'features': incidentFeatures},
-        ),
-      );
-      await ctrl.addLayer(
-        _kIncidentSource,
-        _kIncidentLayer,
-        SymbolLayerProperties(
-          iconImage: 'circle-15',
-          iconColor: [Expressions.get, 'iconColor'],
-          iconSize: [Expressions.multiply, 1.4, _kPinZoomScale],
-          iconAllowOverlap: true,
-          iconIgnorePlacement: true,
-        ),
-        belowLayerId: _kMePointLayer,
-      );
-      // See _kStationTapAreaLayer above — same fix, same reason.
-      await ctrl.addLayer(
-        _kIncidentSource,
-        _kIncidentTapAreaLayer,
-        const CircleLayerProperties(
-          circleRadius: _kTapAreaRadius,
-          circleOpacity: 0,
-        ),
-      );
-    } catch (e, st) {
-      debugPrint('[map] incident layer FAILED: $e\n$st');
-    }
-
+    // Reports are deliberately NOT drawn as dots on this map (removed at the
+    // user's request, 2026-09-30): a coloured dot read as clutter, not
+    // information. A single report opened from My Reports still gets its
+    // line from the responding station and its detail card.
     _maybeFocusInitialIncident();
   }
 
   /// The colour of the line from a focused report to its station — carries
   /// the same meaning the status pill does elsewhere in the app (see
   /// ZirenTokens.statusReceived/Processing/Dispatched/Resolved/Cancelled;
-  /// hex literals repeated here for the same reason _agencyHex/_incidentHex
-  /// above already do, rather than importing app_tokens.dart's Color values
+  /// hex literals repeated here for the same reason _agencyHex
+  /// above does, rather than importing app_tokens.dart's Color values
   /// only to unwrap them back into hex strings).
   String _statusLineHex(String status) => switch (status) {
     'resolved' => '#16A34A',
@@ -644,9 +636,9 @@ class _MapScreenState extends State<MapScreen> {
   };
 
   /// Centres on [MapScreen.focusIncidentId], once, the first time it appears
-  /// among the incidents this map actually drew — drawing a status-coloured
+  /// among the viewer's reports — drawing a status-coloured
   /// line to the responding station if one is known, and opening the same
-  /// detail sheet a tap on the incident's own pin would.
+  /// report detail card.
   ///
   /// Silent no-op if the id is missing, unmatched (deleted, or filed by a
   /// different account than the one now signed in), or has no coordinates
@@ -766,9 +758,12 @@ class _MapScreenState extends State<MapScreen> {
         SymbolLayerProperties(
           iconImage:
               widget.forResponder ? _kMeIconResponder : _kMeIconResident,
-          iconSize: [Expressions.multiply, _kMeIconScale, _kPinZoomScale],
+          iconSize: _pinScale(_kMeIconScale),
           iconAnchor: 'bottom',
-          iconOffset: const [0, _kMeTipInset],
+          // Array values go in as a `literal`: a bare [0, 17] is read as an
+          // expression and rejected ("icon-offset value must be an array of
+          // 2 numbers"), which left the pin's tip off the fix.
+          iconOffset: const [Expressions.literal, [0, _kMeTipInset]],
           // Never dropped for collision. Every other mark on this map can be
           // hidden by a neighbour without costing anything; the one that says
           // where the viewer is standing cannot.
@@ -776,6 +771,29 @@ class _MapScreenState extends State<MapScreen> {
           iconIgnorePlacement: true,
         ),
       );
+      if (_styleHasGlyphs && mounted) {
+        await ctrl.addLayer(
+          _kMePointSource,
+          _kMeLabelLayer,
+          SymbolLayerProperties(
+            textField: AppLocalizations.of(context).mapYouLabel,
+            textFont: _kPinLabelFont,
+            textSize: 12,
+            textColor: '#FFFFFF',
+            textHaloColor: '#1E88E5',
+            textHaloWidth: 2.2,
+            // Under the glow ring the pin stands on, which is the position.
+            textAnchor: 'top',
+            textOffset: const [
+              Expressions.literal,
+              [0, 0.6],
+            ],
+            // Like the pin: where the viewer stands is never hidden.
+            textAllowOverlap: true,
+            textIgnorePlacement: true,
+          ),
+        );
+      }
     } else {
       await ctrl.addLayer(
         _kMePointSource,
@@ -800,7 +818,8 @@ class _MapScreenState extends State<MapScreen> {
         lineColor: '#FC5A05',
         lineWidth: 3,
         lineOpacity: 0.85,
-        lineDasharray: [2, 1.5],
+        // As a `literal`, or MapLibre rejects it and draws the line solid.
+        lineDasharray: [Expressions.literal, [2, 1.5]],
       ),
     );
   }
@@ -1032,17 +1051,6 @@ class _MapScreenState extends State<MapScreen> {
     _ => '#43A047',
   };
 
-  String _incidentHex(String? severity, String status) {
-    if (status == 'resolved' || status == 'cancelled') return '#9E9E9E';
-    return switch (severity) {
-      'critical' => '#B71C1C',
-      'high' => '#E53935',
-      'medium' => '#FB8C00',
-      'low' => '#43A047',
-      _ => '#FB8C00',
-    };
-  }
-
   /// A tapped pin becomes the card at the bottom of the screen, replacing
   /// whatever it was showing before — the nearest station, or an earlier tap.
   /// Picking one from the open list (see [_stationPickerOpen]) lands here
@@ -1052,29 +1060,6 @@ class _MapScreenState extends State<MapScreen> {
       _selectedStation = station;
       _stationPickerOpen = false;
     });
-  }
-
-  void _onIncidentTap(IncidentModel incident) {
-    // A responder tapping a pin wants to WORK the incident — accept it,
-    // mark en route, navigate. The resident sheet below is read-only and
-    // offers none of that, so sending a crew to it was a dead end even on
-    // the days a pin did appear.
-    if (widget.forResponder) {
-      context.push('/responder/incident/${incident.id}');
-      return;
-    }
-    // On the single-report view the card IS the detail; the pin just brings it
-    // back after it was flicked away.
-    if (widget.focusIncidentId != null &&
-        incident.id == widget.focusIncidentId) {
-      setState(() => _focusCardOpen = true);
-      return;
-    }
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _IncidentDetailSheet(incident: incident),
-    );
   }
 
   /// The station the bottom card shows: a tapped pin, so long as its agency
@@ -1743,6 +1728,59 @@ class _StationDetailSheet extends StatelessWidget {
             label: t.mapGetDirections,
             icon: LucideIcons.map_pin,
             onPressed: onGetDirections,
+          ),
+          // The station's own hotline, from the same list the offline sheet
+          // uses — so it is there with or without a connection.
+          ListenableBuilder(
+            listenable: HotlinesStore.instance,
+            builder: (context, _) {
+              StationHotline? entry;
+              for (final h in HotlinesStore.instance.entries) {
+                if (h.agencyId == station.agencyId) entry = h;
+              }
+              if (entry == null || entry.numbers.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final numbers = entry.numbers;
+              return Padding(
+                padding: const EdgeInsets.only(top: ZirenTokens.space10),
+                child: OutlinedButton.icon(
+                  icon: Icon(LucideIcons.phone, size: 18, color: ZirenTokens.systemSuccess),
+                  label: Text(
+                    numbers.length == 1
+                        ? '${t.hotlinesStationCall} · ${numbers.first.display}'
+                        : t.hotlinesStationCall,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: ZirenTokens.textPrimary,
+                  ),
+                  onPressed: () async {
+                    if (numbers.length == 1) {
+                      await callHotline(context, numbers.first);
+                      return;
+                    }
+                    final picked = await showZirenOptionSheet<HotlineNumber>(
+                      context,
+                      title: station.name,
+                      options: [
+                        for (final n in numbers)
+                          ZirenSheetOption(
+                            icon: LucideIcons.phone,
+                            label: n.display,
+                            subtitle: n.label,
+                            value: n,
+                            tone: ZirenTone.success,
+                          ),
+                      ],
+                    );
+                    if (picked != null && context.mounted) {
+                      await callHotline(context, picked);
+                    }
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
