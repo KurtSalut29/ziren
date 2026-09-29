@@ -3562,4 +3562,248 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeProfileButtonLabel => 'Open your profile';
+
+  @override
+  String get respStatusNew => 'New';
+
+  @override
+  String get respStatusAccepted => 'Accepted';
+
+  @override
+  String get respStatusEnRoute => 'En route';
+
+  @override
+  String get respStatusOnScene => 'On scene';
+
+  @override
+  String get respStatusResolved => 'Resolved';
+
+  @override
+  String get respStatusCancelled => 'Cancelled';
+
+  @override
+  String get respStepAssigned => 'Assigned';
+
+  @override
+  String get respDutyOnTitle => 'On duty';
+
+  @override
+  String get respDutyOffTitle => 'Off duty';
+
+  @override
+  String respDutyOnBody(String station) {
+    return 'Receiving dispatches · $station';
+  }
+
+  @override
+  String get respDutyOnBodyPlain => 'Receiving dispatches';
+
+  @override
+  String get respDutyOffBody => 'You will not receive dispatches. Turn it on to start your shift.';
+
+  @override
+  String get respNextUpTitle => 'Do this first';
+
+  @override
+  String respNextUpCount(String count) {
+    return '1 of $count';
+  }
+
+  @override
+  String respOtherAssignments(String count) {
+    return 'Other assignments ($count)';
+  }
+
+  @override
+  String get respOpenAssignment => 'Open';
+
+  @override
+  String get respAnswerNow => 'Answer now';
+
+  @override
+  String respWaitingFor(String time) {
+    return 'Waiting $time';
+  }
+
+  @override
+  String respAssignedAgo(String time) {
+    return 'Assigned $time ago';
+  }
+
+  @override
+  String respClosedAgo(String time) {
+    return 'Closed $time ago';
+  }
+
+  @override
+  String respReportedAgo(String time) {
+    return 'Reported $time ago';
+  }
+
+  @override
+  String get respRecentClosedTitle => 'Recently closed';
+
+  @override
+  String get respNoLocation => 'No location';
+
+  @override
+  String get respReportsTitle => 'My reports';
+
+  @override
+  String get respReportsSubtitle => 'Everything a dispatcher has sent you.';
+
+  @override
+  String get respViewList => 'List';
+
+  @override
+  String get respViewRecord => 'Record';
+
+  @override
+  String get respFilterAll => 'All';
+
+  @override
+  String get respFilterOpen => 'Open';
+
+  @override
+  String get respFilterClosed => 'Closed';
+
+  @override
+  String get respSearchHint => 'Search barangay, INC or words';
+
+  @override
+  String respSearchEmpty(String query) {
+    return 'Nothing matches \"$query\".';
+  }
+
+  @override
+  String respSectionOpen(String count) {
+    return 'Open, needs you ($count)';
+  }
+
+  @override
+  String get respSectionThisWeek => 'Closed this week';
+
+  @override
+  String get respSectionLastWeek => 'Closed last week';
+
+  @override
+  String get respSectionOlder => 'Closed earlier';
+
+  @override
+  String get respHistoryCapNote => 'Showing your 50 most recent closed incidents.';
+
+  @override
+  String get respEmptyOpenTitle => 'Nothing open';
+
+  @override
+  String get respEmptyOpenBody => 'No assignment is waiting on you right now.';
+
+  @override
+  String get respEmptyClosedTitle => 'Nothing closed yet';
+
+  @override
+  String get respEmptyClosedBody => 'Incidents you finish will be filed here.';
+
+  @override
+  String get respEmptyAllTitle => 'No reports yet';
+
+  @override
+  String get respEmptyAllBody => 'Anything a dispatcher sends you will appear here, open or closed.';
+
+  @override
+  String get respRecTotalClosed => 'Closed in total';
+
+  @override
+  String get respRecThisWeek => 'Closed this week';
+
+  @override
+  String get respRecCritical => 'Critical handled';
+
+  @override
+  String get respRecTypical => 'Typical response';
+
+  @override
+  String get respRecChartTitle => 'Closed incidents';
+
+  @override
+  String get respRec7Days => '7 days';
+
+  @override
+  String get respRec8Weeks => '8 weeks';
+
+  @override
+  String respRecNoneInRange(String time) {
+    return 'None closed in this period. Your last one was closed $time ago.';
+  }
+
+  @override
+  String get respRecNoneEver => 'None closed in this period.';
+
+  @override
+  String get respRecMixTitle => 'Severity of what you closed';
+
+  @override
+  String get respRecCategoryTitle => 'Types of incident';
+
+  @override
+  String respRecTotal(String count) {
+    return '$count total';
+  }
+
+  @override
+  String get respRecReports => 'reports';
+
+  @override
+  String get respRecEmptyTitle => 'Nothing to show yet';
+
+  @override
+  String get respRecEmptyBody => 'Close your first incident and your record will show up here.';
+
+  @override
+  String get respRecTruncated => 'Your history is capped at 50 incidents, so the earliest part of this chart may be undercounted.';
+
+  @override
+  String get respRecWeekOf => 'wk';
+
+  @override
+  String get respStepsTitle => 'Progress';
+
+  @override
+  String get respNextStep => 'Next step';
+
+  @override
+  String get respCall => 'Call';
+
+  @override
+  String get respCopy => 'Copy';
+
+  @override
+  String get respGpsCopied => 'Coordinates copied.';
+
+  @override
+  String get respVerified => 'Verified';
+
+  @override
+  String get respUnverified => 'Not verified';
+
+  @override
+  String get respReporterUnknown => 'Unknown reporter';
+
+  @override
+  String get respCardReport => 'What happened';
+
+  @override
+  String get respCardLocation => 'Where';
+
+  @override
+  String get respCardReporter => 'Who reported';
+
+  @override
+  String get respCardStation => 'Your station';
+
+  @override
+  String get respClosedBanner => 'This incident is closed. Nothing else to do here.';
+
+  @override
+  String get respEmergencyContactShort => 'Emergency contact';
 }

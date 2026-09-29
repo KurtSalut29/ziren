@@ -123,9 +123,11 @@ class ProfileAvatarHeader extends StatelessWidget {
 
 /// Two initials from a name, one if that is all there is.
 String initialsOf(String name) {
+  // First name + SURNAME ("Mark Anthony Reyes" -> MR), the same letters the
+  // Home header shows, so one person never carries two different monograms.
   final parts = name.trim().split(RegExp(r'\s+'));
-  if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
-    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  if (parts.length >= 2 && parts.first.isNotEmpty && parts.last.isNotEmpty) {
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
   return name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
 }

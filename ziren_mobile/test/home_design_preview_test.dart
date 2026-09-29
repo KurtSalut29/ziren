@@ -7,7 +7,7 @@ import 'package:ziren/shared/widgets/home_kit.dart';
 import 'package:ziren/shared/widgets/home_surface.dart';
 import 'package:ziren/features/responder/domain/responder_incident_model.dart';
 import 'package:ziren/features/responder/domain/responder_trends.dart';
-import 'package:ziren/features/responder/presentation/responder_home_screen.dart';
+import 'package:ziren/features/responder/presentation/widgets/assignment_cards.dart';
 import 'package:ziren/features/responder/presentation/responder_reports_screen.dart';
 import 'package:ziren/features/responder/presentation/widgets/responder_charts.dart';
 import 'package:ziren/features/responder/presentation/widgets/incoming_report_sheet.dart';
@@ -296,9 +296,6 @@ void main() {
                           place: 'Brgy. Larrazabal, Naval',
                           sos: true,
                         ),
-                        color: ZirenTokens.severityCritical,
-                        icon: ZirenTokens.severityCriticalIcon,
-                        elapsed: '52m',
                         onTap: () {},
                       ),
                       const SizedBox(height: ZirenTokens.space10),
@@ -311,9 +308,6 @@ void main() {
                           severity: 'high',
                           place: 'Brgy. Caraycaray, Naval',
                         ),
-                        color: ZirenTokens.severityHigh,
-                        icon: ZirenTokens.severityHighIcon,
-                        elapsed: '23m',
                         onTap: () {},
                       ),
                       const SizedBox(height: ZirenTokens.space10),
@@ -325,9 +319,6 @@ void main() {
                           severity: 'medium',
                           place: 'Brgy. Poblacion, Naval',
                         ),
-                        color: ZirenTokens.severityMedium,
-                        icon: ZirenTokens.severityMediumIcon,
-                        elapsed: '8m',
                         onTap: () {},
                       ),
                     ],

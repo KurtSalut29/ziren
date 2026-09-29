@@ -237,7 +237,8 @@ class ApproachHazard {
   /// driving should not have to parse "0.3 km".
   ///
   /// Not localised: these are SI units and read the same in both languages.
-  String get distanceLabel => distanceKm < 1
-      ? '${(distanceKm * 1000).round()} m'
-      : '${distanceKm.toStringAsFixed(1)} km';
+  String get distanceLabel =>
+      distanceKm < 1
+          ? '${(distanceKm * 1000).round()} m'
+          : '${distanceKm.toStringAsFixed(1)} km';
 }

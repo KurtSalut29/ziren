@@ -81,12 +81,14 @@ class ResponderSectionHeading extends StatelessWidget {
 
 // ── Duty status ─────────────────────────────────────────────────
 
-/// The duty switch, as a row rather than a dial.
+/// The duty switch with its state said in words and colour.
 ///
-/// From the prototype. It states the state in words — "Aktibo — handa
-/// tumugon" — beside the switch, because a switch alone is a shape a tired
-/// person reads wrong: on and off look alike at a glance, and the cost of
-/// misreading it is an assignment that never arrives.
+/// On duty the whole card turns green and says what that means ("receiving
+/// dispatches · BFP Naval Station"); off duty it goes quiet and says what the
+/// crew is missing. The old version was a solid grey slab with a small switch,
+/// and responders could not tell at a glance which state they were in - the
+/// most consequential state in the app for them, since an off-duty responder
+/// gets no assignments. Who is signed in rides underneath as one quiet line.
 class DutyStatusCard extends StatelessWidget {
   const DutyStatusCard({
     super.key,
@@ -103,45 +105,56 @@ class DutyStatusCard extends StatelessWidget {
   final bool onDuty;
   final bool busy;
   final ValueChanged<bool> onChanged;
-
-  /// The responder's own name, shown under the duty banner — the reference
-  /// design puts "who" directly beneath "what state", since both answer the
-  /// same question a dispatcher radioing this phone would ask first.
   final String displayName;
   final String? rank;
   final String? agencyLabel;
   final String? avatarUrl;
+
+  /// Opens the profile (the identity line).
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final tone = onDuty ? ZirenTokens.systemSuccess : ZirenTokens.textMuted;
+    final green = ZirenTokens.systemSuccess;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
-      child: Container(
+      child: AnimatedContainer(
+        duration: ZirenTokens.motionBase,
         decoration: BoxDecoration(
-          color: ZirenTokens.surfaceCard,
+          color: onDuty ? ZirenTokens.systemSuccessBg : ZirenTokens.surfaceCard,
           borderRadius: BorderRadius.circular(kCardRadius),
           border: Border.all(
-            color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
+            color:
+                onDuty
+                    ? green.withValues(alpha: 0.45)
+                    : ZirenTokens.surfaceBorder.withValues(alpha: 0.9),
+            width: onDuty ? 1.4 : 1,
           ),
         ),
         child: Column(
           children: [
-            // ── The state, stated plainly ──────────────────
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(ZirenTokens.space16),
-              decoration: BoxDecoration(
-                color: tone,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(kCardRadius),
-                ),
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 12, 14),
               child: Row(
                 children: [
+                  AnimatedContainer(
+                    duration: ZirenTokens.motionBase,
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: onDuty ? green : ZirenTokens.surfaceRaised,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      onDuty ? LucideIcons.shield_check : LucideIcons.power_off,
+                      size: 22,
+                      color: onDuty ? Colors.white : ZirenTokens.textMuted,
+                    ),
+                  ),
+                  const SizedBox(width: ZirenTokens.space12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,35 +163,38 @@ class DutyStatusCard extends StatelessWidget {
                           busy
                               ? t.respDutyCardBusy
                               : onDuty
-                              ? t.respDutyCardOn
-                              : t.respDutyCardOff,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                              ? t.respDutyOnTitle
+                              : t.respDutyOffTitle,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: onDuty ? green : ZirenTokens.textPrimary,
                           ),
                         ),
-                        if (agencyLabel != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            t.respDutyCardStation(agencyLabel!),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          onDuty
+                              ? (agencyLabel?.isNotEmpty == true
+                                  ? t.respDutyOnBody(agencyLabel!)
+                                  : t.respDutyOnBodyPlain)
+                              : t.respDutyOffBody,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.35,
+                            color: ZirenTokens.textSecondary,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: ZirenTokens.space8),
                   if (busy)
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.4,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
                       ),
                     )
                   else
@@ -187,21 +203,32 @@ class DutyStatusCard extends StatelessWidget {
                       label: onDuty ? t.respDutyToggleOff : t.respDutyToggleOn,
                       onTap: () => onChanged(!onDuty),
                       child: ExcludeSemantics(
-                        child: Switch.adaptive(
-                          value: onDuty,
-                          onChanged: onChanged,
-                          activeTrackColor: Colors.white.withValues(
-                            alpha: 0.35,
-                          ),
-                          activeColor: Colors.white,
-                          thumbColor: const WidgetStatePropertyAll(
-                            Colors.white,
+                        child: Transform.scale(
+                          scale: 1.15,
+                          child: Switch.adaptive(
+                            value: onDuty,
+                            onChanged: onChanged,
+                            activeTrackColor: green,
+                            thumbColor: const WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
+                            trackOutlineColor: WidgetStatePropertyAll(
+                              onDuty ? green : ZirenTokens.surfaceBorder,
+                            ),
+                            inactiveTrackColor: ZirenTokens.surfaceRaised,
                           ),
                         ),
                       ),
                     ),
                 ],
               ),
+            ),
+            Divider(
+              height: 1,
+              color:
+                  onDuty
+                      ? green.withValues(alpha: 0.2)
+                      : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
             ),
             // ── Who ─────────────────────────────────────────
             InkWell(
@@ -210,12 +237,12 @@ class DutyStatusCard extends StatelessWidget {
                 bottom: Radius.circular(kCardRadius),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(ZirenTokens.space16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
                 child: Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 30,
+                      height: 30,
                       clipBehavior: Clip.antiAlias,
                       decoration: const BoxDecoration(
                         color: ZirenTokens.brandOrange,
@@ -227,54 +254,44 @@ class DutyStatusCard extends StatelessWidget {
                               ? Image.network(
                                 avatarUrl!,
                                 fit: BoxFit.cover,
-                                width: 40,
-                                height: 40,
-                                // An expired signed URL or a network hiccup
-                                // must fall back to initials, same as the
-                                // profile screen's avatar — see EditableAvatar.
+                                width: 30,
+                                height: 30,
+                                // An expired signed URL must fall back to
+                                // initials, same as the profile screen.
                                 errorBuilder:
-                                    (_, __, ___) => _DutyAvatarInitial(
+                                    (_, _, _) => _DutyAvatarInitial(
                                       displayName: displayName,
                                     ),
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
-                                  return _DutyAvatarInitial(
-                                    displayName: displayName,
-                                  );
-                                },
                               )
                               : _DutyAvatarInitial(displayName: displayName),
                     ),
-                    const SizedBox(width: ZirenTokens.space12),
+                    const SizedBox(width: ZirenTokens.space10),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: ZirenTokens.textPrimary,
-                            ),
-                          ),
-                          if (rank != null)
-                            Text(
-                              rank!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: displayName,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: ZirenTokens.textMuted,
+                                fontWeight: FontWeight.w700,
+                                color: ZirenTokens.textPrimary,
                               ),
                             ),
-                        ],
+                            if (rank != null)
+                              TextSpan(
+                                text: '  $rank',
+                                style: TextStyle(color: ZirenTokens.textMuted),
+                              ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ),
                     Icon(
                       LucideIcons.chevron_right,
+                      size: 18,
                       color: ZirenTokens.textMuted,
                     ),
                   ],
@@ -288,9 +305,7 @@ class DutyStatusCard extends StatelessWidget {
   }
 }
 
-/// Fallback for [DutyStatusCard]'s avatar slot — no photo, a network error,
-/// or still loading. Kept private since only the duty card needs this exact
-/// 40px/orange-background variant.
+/// Fallback for [DutyStatusCard]'s avatar - no photo, or a network error.
 class _DutyAvatarInitial extends StatelessWidget {
   const _DutyAvatarInitial({required this.displayName});
 
@@ -301,8 +316,8 @@ class _DutyAvatarInitial extends StatelessWidget {
     return Text(
       initialsOf(displayName),
       style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
         color: Colors.white,
       ),
     );
@@ -311,8 +326,7 @@ class _DutyAvatarInitial extends StatelessWidget {
 
 // ── Figure band ─────────────────────────────────────────────────
 
-/// One figure in the band. Public so the design-preview test can render the
-/// band without a Supabase session — see test/home_design_preview_test.dart.
+/// One figure in the band.
 class ResponderStat {
   const ResponderStat({
     required this.icon,
@@ -327,18 +341,13 @@ class ResponderStat {
   final String label;
   final Color color;
 
-  /// Null renders the cell as a plain, unpressable figure — the caller's
-  /// call, e.g. when the count behind it is zero and there is nothing to
-  /// reveal. Non-null gets a ripple, a tap target, and a small affordance
-  /// glyph so the cell reads as a control rather than a decoration.
+  /// Null renders a plain figure; non-null makes the cell pressable.
   final VoidCallback? onTap;
 }
 
-/// Figures in a row, equal-width.
-///
-/// Equal-width cells rather than a scrolling strip: three or four is few
-/// enough to fit any phone this app targets, and a figure that has to be
-/// scrolled to is a figure nobody reads.
+/// The figures as one card split into equal columns, not three separate
+/// boxes: they are one reading of one queue, and three bordered boxes with
+/// chevron badges looked like three different buttons.
 class ResponderStatBand extends StatelessWidget {
   const ResponderStatBand({super.key, required this.cells});
 
@@ -347,19 +356,31 @@ class ResponderStatBand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        kHomeGutter,
-        ZirenTokens.space10,
-        kHomeGutter,
-        0,
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < cells.length; i++) ...[
-            if (i > 0) const SizedBox(width: ZirenTokens.space8),
-            Expanded(child: ResponderStatCell(stat: cells[i])),
-          ],
-        ],
+      padding: const EdgeInsets.fromLTRB(kHomeGutter, 12, kHomeGutter, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: ZirenTokens.surfaceCard,
+          borderRadius: BorderRadius.circular(kCardRadius),
+          border: Border.all(
+            color: ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+          ),
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              for (var i = 0; i < cells.length; i++) ...[
+                if (i > 0)
+                  VerticalDivider(
+                    width: 1,
+                    indent: 14,
+                    endIndent: 14,
+                    color: ZirenTokens.surfaceBorder,
+                  ),
+                Expanded(child: ResponderStatCell(stat: cells[i])),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -372,136 +393,61 @@ class ResponderStatCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A zero recedes. On a quiet shift most cells read "0", and rendered in
-    // severity red at figure size those zeros become the loudest marks on the
-    // screen while carrying the least information - the eye pulled to the
-    // absence of an emergency. Same rule the dispatcher console's tiles use.
+    // A zero recedes: on a quiet shift, a red "0" would be the loudest mark
+    // on the screen while saying the least.
     final quiet = stat.value == '0' || stat.value == '—';
     final tone = quiet ? ZirenTokens.textMuted : stat.color;
-    final interactive = stat.onTap != null;
 
-    // Ink, not Container, for the decorated box: an InkWell's splash paints
-    // into the nearest Material ancestor, and a plain Container's own
-    // BoxDecoration would sit on top of that ripple instead of showing it.
-    // Faint colour wash and border only when live and interactive — a quiet
-    // zero cell stays visually inert, matching its own "nothing to act on"
-    // meaning instead of inviting a tap that does nothing.
-    final card = Ink(
-      padding: const EdgeInsets.symmetric(
-        vertical: ZirenTokens.space12,
-        horizontal: ZirenTokens.space8,
-      ),
-      decoration: BoxDecoration(
-        color:
-            interactive
-                ? Color.alphaBlend(
-                  stat.color.withValues(alpha: 0.06),
-                  ZirenTokens.surfaceCard,
-                )
-                : ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        border: Border.all(
-          color:
-              interactive
-                  ? stat.color.withValues(alpha: 0.28)
-                  : ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
-        ),
-      ),
+    final body = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Icon-in-a-tinted-circle, the same treatment HomeRow and the
-          // queue card's type tile use elsewhere in this app — a bare glyph
-          // read as a smaller, plainer version of everything around it. A
-          // small chevron badge is the only extra mark for "this taps to
-          // something" — no separate label, so the card stays as compact
-          // as its non-interactive sibling.
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color:
-                      quiet
-                          ? ZirenTokens.surfaceRaised
-                          : tone.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(stat.icon, size: 16, color: tone),
-              ),
-              if (interactive)
-                Positioned(
-                  right: -3,
-                  bottom: -3,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: ZirenTokens.surfaceCard,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: tone.withValues(alpha: 0.4)),
-                    ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      LucideIcons.chevron_right,
-                      size: 10,
-                      color: tone,
+              Icon(stat.icon, size: 15, color: tone),
+              const SizedBox(width: 5),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    stat.value,
+                    style: TextStyle(
+                      fontSize: 22,
+                      height: 1,
+                      fontWeight: FontWeight.w900,
+                      color:
+                          quiet
+                              ? ZirenTokens.textMuted
+                              : ZirenTokens.textPrimary,
                     ),
                   ),
                 ),
+              ),
             ],
           ),
-          const SizedBox(height: ZirenTokens.space8),
-          FittedBox(
-            child: Text(
-              stat.value,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                height: 1,
-                color: tone,
-              ),
-            ),
-          ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 6),
           Text(
             stat.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 9.5,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-              color: ZirenTokens.textMuted,
+              color: ZirenTokens.textSecondary,
             ),
           ),
         ],
       ),
     );
 
-    final content = Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-      child:
-          interactive
-              ? InkWell(
-                onTap: stat.onTap,
-                borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-                splashColor: stat.color.withValues(alpha: 0.16),
-                highlightColor: stat.color.withValues(alpha: 0.08),
-                child: card,
-              )
-              : card,
-    );
-
-    if (!interactive) return content;
-
+    if (stat.onTap == null) return body;
     return Semantics(
       button: true,
       label: '${stat.label}: ${stat.value}',
-      child: content,
+      excludeSemantics: true,
+      child: InkWell(onTap: stat.onTap, child: body),
     );
   }
 }

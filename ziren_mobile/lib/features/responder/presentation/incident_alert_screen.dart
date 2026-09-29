@@ -112,7 +112,8 @@ class _IncidentAlertScreenState extends State<IncidentAlertScreen>
     } else {
       setState(() => _answering = false);
       _showError(
-        provider.answerError ?? AppLocalizations.of(context).respAnswerSendFailed,
+        provider.answerError ??
+            AppLocalizations.of(context).respAnswerSendFailed,
       );
     }
   }
@@ -136,7 +137,8 @@ class _IncidentAlertScreenState extends State<IncidentAlertScreen>
     } else {
       setState(() => _answering = false);
       _showError(
-        provider.answerError ?? AppLocalizations.of(context).respAnswerSendFailed,
+        provider.answerError ??
+            AppLocalizations.of(context).respAnswerSendFailed,
       );
     }
   }

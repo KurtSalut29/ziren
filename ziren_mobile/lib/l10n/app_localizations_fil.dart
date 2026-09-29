@@ -3550,4 +3550,248 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get homeProfileButtonLabel => 'Buksan ang iyong profile';
+
+  @override
+  String get respStatusNew => 'Bago';
+
+  @override
+  String get respStatusAccepted => 'Tinanggap';
+
+  @override
+  String get respStatusEnRoute => 'Papunta';
+
+  @override
+  String get respStatusOnScene => 'Nasa lugar';
+
+  @override
+  String get respStatusResolved => 'Natapos';
+
+  @override
+  String get respStatusCancelled => 'Kinansela';
+
+  @override
+  String get respStepAssigned => 'Na-assign';
+
+  @override
+  String get respDutyOnTitle => 'Naka-duty';
+
+  @override
+  String get respDutyOffTitle => 'Hindi naka-duty';
+
+  @override
+  String respDutyOnBody(String station) {
+    return 'Tumatanggap ng dispatch · $station';
+  }
+
+  @override
+  String get respDutyOnBodyPlain => 'Tumatanggap ng dispatch';
+
+  @override
+  String get respDutyOffBody => 'Hindi ka makakatanggap ng dispatch. I-on para simulan ang shift.';
+
+  @override
+  String get respNextUpTitle => 'Unahin mo ito';
+
+  @override
+  String respNextUpCount(String count) {
+    return '1 sa $count';
+  }
+
+  @override
+  String respOtherAssignments(String count) {
+    return 'Iba pang assignment ($count)';
+  }
+
+  @override
+  String get respOpenAssignment => 'Buksan';
+
+  @override
+  String get respAnswerNow => 'Sagutin ngayon';
+
+  @override
+  String respWaitingFor(String time) {
+    return 'Naghihintay $time';
+  }
+
+  @override
+  String respAssignedAgo(String time) {
+    return 'Na-assign $time na';
+  }
+
+  @override
+  String respClosedAgo(String time) {
+    return 'Naisara $time na';
+  }
+
+  @override
+  String respReportedAgo(String time) {
+    return 'Na-report $time na';
+  }
+
+  @override
+  String get respRecentClosedTitle => 'Kamakailang naisara';
+
+  @override
+  String get respNoLocation => 'Walang lokasyon';
+
+  @override
+  String get respReportsTitle => 'Aking mga report';
+
+  @override
+  String get respReportsSubtitle => 'Lahat ng ipinadala sa iyo ng dispatcher.';
+
+  @override
+  String get respViewList => 'Listahan';
+
+  @override
+  String get respViewRecord => 'Rekord';
+
+  @override
+  String get respFilterAll => 'Lahat';
+
+  @override
+  String get respFilterOpen => 'Bukas';
+
+  @override
+  String get respFilterClosed => 'Sarado';
+
+  @override
+  String get respSearchHint => 'Hanapin: barangay, INC o salita';
+
+  @override
+  String respSearchEmpty(String query) {
+    return 'Walang tugma sa \"$query\".';
+  }
+
+  @override
+  String respSectionOpen(String count) {
+    return 'Bukas, kailangan ka ($count)';
+  }
+
+  @override
+  String get respSectionThisWeek => 'Naisara ngayong linggo';
+
+  @override
+  String get respSectionLastWeek => 'Naisara noong nakaraang linggo';
+
+  @override
+  String get respSectionOlder => 'Naisara noon pa';
+
+  @override
+  String get respHistoryCapNote => 'Ipinapakita ang 50 pinakabagong naisara mo.';
+
+  @override
+  String get respEmptyOpenTitle => 'Walang bukas';
+
+  @override
+  String get respEmptyOpenBody => 'Walang assignment na naghihintay sa iyo ngayon.';
+
+  @override
+  String get respEmptyClosedTitle => 'Wala pang naisara';
+
+  @override
+  String get respEmptyClosedBody => 'Dito mapupunta ang mga insidenteng natapos mo.';
+
+  @override
+  String get respEmptyAllTitle => 'Wala pang report';
+
+  @override
+  String get respEmptyAllBody => 'Dito lalabas ang lahat ng ipapadala sa iyo ng dispatcher, bukas man o sarado.';
+
+  @override
+  String get respRecTotalClosed => 'Kabuuang naisara';
+
+  @override
+  String get respRecThisWeek => 'Naisara ngayong linggo';
+
+  @override
+  String get respRecCritical => 'Critical na nahawakan';
+
+  @override
+  String get respRecTypical => 'Karaniwang tugon';
+
+  @override
+  String get respRecChartTitle => 'Mga naisarang insidente';
+
+  @override
+  String get respRec7Days => '7 araw';
+
+  @override
+  String get respRec8Weeks => '8 linggo';
+
+  @override
+  String respRecNoneInRange(String time) {
+    return 'Walang naisara sa panahong ito. Ang huli mong naisara ay $time na ang nakalipas.';
+  }
+
+  @override
+  String get respRecNoneEver => 'Walang naisara sa panahong ito.';
+
+  @override
+  String get respRecMixTitle => 'Tindi ng mga naisara mo';
+
+  @override
+  String get respRecCategoryTitle => 'Uri ng insidente';
+
+  @override
+  String respRecTotal(String count) {
+    return '$count lahat';
+  }
+
+  @override
+  String get respRecReports => 'report';
+
+  @override
+  String get respRecEmptyTitle => 'Wala pang maipapakita';
+
+  @override
+  String get respRecEmptyBody => 'Kapag may naisara ka nang insidente, lalabas dito ang iyong rekord.';
+
+  @override
+  String get respRecTruncated => 'Hanggang 50 insidente lang ang history mo, kaya maaaring kulang ang pinakaunang bahagi ng chart na ito.';
+
+  @override
+  String get respRecWeekOf => 'lg';
+
+  @override
+  String get respStepsTitle => 'Takbo ng assignment';
+
+  @override
+  String get respNextStep => 'Susunod na hakbang';
+
+  @override
+  String get respCall => 'Tawagan';
+
+  @override
+  String get respCopy => 'Kopyahin';
+
+  @override
+  String get respGpsCopied => 'Nakopya ang coordinates.';
+
+  @override
+  String get respVerified => 'Verified';
+
+  @override
+  String get respUnverified => 'Hindi pa verified';
+
+  @override
+  String get respReporterUnknown => 'Hindi kilala ang nag-ulat';
+
+  @override
+  String get respCardReport => 'Ano ang nangyari';
+
+  @override
+  String get respCardLocation => 'Saan';
+
+  @override
+  String get respCardReporter => 'Sino ang nag-ulat';
+
+  @override
+  String get respCardStation => 'Iyong istasyon';
+
+  @override
+  String get respClosedBanner => 'Sarado na ang insidenteng ito. Wala nang kailangang gawin dito.';
+
+  @override
+  String get respEmergencyContactShort => 'Emergency contact';
 }

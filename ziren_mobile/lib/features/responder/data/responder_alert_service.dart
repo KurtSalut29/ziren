@@ -313,7 +313,8 @@ class ResponderAlertService {
 
   /// Distinct from the assignment id (`incidentId.hashCode`) and the stand-down
   /// id (`^ 0x57A9D`) so the three can never collide or cancel one another.
-  int _nearbyNotificationId(String incidentId) => incidentId.hashCode ^ 0x4E4259;
+  int _nearbyNotificationId(String incidentId) =>
+      incidentId.hashCode ^ 0x4E4259;
 
   /// FLAG_INSISTENT. Repeats the sound until the notification is dealt with.
   /// FLAG_INSISTENT. Repeats the sound until the notification is dealt with.

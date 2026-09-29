@@ -2347,5 +2347,162 @@
     "description": "Label beside the floating Ziren help button on Home (also its screen-reader name); opens How to use Ziren."
   },
   "helpSheetClose": "Close",
-  "homeProfileButtonLabel": "Open your profile"
+  "homeProfileButtonLabel": "Open your profile",
+  "respStatusNew": "New",
+  "@respStatusNew": {
+    "description": "Status chip: dispatched to this responder, not yet answered."
+  },
+  "respStatusAccepted": "Accepted",
+  "respStatusEnRoute": "En route",
+  "respStatusOnScene": "On scene",
+  "respStatusResolved": "Resolved",
+  "respStatusCancelled": "Cancelled",
+  "respStepAssigned": "Assigned",
+  "respDutyOnTitle": "On duty",
+  "respDutyOffTitle": "Off duty",
+  "respDutyOnBody": "Receiving dispatches · {station}",
+  "@respDutyOnBody": {
+    "placeholders": {
+      "station": {
+        "type": "String"
+      }
+    }
+  },
+  "respDutyOnBodyPlain": "Receiving dispatches",
+  "respDutyOffBody": "You will not receive dispatches. Turn it on to start your shift.",
+  "respNextUpTitle": "Do this first",
+  "respNextUpCount": "1 of {count}",
+  "@respNextUpCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "respOtherAssignments": "Other assignments ({count})",
+  "@respOtherAssignments": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "respOpenAssignment": "Open",
+  "respAnswerNow": "Answer now",
+  "respWaitingFor": "Waiting {time}",
+  "@respWaitingFor": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respAssignedAgo": "Assigned {time} ago",
+  "@respAssignedAgo": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respClosedAgo": "Closed {time} ago",
+  "@respClosedAgo": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respReportedAgo": "Reported {time} ago",
+  "@respReportedAgo": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respRecentClosedTitle": "Recently closed",
+  "respNoLocation": "No location",
+  "respReportsTitle": "My reports",
+  "respReportsSubtitle": "Everything a dispatcher has sent you.",
+  "respViewList": "List",
+  "respViewRecord": "Record",
+  "respFilterAll": "All",
+  "respFilterOpen": "Open",
+  "respFilterClosed": "Closed",
+  "respSearchHint": "Search barangay, INC or words",
+  "respSearchEmpty": "Nothing matches \"{query}\".",
+  "@respSearchEmpty": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "respSectionOpen": "Open, needs you ({count})",
+  "@respSectionOpen": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "respSectionThisWeek": "Closed this week",
+  "respSectionLastWeek": "Closed last week",
+  "respSectionOlder": "Closed earlier",
+  "respHistoryCapNote": "Showing your 50 most recent closed incidents.",
+  "respEmptyOpenTitle": "Nothing open",
+  "respEmptyOpenBody": "No assignment is waiting on you right now.",
+  "respEmptyClosedTitle": "Nothing closed yet",
+  "respEmptyClosedBody": "Incidents you finish will be filed here.",
+  "respEmptyAllTitle": "No reports yet",
+  "respEmptyAllBody": "Anything a dispatcher sends you will appear here, open or closed.",
+  "respRecTotalClosed": "Closed in total",
+  "respRecThisWeek": "Closed this week",
+  "respRecCritical": "Critical handled",
+  "respRecTypical": "Typical response",
+  "respRecChartTitle": "Closed incidents",
+  "respRec7Days": "7 days",
+  "respRec8Weeks": "8 weeks",
+  "respRecNoneInRange": "None closed in this period. Your last one was closed {time} ago.",
+  "@respRecNoneInRange": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "respRecNoneEver": "None closed in this period.",
+  "respRecMixTitle": "Severity of what you closed",
+  "respRecCategoryTitle": "Types of incident",
+  "respRecTotal": "{count} total",
+  "@respRecTotal": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "respRecReports": "reports",
+  "respRecEmptyTitle": "Nothing to show yet",
+  "respRecEmptyBody": "Close your first incident and your record will show up here.",
+  "respRecTruncated": "Your history is capped at 50 incidents, so the earliest part of this chart may be undercounted.",
+  "respRecWeekOf": "wk",
+  "@respRecWeekOf": {
+    "description": "Short axis label prefix for a week bar."
+  },
+  "respStepsTitle": "Progress",
+  "respNextStep": "Next step",
+  "respCall": "Call",
+  "respCopy": "Copy",
+  "respGpsCopied": "Coordinates copied.",
+  "respVerified": "Verified",
+  "respUnverified": "Not verified",
+  "respReporterUnknown": "Unknown reporter",
+  "respCardReport": "What happened",
+  "respCardLocation": "Where",
+  "respCardReporter": "Who reported",
+  "respCardStation": "Your station",
+  "respClosedBanner": "This incident is closed. Nothing else to do here.",
+  "respEmergencyContactShort": "Emergency contact"
 }

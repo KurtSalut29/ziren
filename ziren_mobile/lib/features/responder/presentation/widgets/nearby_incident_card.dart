@@ -53,7 +53,9 @@ class NearbyIncidentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
         borderRadius: BorderRadius.circular(kCardRadius),
-        border: Border.all(color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7)),
+        border: Border.all(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +70,11 @@ class NearbyIncidentCard extends StatelessWidget {
                   color: ResponderVocabulary.background(i.severity),
                   borderRadius: BorderRadius.circular(ZirenTokens.radius12),
                 ),
-                child: Icon(ResponderVocabulary.icon(i.severity), size: 17, color: color),
+                child: Icon(
+                  ResponderVocabulary.icon(i.severity),
+                  size: 17,
+                  color: color,
+                ),
               ),
               const SizedBox(width: ZirenTokens.space10),
               Expanded(
@@ -107,7 +113,10 @@ class NearbyIncidentCard extends StatelessWidget {
                         where,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12.5, color: ZirenTokens.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: ZirenTokens.textSecondary,
+                        ),
                       ),
                     ],
                   ],
@@ -120,7 +129,11 @@ class NearbyIncidentCard extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12.5, height: 1.35, color: ZirenTokens.textSecondary),
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: ZirenTokens.textSecondary,
+            ),
           ),
           const SizedBox(height: ZirenTokens.space10),
           Wrap(
@@ -136,14 +149,26 @@ class NearbyIncidentCard extends StatelessWidget {
                       '${i.etaMinutes != null ? ' · ~${i.etaMinutes} min' : ''}',
                 )
               else
-                _Chip(icon: LucideIcons.map_pin_off, text: t.respNearbyDistanceUnknown),
-              _Chip(icon: LucideIcons.clock, text: ResponderVocabulary.elapsed(i.createdAt)),
+                _Chip(
+                  icon: LucideIcons.map_pin_off,
+                  text: t.respNearbyDistanceUnknown,
+                ),
+              _Chip(
+                icon: LucideIcons.clock,
+                text: ResponderVocabulary.elapsed(i.createdAt),
+              ),
               if (i.sosFlagged)
-                _Chip(icon: LucideIcons.megaphone, text: t.respNearbySosChip, tint: ZirenTokens.severityCritical),
+                _Chip(
+                  icon: LucideIcons.megaphone,
+                  text: t.respNearbySosChip,
+                  tint: ZirenTokens.severityCritical,
+                ),
               if (!i.you.isFree)
                 _Chip(
                   icon: LucideIcons.info,
-                  text: t.respNearbyAlreadyOn(ResponderVocabulary.categoryLabel(i.you.currentCategory)),
+                  text: t.respNearbyAlreadyOn(
+                    ResponderVocabulary.categoryLabel(i.you.currentCategory),
+                  ),
                   tint: ZirenTokens.systemWarning,
                 ),
             ],
@@ -160,14 +185,22 @@ class NearbyIncidentCard extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ZirenTokens.textSecondary,
                       minimumSize: const Size.fromHeight(40),
-                      side: BorderSide(color: ZirenTokens.surfaceBorder, width: 1.4),
+                      side: BorderSide(
+                        color: ZirenTokens.surfaceBorder,
+                        width: 1.4,
+                      ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+                        borderRadius: BorderRadius.circular(
+                          ZirenTokens.radius12,
+                        ),
                       ),
                     ),
                     child: Text(
                       t.respNearbyNotAvailable,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -182,7 +215,9 @@ class NearbyIncidentCard extends StatelessWidget {
                       minimumSize: const Size.fromHeight(40),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+                        borderRadius: BorderRadius.circular(
+                          ZirenTokens.radius12,
+                        ),
                       ),
                     ),
                     child:
@@ -197,7 +232,10 @@ class NearbyIncidentCard extends StatelessWidget {
                             )
                             : Text(
                               t.respNearbyCanRespond,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                   ),
                 ),
@@ -222,7 +260,10 @@ class _AnsweredBanner extends StatelessWidget {
     final color = yes ? ZirenTokens.systemSuccess : ZirenTokens.textMuted;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space10, vertical: ZirenTokens.space8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZirenTokens.space10,
+        vertical: ZirenTokens.space8,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(ZirenTokens.radius12),
@@ -230,11 +271,19 @@ class _AnsweredBanner extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(yes ? LucideIcons.circle_check : LucideIcons.circle_x, size: 15, color: color),
+          Icon(
+            yes ? LucideIcons.circle_check : LucideIcons.circle_x,
+            size: 15,
+            color: color,
+          ),
           const SizedBox(width: ZirenTokens.space6),
           Text(
             yes ? t.respNearbyAnsweredYes : t.respNearbyAnsweredNo,
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color),
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -264,7 +313,14 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, size: 11, color: c),
           const SizedBox(width: 3),
-          Text(text, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c)),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              color: c,
+            ),
+          ),
         ],
       ),
     );

@@ -87,6 +87,66 @@ class ResponderTrends {
   /// still falls inside the window. A full list whose oldest row predates the
   /// window proves the window is completely covered — the cap cut off history
   /// older than anything being charted, which costs the chart nothing.
+  /// Closures per week for the last [weeks] weeks, oldest first; each
+  /// DayCount's `day` is the Monday that starts the week.
+  ///
+  /// A responder closes a few calls a week, not a few a day, so a 7-day
+  /// chart is mostly empty bars. Eight weeks shows the pattern.
+  static List<DayCount> closedPerWeek(
+    List<ResponderIncidentModel> history, {
+    int weeks = 8,
+    DateTime? now,
+  }) {
+    final today = _midnight(now ?? DateTime.now());
+    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
+    final starts = [
+      for (var i = weeks - 1; i >= 0; i--)
+        thisMonday.subtract(Duration(days: 7 * i)),
+    ];
+    final counts = List<int>.filled(weeks, 0);
+    for (final incident in history) {
+      final day = _midnight(closedAt(incident).toLocal());
+      for (var i = weeks - 1; i >= 0; i--) {
+        if (!day.isBefore(starts[i])) {
+          if (i < weeks - 1 || !day.isAfter(today)) counts[i]++;
+          break;
+        }
+      }
+    }
+    return [
+      for (var i = 0; i < weeks; i++)
+        DayCount(day: starts[i], count: counts[i]),
+    ];
+  }
+
+  /// Closures since this week's Monday.
+  static int closedThisWeek(
+    List<ResponderIncidentModel> history, {
+    DateTime? now,
+  }) => closedPerWeek(history, weeks: 1, now: now).single.count;
+
+  /// Category (wire value) -> count, biggest first.
+  static List<MapEntry<String, int>> categoryMix(
+    List<ResponderIncidentModel> incidents,
+  ) {
+    final mix = <String, int>{};
+    for (final i in incidents) {
+      final key = i.incidentCategory ?? 'other';
+      mix[key] = (mix[key] ?? 0) + 1;
+    }
+    return mix.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+  }
+
+  /// When the most recent closure happened, or null with no history.
+  static DateTime? lastClosedAt(List<ResponderIncidentModel> history) {
+    DateTime? last;
+    for (final i in history) {
+      final t = closedAt(i);
+      if (last == null || t.isAfter(last)) last = t;
+    }
+    return last;
+  }
+
   static bool windowIsTruncated(
     List<ResponderIncidentModel> history, {
     int days = 7,

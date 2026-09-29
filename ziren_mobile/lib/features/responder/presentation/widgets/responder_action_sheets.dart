@@ -164,9 +164,7 @@ class _ChoiceTile extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  selected
-                      ? LucideIcons.circle_dot
-                      : LucideIcons.circle,
+                  selected ? LucideIcons.circle_dot : LucideIcons.circle,
                   color: selected ? accent : ZirenTokens.textMuted,
                   size: 22,
                 ),
@@ -644,12 +642,7 @@ class _BackupSheetState extends State<BackupSheet> {
   final _reason = TextEditingController();
 
   static const _agencies = <(String, String, Color, IconData)>[
-    (
-      'BFP',
-      'Bureau of Fire Protection',
-      Color(0xFFEF4444),
-      LucideIcons.flame,
-    ),
+    ('BFP', 'Bureau of Fire Protection', Color(0xFFEF4444), LucideIcons.flame),
     (
       'PNP',
       'Philippine National Police',

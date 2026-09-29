@@ -425,7 +425,9 @@ class ResponderRepository {
         '${AppConfig.apiBaseUrl}/responder/nearby',
       ).replace(queryParameters: params.isEmpty ? null : params);
       final response = await withAuthRetry(
-        () => http.get(uri, headers: _headers).timeout(const Duration(seconds: 10)),
+        () => http
+            .get(uri, headers: _headers)
+            .timeout(const Duration(seconds: 10)),
       );
       if (response.statusCode == 200) {
         return NearbyResult.fromJson(

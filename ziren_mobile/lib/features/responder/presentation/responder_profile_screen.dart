@@ -146,206 +146,198 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
       padding: EdgeInsets.zero,
       children: [
         const SizedBox(height: ZirenTokens.space8),
-          Center(
-            child: EditableAvatar(
-              displayName: displayName,
-              avatarUrl: p.avatarUrl,
-              busy: _uploadingAvatar,
-              onTap: _changeAvatar,
-            ),
+        Center(
+          child: EditableAvatar(
+            displayName: displayName,
+            avatarUrl: p.avatarUrl,
+            busy: _uploadingAvatar,
+            onTap: _changeAvatar,
           ),
-          const SizedBox(height: ZirenTokens.space12),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: ZirenTokens.space16,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  displayName,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: ZirenTokens.textPrimary,
-                  ),
+        ),
+        const SizedBox(height: ZirenTokens.space12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                displayName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: ZirenTokens.textPrimary,
                 ),
-                const SizedBox(height: ZirenTokens.space4),
-                Text(
-                  email,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: ZirenTokens.textMuted,
-                  ),
-                ),
-                const SizedBox(height: ZirenTokens.space12),
-                // Agency and duty state belong to the identity, not to a
-                // section. Duty is read-only here on purpose — the toggle
-                // lives on Home, and two controls for one state is how they
-                // end up disagreeing.
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: ZirenTokens.space8,
-                  runSpacing: ZirenTokens.space8,
-                  children: [
-                    if (agencyLabel != null)
-                      ProfileChip(
-                        label: agencyLabel,
-                        color: _agencyColor(p.agencyType),
-                        icon: _agencyIcon(p.agencyType),
-                      ),
-                    if (approved)
-                      ProfileChip(
-                        label:
-                            responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
-                        color:
-                            responder.isOnDuty
-                                ? ZirenTokens.systemSuccess
-                                : ZirenTokens.textMuted,
-                        icon:
-                            responder.isOnDuty
-                                ? LucideIcons.wifi
-                                : LucideIcons.circle_slash,
-                        filled: responder.isOnDuty,
-                      ),
-                  ],
-                ),
+              ),
+              const SizedBox(height: ZirenTokens.space4),
+              Text(
+                email,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: ZirenTokens.textMuted),
+              ),
+              const SizedBox(height: ZirenTokens.space12),
+              // Agency and duty state belong to the identity, not to a
+              // section. Duty is read-only here on purpose — the toggle
+              // lives on Home, and two controls for one state is how they
+              // end up disagreeing.
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: ZirenTokens.space8,
+                runSpacing: ZirenTokens.space8,
+                children: [
+                  if (agencyLabel != null)
+                    ProfileChip(
+                      label: agencyLabel,
+                      color: _agencyColor(p.agencyType),
+                      icon: _agencyIcon(p.agencyType),
+                    ),
+                  if (approved)
+                    ProfileChip(
+                      label: responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
+                      color:
+                          responder.isOnDuty
+                              ? ZirenTokens.systemSuccess
+                              : ZirenTokens.textMuted,
+                      icon:
+                          responder.isOnDuty
+                              ? LucideIcons.wifi
+                              : LucideIcons.circle_slash,
+                      filled: responder.isOnDuty,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: ZirenTokens.space20),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Approval ─────────────────────────────────────
+              //
+              // A banner rather than a row while it is unresolved. A responder
+              // whose account is still pending cannot be dispatched to anything,
+              // and burying that in the fifth line of a card would let somebody
+              // sit through a shift believing they were on the roster.
+              if (!approved) ...[
+                _ApprovalBanner(status: p.approvalStatus),
+                const SizedBox(height: ZirenTokens.space16),
               ],
-            ),
-          ),
-          const SizedBox(height: ZirenTokens.space20),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: ZirenTokens.space16,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Approval ─────────────────────────────────────
-                //
-                // A banner rather than a row while it is unresolved. A responder
-                // whose account is still pending cannot be dispatched to anything,
-                // and burying that in the fifth line of a card would let somebody
-                // sit through a shift believing they were on the roster.
-                if (!approved) ...[
-                  _ApprovalBanner(status: p.approvalStatus),
-                  const SizedBox(height: ZirenTokens.space16),
-                ],
-
-                if (provider.errorMessage != null) ...[
-                  ProfileLoadError(
-                    message: provider.errorMessage!,
-                    onRetry: () {
-                      provider.clearError();
-                      provider.loadProfile(force: true);
-                    },
-                  ),
-                  const SizedBox(height: ZirenTokens.space16),
-                ],
-
-                // ── Contact ──────────────────────────────────────
-                //
-                // Read-only. Name and phone changes go through Settings
-                // (the same editor the resident side uses) rather than an
-                // in-place edit mode on this screen.
-                ProfileSection(
-                  title: t.respProfileContact,
-                  items: [
-                    ProfileRow(
-                      icon: LucideIcons.user,
-                      label: t.respFieldName,
-                      value: p.fullName.isNotEmpty ? p.fullName : '—',
-                    ),
-                    ProfileRow(
-                      icon: LucideIcons.mail,
-                      label: 'Email',
-                      value: email.isNotEmpty ? email : '—',
-                    ),
-                    ProfileRow(
-                      icon: LucideIcons.phone,
-                      label: t.respFieldPhone,
-                      value:
-                          p.phoneNumber?.isNotEmpty == true
-                              ? p.phoneNumber!
-                              : '—',
-                      last: true,
-                    ),
-                  ],
+              if (provider.errorMessage != null) ...[
+                ProfileLoadError(
+                  message: provider.errorMessage!,
+                  onRetry: () {
+                    provider.clearError();
+                    provider.loadProfile(force: true);
+                  },
                 ),
                 const SizedBox(height: ZirenTokens.space16),
-
-                // ── Assignment ───────────────────────────────────
-                //
-                // The unit, not the UUID. This card used to render agencyId, and a
-                // crew member cannot tell whether
-                // "a0000001-0000-0000-0000-000000000001" is theirs — which made the
-                // field worse than showing nothing at all.
-                ProfileSection(
-                  title: t.respProfileAssignment,
-                  items: [
-                    ProfileRow(
-                      icon: LucideIcons.badge,
-                      label: t.respProfileBadge,
-                      value: p.badgeId ?? '—',
-                    ),
-                    ProfileRow(
-                      icon: _agencyIcon(p.agencyType),
-                      label: t.respProfileAgency,
-                      value: agencyLabel ?? '—',
-                      valueColor: _agencyColor(p.agencyType),
-                    ),
-                    ProfileRow(
-                      icon: LucideIcons.map_pin,
-                      label: t.respProfileMunicipality,
-                      value: p.agencyMunicipality ?? '—',
-                    ),
-                    // Read-only "who do I call" info — Section 21. The responder
-                    // cannot change their agency/station from here; this exists
-                    // only so they never have to hunt for the station's own
-                    // number during a shift.
-                    if (p.agencyContactNumber?.isNotEmpty == true)
-                      ProfileRow(
-                        icon: LucideIcons.phone,
-                        label: 'Station Contact',
-                        value: p.agencyContactNumber!,
-                      ),
-                    ProfileRow(
-                      icon: _approvalIcon(p.approvalStatus),
-                      label: t.respProfileStatus,
-                      value: _approvalLabel(p.approvalStatus),
-                      valueColor: _approvalColor(p.approvalStatus),
-                      last: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: ZirenTokens.space24),
-
-                // ── Sign out ─────────────────────────────────────
-                //
-                // Outlined and error-coloured. Disabled mid-save: signing out while
-                // a PATCH is in flight would tear the session down under the request
-                // and lose the edit with no error worth showing.
-                OutlinedButton.icon(
-                  onPressed:
-                      provider.isSaving ? null : () => _confirmLogout(context),
-                  icon: const Icon(LucideIcons.log_out, size: 18),
-                  label: Text(t.respLogout),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ZirenTokens.systemError,
-                    side: BorderSide(
-                      color: ZirenTokens.systemError.withValues(alpha: 0.5),
-                    ),
-                    minimumSize: const Size.fromHeight(52),
-                  ),
-                ),
-
-                const SizedBox(height: ZirenTokens.space32),
               ],
-            ),
+
+              // ── Contact ──────────────────────────────────────
+              //
+              // Read-only. Name and phone changes go through Settings
+              // (the same editor the resident side uses) rather than an
+              // in-place edit mode on this screen.
+              ProfileSection(
+                title: t.respProfileContact,
+                items: [
+                  ProfileRow(
+                    icon: LucideIcons.user,
+                    label: t.respFieldName,
+                    value: p.fullName.isNotEmpty ? p.fullName : '—',
+                  ),
+                  ProfileRow(
+                    icon: LucideIcons.mail,
+                    label: 'Email',
+                    value: email.isNotEmpty ? email : '—',
+                  ),
+                  ProfileRow(
+                    icon: LucideIcons.phone,
+                    label: t.respFieldPhone,
+                    value:
+                        p.phoneNumber?.isNotEmpty == true
+                            ? p.phoneNumber!
+                            : '—',
+                    last: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZirenTokens.space16),
+
+              // ── Assignment ───────────────────────────────────
+              //
+              // The unit, not the UUID. This card used to render agencyId, and a
+              // crew member cannot tell whether
+              // "a0000001-0000-0000-0000-000000000001" is theirs — which made the
+              // field worse than showing nothing at all.
+              ProfileSection(
+                title: t.respProfileAssignment,
+                items: [
+                  ProfileRow(
+                    icon: LucideIcons.badge,
+                    label: t.respProfileBadge,
+                    value: p.badgeId ?? '—',
+                  ),
+                  ProfileRow(
+                    icon: _agencyIcon(p.agencyType),
+                    label: t.respProfileAgency,
+                    value: agencyLabel ?? '—',
+                    valueColor: _agencyColor(p.agencyType),
+                  ),
+                  ProfileRow(
+                    icon: LucideIcons.map_pin,
+                    label: t.respProfileMunicipality,
+                    value: p.agencyMunicipality ?? '—',
+                  ),
+                  // Read-only "who do I call" info — Section 21. The responder
+                  // cannot change their agency/station from here; this exists
+                  // only so they never have to hunt for the station's own
+                  // number during a shift.
+                  if (p.agencyContactNumber?.isNotEmpty == true)
+                    ProfileRow(
+                      icon: LucideIcons.phone,
+                      label: 'Station Contact',
+                      value: p.agencyContactNumber!,
+                    ),
+                  ProfileRow(
+                    icon: _approvalIcon(p.approvalStatus),
+                    label: t.respProfileStatus,
+                    value: _approvalLabel(p.approvalStatus),
+                    valueColor: _approvalColor(p.approvalStatus),
+                    last: true,
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZirenTokens.space24),
+
+              // ── Sign out ─────────────────────────────────────
+              //
+              // Outlined and error-coloured. Disabled mid-save: signing out while
+              // a PATCH is in flight would tear the session down under the request
+              // and lose the edit with no error worth showing.
+              OutlinedButton.icon(
+                onPressed:
+                    provider.isSaving ? null : () => _confirmLogout(context),
+                icon: const Icon(LucideIcons.log_out, size: 18),
+                label: Text(t.respLogout),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ZirenTokens.systemError,
+                  side: BorderSide(
+                    color: ZirenTokens.systemError.withValues(alpha: 0.5),
+                  ),
+                  minimumSize: const Size.fromHeight(52),
+                ),
+              ),
+
+              const SizedBox(height: ZirenTokens.space32),
+            ],
           ),
+        ),
       ],
     );
   }
@@ -370,10 +362,15 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
     final l = AppLocalizations.of(context);
     final confirmed = await showZirenDialog<bool>(
       context,
-      icon: hasActiveAssignment ? LucideIcons.triangle_alert : LucideIcons.log_out,
+      icon:
+          hasActiveAssignment
+              ? LucideIcons.triangle_alert
+              : LucideIcons.log_out,
       tone: hasActiveAssignment ? ZirenTone.warning : ZirenTone.danger,
       title:
-          hasActiveAssignment ? l.respActiveAssignmentTitle : l.respLogoutConfirm,
+          hasActiveAssignment
+              ? l.respActiveAssignmentTitle
+              : l.respLogoutConfirm,
       message:
           hasActiveAssignment ? l.respActiveAssignmentBody : l.respLogoutBody,
       // With a call in hand, staying signed in is the one to press.
@@ -387,9 +384,10 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         ZirenDialogAction(
           label: l.respLogout,
           value: true,
-          kind: hasActiveAssignment
-              ? ZirenActionKind.secondary
-              : ZirenActionKind.danger,
+          kind:
+              hasActiveAssignment
+                  ? ZirenActionKind.secondary
+                  : ZirenActionKind.danger,
           icon: LucideIcons.log_out,
         ),
         if (!hasActiveAssignment)
@@ -516,4 +514,3 @@ class _ApprovalBanner extends StatelessWidget {
     );
   }
 }
-

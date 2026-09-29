@@ -198,8 +198,7 @@ class ResponderProvider extends ChangeNotifier {
                         : i,
               )
               .toList();
-      final fresh =
-          items.where((i) => _seenNearby.add(i.incidentId)).toList();
+      final fresh = items.where((i) => _seenNearby.add(i.incidentId)).toList();
       // Anything this session announced before that is not in THIS reading any
       // more - answered, dispatched to someone, or aged out. Forgotten here
       // (not just reported) so if it ever reappears - handed back, re-opened -
@@ -259,9 +258,10 @@ class ResponderProvider extends ChangeNotifier {
     double? lng,
   }) async {
     _nearbyAnswers[incidentId] = answer;
-    _nearby = _nearby
-        .map((i) => i.incidentId == incidentId ? _withAnswer(i, answer) : i)
-        .toList();
+    _nearby =
+        _nearby
+            .map((i) => i.incidentId == incidentId ? _withAnswer(i, answer) : i)
+            .toList();
     notifyListeners();
     try {
       await _repo.answerNearby(incidentId, answer, lat: lat, lng: lng);

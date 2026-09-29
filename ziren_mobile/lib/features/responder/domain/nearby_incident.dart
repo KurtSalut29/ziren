@@ -3,7 +3,11 @@ import 'responder_vocabulary.dart';
 /// What THIS responder is already doing, as it applies to a nearby alert —
 /// free, or already on a call (and which one).
 class NearbyYou {
-  const NearbyYou({required this.state, this.currentIncidentId, this.currentCategory});
+  const NearbyYou({
+    required this.state,
+    this.currentIncidentId,
+    this.currentCategory,
+  });
 
   /// 'free' | 'committed' | 'en_route' | 'on_scene'
   final String state;
@@ -66,6 +70,7 @@ class NearbyIncident {
   /// Null when this responder's position could not be measured.
   final double? distanceKm;
   final int? etaMinutes;
+
   /// Compass point (N/NE/E/...) FROM this responder TO the incident.
   final String? direction;
 
@@ -123,6 +128,7 @@ class NearbyResult {
   });
 
   final bool onDuty;
+
   /// 'device' (the phone's own live fix was used) | 'last_reported' | 'none'.
   final String position;
   final List<NearbyIncident> items;

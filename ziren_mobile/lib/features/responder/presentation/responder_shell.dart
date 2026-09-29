@@ -168,7 +168,10 @@ class _ResponderShellState extends State<ResponderShell>
       await _alarm.stop();
 
       if (choice == IncomingReportChoice.view && mounted) {
-        final accepted = await Navigator.of(context, rootNavigator: true).push<bool>(
+        final accepted = await Navigator.of(
+          context,
+          rootNavigator: true,
+        ).push<bool>(
           MaterialPageRoute<bool>(
             fullscreenDialog: true,
             builder:

@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/theme/app_tokens.dart';
+import '../../../shared/widgets/home_kit.dart' show kHomeCanvas;
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/map/offline_map_service.dart';
 import '../domain/responder_ack.dart';
 import '../domain/responder_incident_model.dart';
+import '../domain/responder_vocabulary.dart';
+import '../../../shared/widgets/profile_kit.dart' show initialsOf;
+import 'widgets/responder_ui.dart';
 import 'incident_navigation_screen.dart';
 import 'widgets/incident_action_row.dart';
 import 'widgets/responder_action_sheets.dart';
@@ -309,7 +314,8 @@ class _ResponderIncidentDetailScreenState
     final resolving = newStatus == 'resolved';
     return await showZirenDialog<bool>(
           context,
-          icon: resolving ? LucideIcons.circle_check_big : LucideIcons.navigation,
+          icon:
+              resolving ? LucideIcons.circle_check_big : LucideIcons.navigation,
           tone: resolving ? ZirenTone.success : ZirenTone.brand,
           title: action,
           message: resolving ? l.respConfirmResolve : l.respConfirmStatusUpdate,
@@ -405,12 +411,34 @@ class _ResponderIncidentDetailScreenState
     final incident = provider.detailIncident;
 
     return Scaffold(
-      backgroundColor: ZirenTokens.surfaceBase,
+      backgroundColor: kHomeCanvas,
       appBar: AppBar(
-        title: Text(incident?.categoryLabel ?? 'Incident'),
+        backgroundColor: ZirenTokens.surfaceCard,
+        surfaceTintColor: Colors.transparent,
         leading: BackButton(onPressed: () => context.pop()),
+        titleSpacing: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              incident?.categoryLabel ??
+                  AppLocalizations.of(context).respIncident,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: ZirenTokens.textPrimary,
+              ),
+            ),
+            if (incident != null)
+              Text(
+                incident.shortId,
+                style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
+              ),
+          ],
+        ),
       ),
       body: SafeArea(
+        bottom: false,
         child:
             provider.loadingDetail
                 ? const Center(child: LoadingIndicator())
@@ -443,6 +471,11 @@ class _ResponderIncidentDetailScreenState
 
 // ── Detail body ───────────────────────────────────────────────
 
+/// The call, top to bottom in the order a crew needs it: warnings on the
+/// road, what happened, where the assignment stands, where to go, who to
+/// call. The one button that moves the call forward is pinned to the bottom
+/// of the screen, under the thumb, instead of at the top where it had to be
+/// reached for - and it is the only full-width coloured button on the page.
 class _DetailBody extends StatelessWidget {
   const _DetailBody({
     required this.incident,
@@ -465,75 +498,37 @@ class _DetailBody extends StatelessWidget {
   final VoidCallback onPanic;
   final VoidCallback onNavigate;
 
-  Color get _agencyColor {
-    switch (incident.agencyType) {
-      case 'BFP':
-        return ZirenTokens.agencyBFP;
-      case 'PNP':
-        return ZirenTokens.agencyPNP;
-      case 'MDRRMO':
-        return ZirenTokens.agencyMDRRMO;
-      default:
-        return ZirenTokens.brandOrange;
-    }
-  }
-
-  Color get _severityColor {
-    switch (incident.severity) {
-      case 'critical':
-        return ZirenTokens.severityCritical;
-      case 'high':
-        return ZirenTokens.severityHigh;
-      case 'medium':
-        return ZirenTokens.severityMedium;
-      case 'low':
-        return ZirenTokens.severityLow;
-      default:
-        return ZirenTokens.textMuted;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final closed = ResponderVocabulary.isClosed(incident);
+    final hasAction =
+        incident.needsAnswer ||
+        (incident.nextStatus != null && incident.nextActionLabel != null);
+
     return Column(
       children: [
-        // ── Status + action bar ──────────────────────────────
-        _StatusActionBar(
-          incident: incident,
-          provider: provider,
-          onAdvanceStatus: onAdvanceStatus,
-          onAccept: onAccept,
-          onDecline: onDecline,
-          agencyColor: _agencyColor,
-          severityColor: _severityColor,
-        ),
-
-        // ── Scrollable content ───────────────────────────────
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(ZirenTokens.space16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Approach hazards ─────────────────────────
                 //
-                // FIRST, above the report itself, and that ordering is the
-                // feature. A crew reads this screen in the cab before
-                // pulling away; a cut bridge they find out about at the
-                // bottom of the page is a cut bridge they find out about
-                // by arriving at it.
+                // FIRST, above the report itself. A crew reads this screen
+                // in the cab before pulling away; a cut bridge found at the
+                // bottom of the page is a cut bridge found by arriving at it.
                 if (incident.hazards.isNotEmpty)
                   _HazardBanner(hazards: incident.hazards),
 
-                // Error banner
                 if (provider.statusUpdateError != null)
                   Container(
                     margin: const EdgeInsets.only(bottom: ZirenTokens.space12),
                     padding: const EdgeInsets.all(ZirenTokens.space12),
                     decoration: BoxDecoration(
                       color: ZirenTokens.systemErrorBg,
-                      borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+                      borderRadius: BorderRadius.circular(ZirenTokens.radius12),
                       border: Border.all(
                         color: ZirenTokens.systemError.withValues(alpha: 0.4),
                       ),
@@ -547,213 +542,423 @@ class _DetailBody extends StatelessWidget {
                     ),
                   ),
 
-                // ── Incident summary card ────────────────────
-                _DetailCard(
-                  title: t.respSectionReport,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _InfoRow(
-                        icon: LucideIcons.shapes,
-                        label: t.respFieldCategory,
-                        value: incident.categoryLabel,
-                      ),
-                      const SizedBox(height: ZirenTokens.space8),
-                      Text(
-                        incident.reportText,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: ZirenTokens.textPrimary,
-                          height: 1.5,
-                        ),
-                      ),
-                      // Directly under the text, for the same reason the
-                      // dispatcher console puts it there: when the transcript
-                      // and the recording disagree, nobody should have to go
-                      // looking for the recording to find that out.
-                      ResponderVoiceNote(incidentId: incident.id),
-                    ],
-                  ),
-                ),
+                // ── What happened ────────────────────────────
+                _SummaryCard(incident: incident),
 
-                // ── Location ─────────────────────────────────
-                _DetailCard(
-                  title: t.respSectionLocation,
-                  action: ElevatedButton.icon(
-                    icon: const Icon(LucideIcons.navigation, size: 16),
-                    label: Text(t.respNavigate),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ZirenTokens.brandOrange,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: ZirenTokens.space12,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    onPressed: onNavigate,
+                // ── Where the assignment stands ──────────────
+                if (closed)
+                  _ClosedBanner(text: t.respClosedBanner)
+                else
+                  _DetailCard(
+                    icon: LucideIcons.route,
+                    title: t.respStepsTitle,
+                    child: AssignmentProgress(incident: incident),
                   ),
+
+                // ── Where ────────────────────────────────────
+                _DetailCard(
+                  icon: LucideIcons.map_pin,
+                  title: t.respCardLocation,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (incident.locationAddress != null)
-                        _InfoRow(
-                          icon: LucideIcons.map_pin,
-                          label: t.respFieldAddress,
-                          value: incident.locationAddress!,
+                      Text(
+                        incident.locationAddress ?? t.respNoLocation,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.3,
+                          fontWeight: FontWeight.w800,
+                          color: ZirenTokens.textPrimary,
                         ),
-                      if (incident.landmarkNote != null) ...[
-                        const SizedBox(height: ZirenTokens.space6),
-                        _InfoRow(
-                          icon: LucideIcons.map_pin,
+                      ),
+                      if (incident.landmarkNote?.trim().isNotEmpty == true) ...[
+                        const SizedBox(height: ZirenTokens.space10),
+                        _LandmarkBox(
                           label: t.respFieldLandmark,
-                          value: incident.landmarkNote!,
+                          value: incident.landmarkNote!.trim(),
                         ),
                       ],
                       if (incident.latitude != null &&
                           incident.longitude != null) ...[
-                        const SizedBox(height: ZirenTokens.space6),
-                        _InfoRow(
-                          icon: LucideIcons.locate_fixed,
-                          label: t.respFieldGps,
-                          value:
-                              '${incident.latitude!.toStringAsFixed(5)}, '
-                              '${incident.longitude!.toStringAsFixed(5)}',
-                        ),
                         const SizedBox(height: ZirenTokens.space12),
-                        // Inline map preview — TODO 6C.1: swap stub MBTiles
                         _InlineMap(
                           lat: incident.latitude!,
                           lng: incident.longitude!,
                         ),
+                        const SizedBox(height: ZirenTokens.space8),
+                        _GpsRow(
+                          lat: incident.latitude!,
+                          lng: incident.longitude!,
+                        ),
+                      ],
+                      if (!closed) ...[
+                        const SizedBox(height: ZirenTokens.space12),
+                        OutlinedButton.icon(
+                          icon: const Icon(LucideIcons.navigation, size: 18),
+                          label: Text(t.respNavigate),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ZirenTokens.brandOrange,
+                            minimumSize: const Size.fromHeight(48),
+                            side: const BorderSide(
+                              color: ZirenTokens.brandOrange,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            textStyle: responderButtonText(
+                              context,
+                              14.5,
+                              FontWeight.w800,
+                            ),
+                          ),
+                          onPressed: onNavigate,
+                        ),
                       ],
                     ],
                   ),
                 ),
 
-                // ── Reporter info ─────────────────────────────
-                _DetailCard(
-                  title: t.respSectionReporter,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _InfoRow(
-                        icon: LucideIcons.user,
-                        label: t.respFieldName,
-                        value: incident.reporterName ?? 'Unknown',
-                      ),
-                      if (incident.reporterPhone != null) ...[
-                        const SizedBox(height: ZirenTokens.space8),
-                        _PhoneRow(
-                          label: t.respFieldPhone,
-                          phone: incident.reporterPhone!,
-                        ),
-                      ],
-                      if (incident.emergencyContactName != null) ...[
-                        const SizedBox(height: ZirenTokens.space8),
-                        _InfoRow(
-                          icon: LucideIcons.phone_call,
-                          label: t.respFieldEmergencyContact,
-                          value: incident.emergencyContactName!,
-                        ),
-                      ],
-                      if (incident.emergencyContactNumber != null) ...[
-                        const SizedBox(height: ZirenTokens.space6),
-                        _PhoneRow(
-                          label: t.respFieldContactNumber,
-                          phone: incident.emergencyContactNumber!,
-                        ),
-                      ],
-                      // Trust indicators
-                      const SizedBox(height: ZirenTokens.space10),
-                      Row(
-                        children: [
-                          _TrustChip(
-                            label:
-                                incident.reporterVerified
-                                    ? 'Verified'
-                                    : 'Unverified',
-                            color:
-                                incident.reporterVerified
-                                    ? ZirenTokens.systemSuccess
-                                    : ZirenTokens.textMuted,
-                          ),
-                          if (incident.reporterWarningCount > 0) ...[
-                            const SizedBox(width: ZirenTokens.space6),
-                            _TrustChip(
-                              label: t.respPriorWarnings(
-                                incident.reporterWarningCount,
-                              ),
-                              color: ZirenTokens.systemWarning,
-                            ),
-                          ],
-                          if (incident.sosFlag) ...[
-                            const SizedBox(width: ZirenTokens.space6),
-                            _TrustChip(
-                              label: t.respSosFlagged,
-                              color: ZirenTokens.severityCritical,
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                // ── Who reported ─────────────────────────────
+                _ReporterCard(incident: incident),
 
                 // ── Station ──────────────────────────────────
-                _DetailCard(
-                  title: t.respSectionStation,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _InfoRow(
-                        icon: LucideIcons.building,
-                        label: t.respFieldStation,
-                        value: incident.stationName ?? '—',
+                if (incident.stationName != null)
+                  _DetailCard(
+                    icon: LucideIcons.building,
+                    title: t.respCardStation,
+                    child: Text(
+                      [
+                        incident.stationName!,
+                        if (incident.stationAddress?.isNotEmpty == true)
+                          incident.stationAddress!,
+                      ].join(' · '),
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: ZirenTokens.textSecondary,
                       ),
-                      if (incident.stationAddress != null) ...[
-                        const SizedBox(height: ZirenTokens.space6),
-                        _InfoRow(
-                          icon: LucideIcons.map,
-                          label: t.respFieldAddress,
-                          value: incident.stationAddress!,
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
 
-                // ── Field updates / communication (Sections 11, 12) ──
+                // ── Field updates / communication ────────────
                 //
-                // Only once the crew has actually taken the call — a
-                // thread on an unanswered assignment has nothing to say
-                // yet, and posting to it before accepting would read as
-                // the crew already committed.
+                // Only once the crew has actually taken the call.
                 if (incident.status != 'dispatched' ||
                     incident.isAcceptedNotMoving) ...[
-                  const SizedBox(height: ZirenTokens.space16),
+                  const SizedBox(height: ZirenTokens.space4),
                   ResponderNotesPanel(incidentId: incident.id),
                 ],
 
-                // Mutual aid, on-scene evidence and the responder's own
-                // panic button. Last on the page, far from the status
-                // controls that get pressed on every call — see
-                // _EmergencyActions. Scene capture is gated on 'arrived' — a
-                // photo taken from the truck two barangays away files
-                // evidence of somewhere the crew has not been.
-                _EmergencyActions(
-                  incidentId: incident.id,
-                  sceneCaptureEnabled: incident.status == 'arrived',
-                  onRequestBackup: onRequestBackup,
-                  onEscalate: onEscalate,
-                  onPanic: onPanic,
-                  busy: provider.answering || provider.raisingDistress,
+                // Mutual aid, scene photos and the responder's own panic
+                // button. Last on the page, far from the status button that
+                // is pressed on every call.
+                if (!closed)
+                  _EmergencyActions(
+                    incidentId: incident.id,
+                    sceneCaptureEnabled: incident.status == 'arrived',
+                    onRequestBackup: onRequestBackup,
+                    onEscalate: onEscalate,
+                    onPanic: onPanic,
+                    busy: provider.answering || provider.raisingDistress,
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── The next step, under the thumb ───────────────────
+        if (hasAction)
+          _StatusActionBar(
+            incident: incident,
+            provider: provider,
+            onAdvanceStatus: onAdvanceStatus,
+            onAccept: onAccept,
+            onDecline: onDecline,
+          ),
+      ],
+    );
+  }
+}
+
+// ── Summary ───────────────────────────────────────────────────
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.incident});
+
+  final ResponderIncidentModel incident;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final closed = ResponderVocabulary.isClosed(incident);
+    final assigned = incident.dispatchedAt;
+    return Container(
+      margin: const EdgeInsets.only(bottom: ZirenTokens.space12),
+      decoration: BoxDecoration(
+        color: ZirenTokens.surfaceCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 5,
+              color:
+                  closed
+                      ? ZirenTokens.surfaceBorder
+                      : ResponderVocabulary.color(incident.severity),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(ZirenTokens.space16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CategoryTile(
+                          category: incident.incidentCategory,
+                          severity: incident.severity,
+                          closed: closed,
+                          size: 46,
+                        ),
+                        const SizedBox(width: ZirenTokens.space12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                incident.categoryLabel,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: ZirenTokens.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                incident.shortId,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: ZirenTokens.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: ZirenTokens.space12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        SeverityChip(
+                          severity: incident.severity,
+                          muted: closed,
+                        ),
+                        PhaseChip(incident: incident),
+                        if (incident.sosFlag && !closed) const SosChip(),
+                      ],
+                    ),
+                    const SizedBox(height: ZirenTokens.space12),
+                    Text(
+                      t.respCardReport.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1,
+                        color: ZirenTokens.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      incident.reportText,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1.45,
+                        fontWeight: FontWeight.w600,
+                        color: ZirenTokens.textPrimary,
+                      ),
+                    ),
+                    // Directly under the text: when the transcript and the
+                    // recording disagree, nobody should have to go looking
+                    // for the recording to find that out.
+                    ResponderVoiceNote(incidentId: incident.id),
+                    const SizedBox(height: ZirenTokens.space10),
+                    Row(
+                      children: [
+                        Icon(
+                          LucideIcons.clock,
+                          size: 13,
+                          color: ZirenTokens.textMuted,
+                        ),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            [
+                              t.respReportedAgo(
+                                ResponderVocabulary.elapsed(incident.createdAt),
+                              ),
+                              if (assigned != null)
+                                t.respAssignedAgo(
+                                  ResponderVocabulary.elapsed(assigned),
+                                ),
+                            ].join(' · '),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: ZirenTokens.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClosedBanner extends StatelessWidget {
+  const _ClosedBanner({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: ZirenTokens.space12),
+      padding: const EdgeInsets.all(ZirenTokens.space12),
+      decoration: BoxDecoration(
+        color: ZirenTokens.statusResolvedBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: ZirenTokens.statusResolved.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            LucideIcons.circle_check_big,
+            size: 18,
+            color: ZirenTokens.statusResolved,
+          ),
+          const SizedBox(width: ZirenTokens.space8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: ZirenTokens.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LandmarkBox extends StatelessWidget {
+  const _LandmarkBox({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(ZirenTokens.space10),
+      decoration: BoxDecoration(
+        color: ZirenTokens.brandSubtle,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            LucideIcons.landmark,
+            size: 18,
+            color: ZirenTokens.brandOrange,
+          ),
+          const SizedBox(width: ZirenTokens.space10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: ZirenTokens.textSecondary,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GpsRow extends StatelessWidget {
+  const _GpsRow({required this.lat, required this.lng});
+
+  final double lat;
+  final double lng;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final text = '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}';
+    return Row(
+      children: [
+        Icon(LucideIcons.locate_fixed, size: 14, color: ZirenTokens.textMuted),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            '${t.respFieldGps}  $text',
+            style: TextStyle(fontSize: 12.5, color: ZirenTokens.textSecondary),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: text));
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(t.respGpsCopied),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+          icon: const Icon(LucideIcons.copy, size: 14),
+          label: Text(t.respCopy),
+          style: TextButton.styleFrom(
+            foregroundColor: ZirenTokens.textSecondary,
+            visualDensity: VisualDensity.compact,
+            textStyle: responderButtonText(context, 12.5, FontWeight.w700),
           ),
         ),
       ],
@@ -761,7 +966,187 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-// ── Status action bar ─────────────────────────────────────────
+// ── Reporter ──────────────────────────────────────────────────
+
+class _ReporterCard extends StatelessWidget {
+  const _ReporterCard({required this.incident});
+
+  final ResponderIncidentModel incident;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final name = incident.reporterName?.trim();
+    return _DetailCard(
+      icon: LucideIcons.user_round,
+      title: t.respCardReporter,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: ZirenTokens.surfaceRaised,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  name?.isNotEmpty == true ? initialsOf(name!) : '?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: ZirenTokens.space10),
+              Expanded(
+                child: Text(
+                  name?.isNotEmpty == true ? name! : t.respReporterUnknown,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                ),
+              ),
+              _TrustChip(
+                icon:
+                    incident.reporterVerified
+                        ? LucideIcons.badge_check
+                        : LucideIcons.circle_question_mark,
+                label:
+                    incident.reporterVerified
+                        ? t.respVerified
+                        : t.respUnverified,
+                color:
+                    incident.reporterVerified
+                        ? ZirenTokens.systemSuccess
+                        : ZirenTokens.textMuted,
+              ),
+            ],
+          ),
+          if (incident.reporterWarningCount > 0 || incident.sosFlag) ...[
+            const SizedBox(height: ZirenTokens.space8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (incident.reporterWarningCount > 0)
+                  _TrustChip(
+                    icon: LucideIcons.triangle_alert,
+                    label: t.respPriorWarnings(incident.reporterWarningCount),
+                    color: ZirenTokens.systemWarning,
+                  ),
+                if (incident.sosFlag)
+                  _TrustChip(
+                    icon: LucideIcons.megaphone,
+                    label: t.respSosFlagged,
+                    color: ZirenTokens.severityCritical,
+                  ),
+              ],
+            ),
+          ],
+          if (incident.reporterPhone != null) ...[
+            const SizedBox(height: ZirenTokens.space12),
+            _CallRow(label: t.respFieldPhone, phone: incident.reporterPhone!),
+          ],
+          if (incident.emergencyContactNumber != null ||
+              incident.emergencyContactName != null) ...[
+            const SizedBox(height: ZirenTokens.space8),
+            _CallRow(
+              label: [
+                t.respEmergencyContactShort,
+                if (incident.emergencyContactName?.isNotEmpty == true)
+                  incident.emergencyContactName!,
+              ].join(' · '),
+              phone: incident.emergencyContactNumber,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A number with a real Call button, not an underlined link: a crew in
+/// gloves needs a target, and the old orange underline read as decoration.
+class _CallRow extends StatelessWidget {
+  const _CallRow({required this.label, required this.phone});
+
+  final String label;
+  final String? phone;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: ZirenTokens.surfaceRaised.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.phone, size: 16, color: ZirenTokens.textSecondary),
+          const SizedBox(width: ZirenTokens.space10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: ZirenTokens.textMuted,
+                  ),
+                ),
+                Text(
+                  phone ?? '—',
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (phone != null)
+            FilledButton.icon(
+              onPressed: () async {
+                try {
+                  await launchUrl(Uri(scheme: 'tel', path: phone));
+                } catch (_) {
+                  // No dialer: nothing else useful to do from here.
+                }
+              },
+              icon: const Icon(LucideIcons.phone_call, size: 16),
+              label: Text(t.respCall),
+              style: FilledButton.styleFrom(
+                backgroundColor: ZirenTokens.systemSuccess,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: responderButtonText(context, 13.5, FontWeight.w800),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Status action bar (bottom) ────────────────────────────────
 
 class _StatusActionBar extends StatelessWidget {
   const _StatusActionBar({
@@ -770,16 +1155,12 @@ class _StatusActionBar extends StatelessWidget {
     required this.onAdvanceStatus,
     required this.onAccept,
     required this.onDecline,
-    required this.agencyColor,
-    required this.severityColor,
   });
   final ResponderIncidentModel incident;
   final ResponderProvider provider;
   final ValueSetter<String> onAdvanceStatus;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
-  final Color agencyColor;
-  final Color severityColor;
 
   @override
   Widget build(BuildContext context) {
@@ -787,245 +1168,187 @@ class _StatusActionBar extends StatelessWidget {
     final nextStatus = incident.nextStatus;
     final nextLabel = incident.nextActionLabel;
 
-    // UNANSWERED ASSIGNMENTS DO NOT GET A STATUS BUTTON.
-    //
-    // Letting a crew tap "En Route" without accepting would leave the
-    // dispatcher's board showing an unanswered assignment for someone who
-    // is already driving to it — which is the exact confusion this whole
-    // feature exists to remove. Answer first, then move.
+    // UNANSWERED ASSIGNMENTS DO NOT GET A STATUS BUTTON. Letting a crew tap
+    // "En Route" without accepting would leave the dispatcher's board showing
+    // an unanswered assignment for someone already driving to it.
     final awaitingAnswer = incident.needsAnswer;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ZirenTokens.space16,
-        vertical: ZirenTokens.space12,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
-        border: Border(bottom: BorderSide(color: ZirenTokens.surfaceBorder)),
+        border: Border(top: BorderSide(color: ZirenTokens.surfaceBorder)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              // Severity + status. Expanded so the Flexible status label
-              // inside has a bounded width to ellipsize against — without it
-              // the Row hands this Column infinite width and nothing shrinks.
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: ZirenTokens.space8,
-                            vertical: ZirenTokens.space2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: severityColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(
-                              ZirenTokens.radius4,
-                            ),
-                          ),
-                          child: Text(
-                            (incident.severity ?? 'pending').toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: severityColor,
-                            ),
-                          ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (awaitingAnswer) ...[
+              _AckCountdown(ack: incident.ack),
+              const SizedBox(height: ZirenTokens.space10),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: ElevatedButton.icon(
+                      onPressed: provider.answering ? null : onAccept,
+                      icon:
+                          provider.answering
+                              ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : const Icon(LucideIcons.check, size: 20),
+                      label: Text(t.respAccept),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ZirenTokens.systemSuccess,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        const SizedBox(width: ZirenTokens.space6),
-                        // Flexible with an ellipsis. Even with the button gone
-                        // from this row, "Dispatched — Respond Now" next to a
-                        // CRITICAL chip sits close to the edge of a 360dp
-                        // screen, and a status line is the wrong thing to let
-                        // overflow.
-                        Flexible(
-                          child: Text(
-                            incident.statusLabel,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: agencyColor,
-                            ),
-                          ),
+                        textStyle: responderButtonText(
+                          context,
+                          15,
+                          FontWeight.w900,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: ZirenTokens.space2),
-                    Text(
-                      incident.shortId,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: ZirenTokens.textMuted,
                       ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: ZirenTokens.space8),
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton(
+                      onPressed: provider.answering ? null : onDecline,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ZirenTokens.systemError,
+                        side: BorderSide(
+                          color: ZirenTokens.systemError.withValues(alpha: 0.5),
+                          width: 1.4,
+                        ),
+                        minimumSize: const Size.fromHeight(54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        textStyle: responderButtonText(
+                          context,
+                          13.5,
+                          FontWeight.w800,
+                        ),
+                      ),
+                      child: Text(t.respDecline, textAlign: TextAlign.center),
+                    ),
+                  ),
+                ],
+              ),
+            ] else if (nextStatus != null && nextLabel != null) ...[
+              // What this button does, said before the button does it.
+              Row(
+                children: [
+                  Text(
+                    t.respNextStep.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                      color: ZirenTokens.textMuted,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (incident.isAcceptedNotMoving)
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.circle_check_big,
+                            size: 13,
+                            color: ZirenTokens.systemSuccess,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              t.respStatusAccepted,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: ZirenTokens.systemSuccess,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (incident.status == 'en_route' &&
+                      incident.etaLabel(t) != null)
+                    Flexible(
+                      child: Text(
+                        t.respTellingResident(incident.etaLabel(t) ?? ''),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: ZirenTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: ZirenTokens.space8),
+              ElevatedButton.icon(
+                onPressed:
+                    provider.updatingStatus
+                        ? null
+                        : () => onAdvanceStatus(nextStatus),
+                icon:
+                    provider.updatingStatus
+                        ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                        : Icon(switch (nextStatus) {
+                          'resolved' => LucideIcons.circle_check_big,
+                          'arrived' => LucideIcons.map_pin_check,
+                          _ => LucideIcons.navigation,
+                        }, size: 22),
+                label: Text(nextLabel),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      nextStatus == 'resolved'
+                          ? ZirenTokens.systemSuccess
+                          : ZirenTokens.brandOrange,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  textStyle: responderButtonText(context, 16, FontWeight.w900),
                 ),
               ),
             ],
-          ),
-
-          // ── Advance the status ────────────────────────────
-          //
-          // Full width, on its own row. It used to sit beside the status
-          // sentence, and the two together overflowed a 360dp handset by
-          // 19 logical pixels — which Flutter draws as a striped bar
-          // straight across the button. A crew wearing gloves has an
-          // easier time with a full-width target anyway, and it now
-          // matches the accept/decline row below it.
-          if (!awaitingAnswer && nextStatus != null && nextLabel != null) ...[
-            const SizedBox(height: ZirenTokens.space12),
-            ElevatedButton.icon(
-              onPressed:
-                  provider.updatingStatus
-                      ? null
-                      : () => onAdvanceStatus(nextStatus),
-              icon:
-                  provider.updatingStatus
-                      ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
-                        ),
-                      )
-                      : Icon(
-                        nextStatus == 'resolved'
-                            ? LucideIcons.circle_check_big
-                            : LucideIcons.navigation,
-                        size: 20,
-                      ),
-              label: Text(nextLabel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    nextStatus == 'resolved'
-                        ? ZirenTokens.systemSuccess
-                        : ZirenTokens.brandOrange,
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(48),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
           ],
-
-          // ── The answer ────────────────────────────────────
-          if (awaitingAnswer) ...[
-            const SizedBox(height: ZirenTokens.space12),
-            _AckCountdown(ack: incident.ack),
-            const SizedBox(height: ZirenTokens.space8),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: ElevatedButton.icon(
-                    onPressed: provider.answering ? null : onAccept,
-                    icon:
-                        provider.answering
-                            ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                            : const Icon(LucideIcons.check, size: 20),
-                    label: Text(t.respAccept),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ZirenTokens.systemSuccess,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(48),
-                      textStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: ZirenTokens.space8),
-                Expanded(
-                  flex: 2,
-                  child: OutlinedButton(
-                    onPressed: provider.answering ? null : onDecline,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ZirenTokens.systemError,
-                      side: BorderSide(
-                        color: ZirenTokens.systemError.withValues(alpha: 0.5),
-                      ),
-                      minimumSize: const Size.fromHeight(48),
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    child: Text(t.respDecline),
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Confirmed but not moving yet. Quiet reassurance rather than a
-          // prompt — the crew has answered, and the next thing they do is
-          // drive, not tap.
-          if (incident.isAcceptedNotMoving)
-            Padding(
-              padding: const EdgeInsets.only(top: ZirenTokens.space8),
-              child: Row(
-                children: [
-                  const Icon(
-                    LucideIcons.circle_check_big,
-                    size: 15,
-                    color: ZirenTokens.systemSuccess,
-                  ),
-                  const SizedBox(width: ZirenTokens.space4),
-                  Flexible(child: Text(
-                    t.respAccepted,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: ZirenTokens.systemSuccess.withValues(alpha: 0.9),
-                    ),
-                  )),
-                ],
-              ),
-            ),
-
-          // The ETA the resident is being shown, surfaced back to the crew
-          // so they know what was promised on their behalf.
-          if (incident.status == 'en_route' && incident.etaLabel(t) != null)
-            Padding(
-              padding: const EdgeInsets.only(top: ZirenTokens.space8),
-              child: Row(
-                children: [
-                  Icon(
-                    LucideIcons.clock,
-                    size: 15,
-                    color: ZirenTokens.textSecondary,
-                  ),
-                  const SizedBox(width: ZirenTokens.space4),
-                  Flexible(child: Text(
-                    t.respTellingResident(incident.etaLabel(t) ?? ''),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: ZirenTokens.textSecondary,
-                    ),
-                  )),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -1054,9 +1377,7 @@ class _AckCountdown extends StatelessWidget {
         Row(
           children: [
             Icon(
-              overdue
-                  ? LucideIcons.bell_ring
-                  : LucideIcons.timer,
+              overdue ? LucideIcons.bell_ring : LucideIcons.timer,
               size: 15,
               color: color,
             ),
@@ -1067,8 +1388,8 @@ class _AckCountdown extends StatelessWidget {
                     ? t.respNoAnswerSeen
                     : t.respAnswerWithin(ack.remainingLabel),
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
                   color: color,
                 ),
               ),
@@ -1076,19 +1397,16 @@ class _AckCountdown extends StatelessWidget {
             if (ack.declineCount > 0)
               Text(
                 t.respDeclinedTimes(ack.declineCount),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: ZirenTokens.textMuted,
-                ),
+                style: TextStyle(fontSize: 11, color: ZirenTokens.textMuted),
               ),
           ],
         ),
-        const SizedBox(height: ZirenTokens.space4),
+        const SizedBox(height: ZirenTokens.space6),
         ClipRRect(
           borderRadius: BorderRadius.circular(ZirenTokens.radius4),
           child: LinearProgressIndicator(
             value: ack.elapsedFraction,
-            minHeight: 4,
+            minHeight: 5,
             backgroundColor: color.withValues(alpha: 0.15),
             valueColor: AlwaysStoppedAnimation(color),
           ),
@@ -1101,10 +1419,14 @@ class _AckCountdown extends StatelessWidget {
 // ── Detail card ───────────────────────────────────────────────
 
 class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.child, this.action});
+  const _DetailCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+  final IconData icon;
   final String title;
   final Widget child;
-  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -1113,25 +1435,26 @@ class _DetailCard extends StatelessWidget {
       padding: const EdgeInsets.all(ZirenTokens.space16),
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-        border: Border.all(color: ZirenTokens.surfaceBorder),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
+              Icon(icon, size: 16, color: ZirenTokens.textSecondary),
+              const SizedBox(width: 6),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: ZirenTokens.textMuted,
-                  letterSpacing: 0.8,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: ZirenTokens.textPrimary,
                 ),
               ),
-              const Spacer(),
-              if (action != null) action!,
             ],
           ),
           const SizedBox(height: ZirenTokens.space12),
@@ -1142,128 +1465,40 @@ class _DetailCard extends StatelessWidget {
   }
 }
 
-// ── Info row ──────────────────────────────────────────────────
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 15, color: ZirenTokens.textMuted),
-        const SizedBox(width: ZirenTokens.space8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: ZirenTokens.textMuted,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: ZirenTokens.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Phone row with tap-to-call ────────────────────────────────
-
-class _PhoneRow extends StatelessWidget {
-  const _PhoneRow({required this.label, required this.phone});
-  final String label;
-  final String phone;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final uri = Uri(scheme: 'tel', path: phone);
-        if (await canLaunchUrl(uri)) await launchUrl(uri);
-      },
-      child: Row(
-        children: [
-          const Icon(
-            LucideIcons.phone,
-            size: 15,
-            color: ZirenTokens.brandOrange,
-          ),
-          const SizedBox(width: ZirenTokens.space8),
-          Flexible(child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: ZirenTokens.textMuted,
-                ),
-              ),
-              Text(
-                phone,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: ZirenTokens.brandOrange,
-                  decoration: TextDecoration.underline,
-                  decorationColor: ZirenTokens.brandOrange,
-                ),
-              ),
-            ],
-          )),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Trust chip ────────────────────────────────────────────────
 
 class _TrustChip extends StatelessWidget {
-  const _TrustChip({required this.label, required this.color});
+  const _TrustChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
   final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ZirenTokens.space8,
-        vertical: ZirenTokens.space2,
-      ),
+      padding: const EdgeInsets.fromLTRB(7, 3, 9, 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(ZirenTokens.radius32),
-        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1292,10 +1527,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: ZirenTokens.textSecondary,
-              ),
+              style: TextStyle(fontSize: 14, color: ZirenTokens.textSecondary),
             ),
             const SizedBox(height: ZirenTokens.space16),
             ElevatedButton(
@@ -1350,7 +1582,7 @@ class _InlineMapState extends State<_InlineMap> {
   Widget build(BuildContext context) {
     if (_styleJson == null) {
       return Container(
-        height: 160,
+        height: 180,
         decoration: BoxDecoration(
           color: ZirenTokens.surfaceRaised,
           borderRadius: BorderRadius.circular(ZirenTokens.radius8),
@@ -1360,9 +1592,9 @@ class _InlineMapState extends State<_InlineMap> {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+      borderRadius: BorderRadius.circular(14),
       child: SizedBox(
-        height: 160,
+        height: 180,
         child: MapLibreMap(
           styleString: _styleJson!,
           initialCameraPosition: CameraPosition(
@@ -1425,15 +1657,17 @@ class _HazardBanner extends StatelessWidget {
                 color: ZirenTokens.systemWarning,
               ),
               const SizedBox(width: ZirenTokens.space6),
-              Flexible(child: Text(
-                AppLocalizations.of(context).respHazardBanner(hazards.length),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: ZirenTokens.systemWarning,
+              Flexible(
+                child: Text(
+                  AppLocalizations.of(context).respHazardBanner(hazards.length),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: ZirenTokens.systemWarning,
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
           const SizedBox(height: ZirenTokens.space8),

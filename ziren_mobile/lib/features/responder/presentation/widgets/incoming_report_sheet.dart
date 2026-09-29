@@ -260,11 +260,7 @@ class _CloseButton extends StatelessWidget {
           color: ZirenTokens.surfaceRaised,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          LucideIcons.x,
-          size: 18,
-          color: ZirenTokens.textSecondary,
-        ),
+        child: Icon(LucideIcons.x, size: 18, color: ZirenTokens.textSecondary),
       ),
     );
   }

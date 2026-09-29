@@ -6852,6 +6852,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open your profile'**
   String get homeProfileButtonLabel;
+
+  /// Status chip: dispatched to this responder, not yet answered.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get respStatusNew;
+
+  /// No description provided for @respStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get respStatusAccepted;
+
+  /// No description provided for @respStatusEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'En route'**
+  String get respStatusEnRoute;
+
+  /// No description provided for @respStatusOnScene.
+  ///
+  /// In en, this message translates to:
+  /// **'On scene'**
+  String get respStatusOnScene;
+
+  /// No description provided for @respStatusResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get respStatusResolved;
+
+  /// No description provided for @respStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get respStatusCancelled;
+
+  /// No description provided for @respStepAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get respStepAssigned;
+
+  /// No description provided for @respDutyOnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On duty'**
+  String get respDutyOnTitle;
+
+  /// No description provided for @respDutyOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off duty'**
+  String get respDutyOffTitle;
+
+  /// No description provided for @respDutyOnBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving dispatches · {station}'**
+  String respDutyOnBody(String station);
+
+  /// No description provided for @respDutyOnBodyPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiving dispatches'**
+  String get respDutyOnBodyPlain;
+
+  /// No description provided for @respDutyOffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You will not receive dispatches. Turn it on to start your shift.'**
+  String get respDutyOffBody;
+
+  /// No description provided for @respNextUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Do this first'**
+  String get respNextUpTitle;
+
+  /// No description provided for @respNextUpCount.
+  ///
+  /// In en, this message translates to:
+  /// **'1 of {count}'**
+  String respNextUpCount(String count);
+
+  /// No description provided for @respOtherAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Other assignments ({count})'**
+  String respOtherAssignments(String count);
+
+  /// No description provided for @respOpenAssignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get respOpenAssignment;
+
+  /// No description provided for @respAnswerNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer now'**
+  String get respAnswerNow;
+
+  /// No description provided for @respWaitingFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting {time}'**
+  String respWaitingFor(String time);
+
+  /// No description provided for @respAssignedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned {time} ago'**
+  String respAssignedAgo(String time);
+
+  /// No description provided for @respClosedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed {time} ago'**
+  String respClosedAgo(String time);
+
+  /// No description provided for @respReportedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported {time} ago'**
+  String respReportedAgo(String time);
+
+  /// No description provided for @respRecentClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently closed'**
+  String get respRecentClosedTitle;
+
+  /// No description provided for @respNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'No location'**
+  String get respNoLocation;
+
+  /// No description provided for @respReportsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My reports'**
+  String get respReportsTitle;
+
+  /// No description provided for @respReportsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything a dispatcher has sent you.'**
+  String get respReportsSubtitle;
+
+  /// No description provided for @respViewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get respViewList;
+
+  /// No description provided for @respViewRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get respViewRecord;
+
+  /// No description provided for @respFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get respFilterAll;
+
+  /// No description provided for @respFilterOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get respFilterOpen;
+
+  /// No description provided for @respFilterClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get respFilterClosed;
+
+  /// No description provided for @respSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search barangay, INC or words'**
+  String get respSearchHint;
+
+  /// No description provided for @respSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches \"{query}\".'**
+  String respSearchEmpty(String query);
+
+  /// No description provided for @respSectionOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open, needs you ({count})'**
+  String respSectionOpen(String count);
+
+  /// No description provided for @respSectionThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed this week'**
+  String get respSectionThisWeek;
+
+  /// No description provided for @respSectionLastWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed last week'**
+  String get respSectionLastWeek;
+
+  /// No description provided for @respSectionOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed earlier'**
+  String get respSectionOlder;
+
+  /// No description provided for @respHistoryCapNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing your 50 most recent closed incidents.'**
+  String get respHistoryCapNote;
+
+  /// No description provided for @respEmptyOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing open'**
+  String get respEmptyOpenTitle;
+
+  /// No description provided for @respEmptyOpenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No assignment is waiting on you right now.'**
+  String get respEmptyOpenBody;
+
+  /// No description provided for @respEmptyClosedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing closed yet'**
+  String get respEmptyClosedTitle;
+
+  /// No description provided for @respEmptyClosedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Incidents you finish will be filed here.'**
+  String get respEmptyClosedBody;
+
+  /// No description provided for @respEmptyAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No reports yet'**
+  String get respEmptyAllTitle;
+
+  /// No description provided for @respEmptyAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything a dispatcher sends you will appear here, open or closed.'**
+  String get respEmptyAllBody;
+
+  /// No description provided for @respRecTotalClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed in total'**
+  String get respRecTotalClosed;
+
+  /// No description provided for @respRecThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed this week'**
+  String get respRecThisWeek;
+
+  /// No description provided for @respRecCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical handled'**
+  String get respRecCritical;
+
+  /// No description provided for @respRecTypical.
+  ///
+  /// In en, this message translates to:
+  /// **'Typical response'**
+  String get respRecTypical;
+
+  /// No description provided for @respRecChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed incidents'**
+  String get respRecChartTitle;
+
+  /// No description provided for @respRec7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get respRec7Days;
+
+  /// No description provided for @respRec8Weeks.
+  ///
+  /// In en, this message translates to:
+  /// **'8 weeks'**
+  String get respRec8Weeks;
+
+  /// No description provided for @respRecNoneInRange.
+  ///
+  /// In en, this message translates to:
+  /// **'None closed in this period. Your last one was closed {time} ago.'**
+  String respRecNoneInRange(String time);
+
+  /// No description provided for @respRecNoneEver.
+  ///
+  /// In en, this message translates to:
+  /// **'None closed in this period.'**
+  String get respRecNoneEver;
+
+  /// No description provided for @respRecMixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Severity of what you closed'**
+  String get respRecMixTitle;
+
+  /// No description provided for @respRecCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Types of incident'**
+  String get respRecCategoryTitle;
+
+  /// No description provided for @respRecTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} total'**
+  String respRecTotal(String count);
+
+  /// No description provided for @respRecReports.
+  ///
+  /// In en, this message translates to:
+  /// **'reports'**
+  String get respRecReports;
+
+  /// No description provided for @respRecEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to show yet'**
+  String get respRecEmptyTitle;
+
+  /// No description provided for @respRecEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Close your first incident and your record will show up here.'**
+  String get respRecEmptyBody;
+
+  /// No description provided for @respRecTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Your history is capped at 50 incidents, so the earliest part of this chart may be undercounted.'**
+  String get respRecTruncated;
+
+  /// Short axis label prefix for a week bar.
+  ///
+  /// In en, this message translates to:
+  /// **'wk'**
+  String get respRecWeekOf;
+
+  /// No description provided for @respStepsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get respStepsTitle;
+
+  /// No description provided for @respNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get respNextStep;
+
+  /// No description provided for @respCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get respCall;
+
+  /// No description provided for @respCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get respCopy;
+
+  /// No description provided for @respGpsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates copied.'**
+  String get respGpsCopied;
+
+  /// No description provided for @respVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get respVerified;
+
+  /// No description provided for @respUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get respUnverified;
+
+  /// No description provided for @respReporterUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown reporter'**
+  String get respReporterUnknown;
+
+  /// No description provided for @respCardReport.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened'**
+  String get respCardReport;
+
+  /// No description provided for @respCardLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Where'**
+  String get respCardLocation;
+
+  /// No description provided for @respCardReporter.
+  ///
+  /// In en, this message translates to:
+  /// **'Who reported'**
+  String get respCardReporter;
+
+  /// No description provided for @respCardStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your station'**
+  String get respCardStation;
+
+  /// No description provided for @respClosedBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This incident is closed. Nothing else to do here.'**
+  String get respClosedBanner;
+
+  /// No description provided for @respEmergencyContactShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency contact'**
+  String get respEmergencyContactShort;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -446,8 +446,9 @@ class _GuidancePanel extends StatelessWidget {
                       ),
                       Text(
                         etaMinutes == null
-                            ? AppLocalizations.of(context)
-                                .respNavStraightDistance
+                            ? AppLocalizations.of(
+                              context,
+                            ).respNavStraightDistance
                             : '${AppLocalizations.of(context).respEtaMinutes(etaMinutes!)} · ${AppLocalizations.of(context).respNavStraightDistance}',
                         style: TextStyle(
                           fontSize: 12,

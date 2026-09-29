@@ -190,7 +190,8 @@ class ResponderIncidentModel {
   /// Human-readable category label in Filipino/English — see
   /// ResponderVocabulary.categoryLabel, the one copy every responder screen
   /// (including a nearby-incident alert) reads.
-  String get categoryLabel => ResponderVocabulary.categoryLabel(incidentCategory);
+  String get categoryLabel =>
+      ResponderVocabulary.categoryLabel(incidentCategory);
 
   /// Human-readable status label.
   String get statusLabel {

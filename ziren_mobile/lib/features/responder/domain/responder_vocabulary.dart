@@ -1,8 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import 'responder_incident_model.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+
+/// Where an assignment stands, in the steps a crew thinks in.
+///
+/// Finer than the wire status: 'dispatched' is two different situations for
+/// the crew, "answer this" and "accepted, not moving yet", and a screen that
+/// showed both as "Dispatched" left them unsure whether their answer had
+/// registered.
+enum ResponderPhase {
+  newAssignment,
+  accepted,
+  enRoute,
+  onScene,
+  resolved,
+  cancelled,
+}
 
 /// The shared reading of an incident: its colour, its icon, its word, and its
 /// place in the working order.
@@ -78,6 +94,82 @@ class ResponderVocabulary {
         return 'Emergency';
     }
   }
+
+  /// What the incident IS, as an icon — fire, medical, road, flood, crime.
+  /// Severity says how bad; this says what kind, which is the first thing a
+  /// crew needs to know to pick up the right gear.
+  static IconData categoryIcon(String? category) => switch (category) {
+    'fire' => LucideIcons.flame,
+    'medical_trauma' => LucideIcons.stethoscope,
+    'vehicular' => LucideIcons.car,
+    'flood_landslide_calamity' => LucideIcons.waves_horizontal,
+    'domestic_dispute_crime' => LucideIcons.shield,
+    'hazmat' => LucideIcons.biohazard,
+    'missing_person' => LucideIcons.user_search,
+    _ => LucideIcons.siren,
+  };
+
+  // ── Phase ───────────────────────────────────────────────────
+
+  static ResponderPhase phase(ResponderIncidentModel i) => switch (i.status) {
+    'dispatched' =>
+      i.ack.isAccepted ? ResponderPhase.accepted : ResponderPhase.newAssignment,
+    'en_route' => ResponderPhase.enRoute,
+    'arrived' => ResponderPhase.onScene,
+    'resolved' => ResponderPhase.resolved,
+    'cancelled' => ResponderPhase.cancelled,
+    _ => ResponderPhase.newAssignment,
+  };
+
+  static String phaseLabel(ResponderPhase p, AppLocalizations t) => switch (p) {
+    ResponderPhase.newAssignment => t.respStatusNew,
+    ResponderPhase.accepted => t.respStatusAccepted,
+    ResponderPhase.enRoute => t.respStatusEnRoute,
+    ResponderPhase.onScene => t.respStatusOnScene,
+    ResponderPhase.resolved => t.respStatusResolved,
+    ResponderPhase.cancelled => t.respStatusCancelled,
+  };
+
+  static IconData phaseIcon(ResponderPhase p) => switch (p) {
+    ResponderPhase.newAssignment => LucideIcons.bell_ring,
+    ResponderPhase.accepted => LucideIcons.circle_check,
+    ResponderPhase.enRoute => LucideIcons.navigation,
+    ResponderPhase.onScene => LucideIcons.map_pin_check,
+    ResponderPhase.resolved => LucideIcons.circle_check_big,
+    ResponderPhase.cancelled => LucideIcons.circle_x,
+  };
+
+  /// Three meanings, three colours: orange = waiting on YOU, indigo = in
+  /// progress, green = done. Never the agency hue — BFP's red-coral beside
+  /// "On Scene" read as a critical alarm on a call that was going fine.
+  static Color phaseColor(ResponderPhase p) => switch (p) {
+    ResponderPhase.newAssignment => ZirenTokens.statusDispatched,
+    ResponderPhase.accepted ||
+    ResponderPhase.enRoute ||
+    ResponderPhase.onScene => ZirenTokens.statusProcessing,
+    ResponderPhase.resolved => ZirenTokens.statusResolved,
+    ResponderPhase.cancelled => ZirenTokens.statusCancelled,
+  };
+
+  static Color phaseBackground(ResponderPhase p) => switch (p) {
+    ResponderPhase.newAssignment => ZirenTokens.statusDispatchedBg,
+    ResponderPhase.accepted ||
+    ResponderPhase.enRoute ||
+    ResponderPhase.onScene => ZirenTokens.statusProcessingBg,
+    ResponderPhase.resolved => ZirenTokens.statusResolvedBg,
+    ResponderPhase.cancelled => ZirenTokens.statusCancelledBg,
+  };
+
+  /// Position on the five-step track Assigned → Accepted → En route →
+  /// On scene → Resolved, 0-based. A cancelled call has no place on it.
+  static int? stepIndex(ResponderPhase p) => switch (p) {
+    ResponderPhase.newAssignment => 0,
+    ResponderPhase.accepted => 1,
+    ResponderPhase.enRoute => 2,
+    ResponderPhase.onScene => 3,
+    ResponderPhase.resolved => 4,
+    ResponderPhase.cancelled => null,
+  };
 
   /// The tier as a WORD.
   ///
@@ -206,10 +298,7 @@ class ResponderVocabulary {
   /// equally critical calls in whatever order the server returned them, which
   /// is no order at all from the responder's seat — and the person who has
   /// been waiting longest is the one the queue owes.
-  static int workingOrder(
-    ResponderIncidentModel a,
-    ResponderIncidentModel b,
-  ) {
+  static int workingOrder(ResponderIncidentModel a, ResponderIncidentModel b) {
     final r = rank(a.severity).compareTo(rank(b.severity));
     if (r != 0) return r;
     return a.createdAt.compareTo(b.createdAt);

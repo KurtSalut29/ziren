@@ -72,7 +72,9 @@ class ResponderNotification {
       case 'severity':
         final was = (previousSeverity ?? '').toUpperCase();
         final now = severity.toUpperCase();
-        return was.isEmpty ? 'Now $now.' : '$was → $now. Open Ziren for the details.';
+        return was.isEmpty
+            ? 'Now $now.'
+            : '$was → $now. Open Ziren for the details.';
       default:
         return 'Open Ziren for the details.';
     }
@@ -269,7 +271,8 @@ class ResponderNotificationProvider extends ChangeNotifier {
     // (a cancelled incident that is no longer in the queue we were seeded
     // from, say) is not a call, and must not sound like one.
     final wasKnown = _known.contains(id);
-    final isNewAssignment = !wasKnown && (status == null || status == 'dispatched');
+    final isNewAssignment =
+        !wasKnown && (status == null || status == 'dispatched');
     _known.add(id);
 
     final category = row['incident_category'] as String? ?? 'other';

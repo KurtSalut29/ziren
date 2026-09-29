@@ -82,8 +82,11 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
       padding: const EdgeInsets.all(ZirenTokens.space16),
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        border: Border.all(color: ZirenTokens.surfaceBorder),
+        // Same card shape and title style as the rest of the detail screen.
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,18 +96,19 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
               Icon(
                 LucideIcons.message_square,
                 size: 16,
-                color: ZirenTokens.textMuted,
+                color: ZirenTokens.textSecondary,
               ),
-              const SizedBox(width: ZirenTokens.space8),
-              Flexible(child: Text(
-                'FIELD UPDATES',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                  color: ZirenTokens.textMuted,
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Field updates',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
           const SizedBox(height: ZirenTokens.space12),
@@ -125,11 +129,7 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
               style: TextStyle(fontSize: 12.5, color: ZirenTokens.textMuted),
             )
           else
-            Column(
-              children: [
-                for (final n in _notes!) _NoteRow(note: n),
-              ],
-            ),
+            Column(children: [for (final n in _notes!) _NoteRow(note: n)]),
           const SizedBox(height: ZirenTokens.space12),
           if (_error != null) ...[
             Text(
@@ -151,8 +151,7 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
                   maxLines: 3,
                   style: const TextStyle(fontSize: 13),
                   decoration: const InputDecoration(
-                    hintText:
-                        'e.g. Fire has spread to the second floor.',
+                    hintText: 'e.g. Fire has spread to the second floor.',
                     hintStyle: TextStyle(fontSize: 12.5),
                     isDense: true,
                     border: OutlineInputBorder(),
@@ -222,29 +221,30 @@ class _NoteRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Flexible(child: Text(
-                _label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: _color,
+              Flexible(
+                child: Text(
+                  _label,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: _color,
+                  ),
                 ),
-              )),
+              ),
               const SizedBox(width: ZirenTokens.space6),
-              Flexible(child: Text(
-                _clock(note.createdAt),
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: ZirenTokens.textMuted,
+              Flexible(
+                child: Text(
+                  _clock(note.createdAt),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: ZirenTokens.textMuted,
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
           const SizedBox(height: 2),
-          Text(
-            note.body,
-            style: const TextStyle(fontSize: 12.5, height: 1.4),
-          ),
+          Text(note.body, style: const TextStyle(fontSize: 12.5, height: 1.4)),
         ],
       ),
     );
