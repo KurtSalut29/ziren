@@ -3,6 +3,9 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
+import '../../../shared/widgets/suspension_banner.dart' show suspensionSentence;
+import '../../announcements/domain/announcement_model.dart' show announcementKindLabel;
+import '../../announcements/presentation/announcement_style.dart' show announcementStyle;
 import '../../incident_report/presentation/incident_labels.dart';
 import '../domain/notification_provider.dart';
 
@@ -16,6 +19,12 @@ enum NoticeAction {
 
   /// Open the chat on the report, to answer a question or a message.
   openChat,
+
+  /// Open the emergency hotlines: what a suspended resident can still use.
+  hotlines,
+
+  /// Open the safety alert (an evacuation order...), where it is answered.
+  openAnnouncement,
 }
 
 /// One notification, as the resident should read it: the words, the picture and
@@ -44,6 +53,7 @@ class NoticeView {
     this.halted = false,
     this.primary = NoticeAction.dismiss,
     this.primaryLabel = '',
+    this.eyebrow,
   });
 
   final IconData icon;
@@ -73,6 +83,10 @@ class NoticeView {
   /// The main button. [NoticeAction.dismiss] means the only button is "Got it".
   final NoticeAction primary;
   final String primaryLabel;
+
+  /// The small line over the headline. Null means "Report update"; a notice
+  /// about the account says so instead.
+  final String? eyebrow;
 
   bool get hasRail => stage != null || halted;
 }
@@ -151,6 +165,68 @@ NoticeView noticeView(AppLocalizations t, AppNotification n) {
         primaryLabel: t.notifOpenChat,
       );
 
+    case NotificationKind.accountWarning:
+      final left = n.warningsLeft;
+      return NoticeView(
+        icon: LucideIcons.triangle_alert,
+        color: ZirenTokens.systemWarning,
+        eyebrow: t.accountNoticeEyebrow,
+        title: t.accountWarnedTitle,
+        body: t.accountWarnedBody(violationWords(t, n)),
+        quote: detail.isEmpty ? null : detail,
+        help: (left != null && left > 0) ? t.accountWarnedLeft(left) : null,
+      );
+
+    case NotificationKind.accountSuspended:
+      return NoticeView(
+        icon: LucideIcons.ban,
+        color: ZirenTokens.systemWarning,
+        eyebrow: t.accountNoticeEyebrow,
+        title: t.accountSuspendedTitle,
+        body:
+            '${t.accountWarnedBody(violationWords(t, n))} ${suspensionSentence(t, until: n.suspendedUntil, indefinite: n.indefinite)}',
+        quote: detail.isEmpty ? null : detail,
+        help: t.accountSuspendedHelp,
+        primary: NoticeAction.hotlines,
+        primaryLabel: t.accountOpenHotlines,
+      );
+
+    case NotificationKind.accountReinstated:
+      return NoticeView(
+        icon: LucideIcons.circle_check_big,
+        color: ZirenTokens.systemSuccess,
+        eyebrow: t.accountNoticeEyebrow,
+        title: t.accountReinstatedTitle,
+        body: n.wasSuspended ? t.accountReinstatedBody : t.accountWarningsClearedBody,
+        quote: detail.isEmpty ? null : detail,
+      );
+
+    case NotificationKind.announcement:
+      final category = n.announcementCategory ?? 'emergency';
+      final (icon, color) = announcementStyle(category);
+      return NoticeView(
+        icon: icon,
+        color: color,
+        eyebrow: t.annNoticeEyebrow,
+        title: announcementKindLabel(t, category),
+        body: (n.serverTitle ?? '').trim().isEmpty ? announcementKindLabel(t, category) : n.serverTitle!.trim(),
+        quote: detail.isEmpty ? null : detail,
+        primary: NoticeAction.openAnnouncement,
+        primaryLabel: n.asksResponse ? t.annRespondNow : t.annOpen,
+      );
+
+    case NotificationKind.helpAcknowledged:
+      return NoticeView(
+        icon: LucideIcons.life_buoy,
+        color: ZirenTokens.systemSuccess,
+        eyebrow: t.annNoticeEyebrow,
+        title: t.annHelpAckTitle,
+        body: t.annHelpAckBody((n.station ?? '').trim().isEmpty ? 'MDRRMO' : n.station!.trim()),
+        help: t.annHelpWhileWaiting,
+        primary: NoticeAction.openAnnouncement,
+        primaryLabel: t.annOpen,
+      );
+
     case NotificationKind.status:
       break;
   }
@@ -224,3 +300,20 @@ String? _etaLine(AppLocalizations t, AppNotification n) {
       ? t.activeReportAgencyEnRoute(agency, eta)
       : t.activeReportResponderEnRoute(eta);
 }
+
+/// The rule that was broken, in the resident's language. The server sends a
+/// key; a key this build does not know falls back to the server's own words
+/// rather than to nothing.
+String violationWords(AppLocalizations t, AppNotification n) =>
+    switch (n.violation) {
+      'false_report' => t.violationFalseReport,
+      'false_sos' => t.violationFalseSos,
+      'spam' => t.violationSpam,
+      'abusive_language' => t.violationAbusive,
+      'fake_identity' => t.violationFakeIdentity,
+      'other' => t.violationOther,
+      _ =>
+        (n.violationLabel ?? '').trim().isNotEmpty
+            ? n.violationLabel!.trim()
+            : t.violationOther,
+    };

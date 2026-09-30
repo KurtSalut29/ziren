@@ -324,10 +324,19 @@ export const DUE_COLOR: Record<DueBucket, string> = {
   ontime: 'var(--color-text-muted)',
 };
 
-/** "LATE by 12m" · "Due in 3m" · "Due in 1h". */
+/**
+ * "LATE by 12m" · "Due in 3m" · "LATE by 2h 5m" · "LATE by 9d 7h".
+ *
+ * Days past a day: a report nine days old read "LATE by 223h 28m", beside a
+ * waiting time of "9d", and nobody divides 223 by 24 at a glance.
+ */
 export function formatDue(d: DueState): string {
   const abs = Math.abs(d.minutesLeft);
-  const span = abs < 60 ? `${abs}m` : `${Math.floor(abs / 60)}h ${abs % 60}m`;
+  const hours = Math.floor(abs / 60);
+  const span =
+    abs < 60 ? `${abs}m`
+    : hours < 24 ? `${hours}h ${abs % 60}m`
+    : `${Math.floor(hours / 24)}d ${hours % 24}h`;
   if (d.minutesLeft < 0) return `LATE by ${span}`;
   if (d.minutesLeft === 0) return 'Due now';
   return `Due in ${span}`;

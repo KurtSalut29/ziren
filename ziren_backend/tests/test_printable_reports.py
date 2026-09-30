@@ -49,6 +49,12 @@ def _text(pdf: bytes) -> str:
     return "\n".join(out)
 
 
+def _flat(text: str) -> str:
+    """Text as read, not as laid out: a cell that wraps onto two lines still
+    reads as one phrase."""
+    return " ".join(text.split())
+
+
 def _agency_db(name="BFP Naval Station", municipality="Naval", agency_type="BFP"):
     db = MagicMock()
     db.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = MagicMock(
@@ -64,6 +70,7 @@ def _incident(n, **kw):
         "created_at": "2026-09-20T01:00:00Z", "dispatched_at": "2026-09-20T01:07:00Z",
         "resolved_at": "2026-09-20T02:00:00Z", "outcome": "fire_contained",
         "stations": {"name": "BFP Naval"}, "responder": {"full_name": "FO1 Cruz"},
+        "report_text": f"Fire — Sunog sa bahay number {n}, may naiwan pang bata sa loob",
     }
     row.update(kw)
     return row
@@ -89,7 +96,7 @@ def test_incident_records_pdf_is_a_formatted_document():
     assert media == "application/pdf"
     assert filename.startswith("incident_records_") and filename.endswith(".pdf")
     assert content.startswith(b"%PDF")
-    text = _text(content)
+    text = _flat(_text(content))
     for phrase in (
         "INCIDENT RECORDS REPORT", "Republic of the Philippines", "BUREAU OF FIRE PROTECTION",
         "BFP Naval Station, Naval", "September 1, 2026 to September 30, 2026", "BFP-2026-000001",
@@ -118,10 +125,12 @@ def test_incident_records_csv_has_one_row_per_incident_and_passes_filters_throug
         )
     assert media == "text/csv" and filename.endswith(".csv")
     rows = list(csv.reader(io.StringIO(content.decode("utf-8"))))
-    assert rows[0] == printable_reports.RECORD_HEADERS
+    assert rows[0] == printable_reports.EXPORT_HEADERS
+    assert rows[0][3] == "Resident's Report"
     assert rows[1][0] == "BFP-2026-000001"
-    assert rows[1][3] == "Critical"
-    assert rows[1][8] == "7"  # minutes from report to dispatch
+    assert rows[1][3] == "Fire — Sunog sa bahay number 1, may naiwan pang bata sa loob"
+    assert rows[1][4] == "Critical"
+    assert rows[1][9] == "7"  # minutes from report to dispatch
     kwargs = hist.call_args.kwargs
     assert (kwargs["status"], kwargs["severity"], kwargs["date_from"], kwargs["date_to"], kwargs["days"]) == (
         "resolved", "critical", "2026-09-01", "2026-09-30", 0,
@@ -142,6 +151,85 @@ def test_incident_records_pages_through_the_whole_window():
         content, _, _ = printable_reports.build_incident_records(AGENCY_ADMIN, "csv")
     assert [c.kwargs["offset"] for c in hist.call_args_list] == [0, page, page * 2]
     assert len(list(csv.reader(io.StringIO(content.decode("utf-8"))))) == page * 2 + 5 + 1
+
+
+# ── What the resident said (2026-10-01) ────────────────────────────────────
+#
+# The records export said where, when, how bad and who went - but never what
+# was reported. The resident's own words now go with every record.
+
+@pytest.mark.parametrize("row, expected", [
+    ({"report_text": "Fire — may sunog sa bahay"}, "Fire — may sunog sa bahay"),
+    ({"report_text": "Fire — no additional details provided"}, "Fire — no additional details provided"),
+    ({"report_text": "SOS — tulong po"}, "SOS — tulong po"),
+    ({"report_text": "Fire — reported by voice recording — Sir tabang may kalayo"}, "(Voice) Sir tabang may kalayo"),
+    ({"report_text": "Sunog — iniulat sa pamamagitan ng boses — may sunog po dito"}, "(Voice) may sunog po dito"),
+    (
+        {"report_text": "Fire — reported by voice recording — may kalayo sa balay",
+         "signals": {"normalisation": {"text": "Fire — reported by voice recording — may kalayo sa balay namon"}}},
+        "(Voice) may kalayo sa balay namon",
+    ),
+    ({"report_text": "Fire — reported by voice recording"}, "(Voice note — no transcript)"),
+    ({"report_text": ""}, "—"),
+])
+def test_resident_words_strip_only_the_app_s_own_scaffolding(row, expected):
+    assert printable_reports.resident_words(row) == expected
+
+
+def test_resident_words_are_shortened_for_print_only_when_asked():
+    long = {"report_text": "a" * 900}
+    assert printable_reports.resident_words(long) == "a" * 900
+    assert len(printable_reports.resident_words(long, limit=700)) == 700
+
+
+def test_incident_records_pdf_has_a_resident_s_report_column():
+    with patch("app.services.printable_reports.dispatch_service.get_incident_history",
+               return_value=_history([_incident(1), _incident(2, report_text="Fire — reported by voice recording")])), \
+         patch("app.services.printable_reports.get_supabase", return_value=_agency_db()):
+        content, _, _ = printable_reports.build_incident_records(AGENCY_ADMIN, "pdf")
+    text = _flat(_text(content))
+    # A column header, not a label repeated under every record.
+    assert text.count("Resident's Report") == 1
+    assert "Resident's report:" not in text
+    assert "Sunog sa bahay number 1, may naiwan pang bata sa loob" in text
+    assert "(Voice note — no transcript)" in text
+    # The note is the report's, not the resident's words: never quoted.
+    assert "“" not in text
+
+
+def test_incident_records_pdf_columns_fill_the_page_exactly():
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Table
+
+    captured = {}
+
+    class Spy(Table):
+        def __init__(self, data, colWidths=None, **kw):
+            if data and len(data[0]) == 12:
+                captured["w"] = colWidths
+            super().__init__(data, colWidths=colWidths, **kw)
+
+    # The builder imports Table inside the function, so patching the module
+    # attribute reaches it.
+    with patch("app.services.printable_reports.dispatch_service.get_incident_history",
+               return_value=_history([_incident(1)])), \
+         patch("app.services.printable_reports.get_supabase", return_value=_agency_db()), \
+         patch("reportlab.platypus.Table", Spy):
+        printable_reports.build_incident_records(AGENCY_ADMIN, "pdf")
+    assert abs(sum(captured["w"]) - 10 * inch) < 0.01
+    assert captured["w"][4] == max(captured["w"])  # the report column is the widest
+
+
+def test_incident_records_xlsx_carries_the_report_wrapped():
+    from openpyxl import load_workbook
+    with patch("app.services.printable_reports.dispatch_service.get_incident_history", return_value=_history([_incident(1)])), \
+         patch("app.services.printable_reports.get_supabase", return_value=_agency_db()):
+        content, _, _ = printable_reports.build_incident_records(AGENCY_ADMIN, "xlsx")
+    ws = load_workbook(io.BytesIO(content)).active
+    assert ws["D1"].value == "Resident's Report"
+    assert ws["D2"].value.endswith("may naiwan pang bata sa loob")
+    assert ws["D2"].alignment.wrap_text is True
+    assert ws.column_dimensions["D"].width == 60
 
 
 def test_incident_records_xlsx_is_produced():

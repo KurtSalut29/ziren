@@ -7,72 +7,107 @@
  * dispatch actions. Everything here is a pure function of its props (plus one
  * local reveal toggle), so it can be read and changed without the dialog's
  * state in the way.
+ *
+ * REDESIGNED 2026-09-30. The dialog used to be one long column of
+ * label-and-value rows under six headings, every fact at the same weight, and
+ * the ones a dispatcher decides on (is someone trapped, is it spreading, how
+ * many victims, the landmark, the number to call back) sat below the fold.
+ * The pieces here are what replaced it: cards with a clear title, the
+ * resident's answers as tiles that can be read at a glance, warning chips for
+ * anything that should change how the report is handled, and the timestamps
+ * as a row of steps.
  */
 
 import { useState } from 'react';
-import { Sparkles, type LucideIcon } from 'lucide-react';
+import { Check, Sparkles, type LucideIcon } from 'lucide-react';
 import { withoutVoicePlaceholder } from '@/lib/incidents/report-text';
 import type { WizardAnswer } from '@/lib/incidents/wizard-catalog';
+import { cn } from '@/lib/utils';
 
+/**
+ * One card of the report: an icon, a title, and what belongs under it.
+ *
+ * The 5W1H structure the dialog has always had is kept: [facet] is the W (or
+ * H) this card answers, shown as a quiet tag at the right of its heading.
+ */
 export function Section({
   title,
   facet,
   icon: Icon,
+  tone,
+  aside,
+  className,
   children,
 }: {
   title: string;
-  /** The W (or H) this section answers, shown as a chip beside the heading. */
-  facet: string;
+  /** The W (or H) this section answers, shown as a tag beside the heading. */
+  facet?: string;
   icon: LucideIcon;
+  /** Tints the icon tile. Defaults to the neutral secondary text colour. */
+  tone?: string;
+  /** Something for the right of the heading, in place of the facet tag. */
+  aside?: React.ReactNode;
+  className?: string;
   children: React.ReactNode;
 }) {
+  const color = tone ?? 'var(--color-text-secondary)';
   return (
-    <section className="flex flex-col gap-2">
-      {/* Deliberately NOT .text-section-label (11px/500) — that class is the
-          quiet sidebar/table-header style shared across the whole app, and
-          turning it up here would have turned it up everywhere. These six
-          headings are the report's own table of contents; a dispatcher
-          scanning a long one needs them to interrupt the eye, not blend into
-          the muted body text around them, so they get their own bigger,
-          bolder, higher-contrast treatment plus a bottom rule that the quiet
-          style never had. */}
-      <h3 className="flex items-center gap-2 border-b border-[var(--color-surface-border)] pb-1.5">
-        <Icon className="shrink-0" size={16} style={{ color: 'var(--color-text-secondary)' }} />
-        <span className="text-[13.5px] font-bold uppercase tracking-wide text-foreground">
+    <section
+      className={cn(
+        'flex min-w-0 flex-col gap-3 rounded-[14px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4',
+        className,
+      )}
+    >
+      <h3 className="flex items-center gap-2.5">
+        <span
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg"
+          style={{ color, backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)` }}
+        >
+          <Icon size={15} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13.5px] font-bold text-foreground">
           {title}
         </span>
-        {/* The facet label is what makes the 5W1H structure legible as a
-            structure rather than as six arbitrary headings. */}
-        <span
-          className="rounded-full border px-1.5 py-px text-[10px] font-bold uppercase tracking-wide"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--color-brand) 45%, transparent)',
-            color: 'var(--color-brand)',
-          }}
-        >
-          {facet}
-        </span>
+        {aside ?? (facet && (
+          <span className="shrink-0 rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            {facet}
+          </span>
+        ))}
       </h3>
       {children}
     </section>
   );
 }
 
-/** Label left, value right — one fact per line, aligned down the panel. */
+/** Label left, value right — one secondary fact per line. */
 export function Row({
   label,
   sub,
   icon: Icon,
+  stacked,
   children,
 }: {
   label: string;
   /** The prompt as the resident saw it, verbatim. */
   sub?: string;
   icon?: LucideIcon;
+  /** Label above the value, for a card too narrow to hold them side by side. */
+  stacked?: boolean;
   children: React.ReactNode;
 }) {
+  if (stacked) {
+    return (
+      <div className="flex min-w-0 flex-col gap-0.5 text-[13px] leading-snug">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {Icon && <Icon className="shrink-0" size={12} />}
+          {label}
+        </span>
+        <span className="min-w-0 break-words font-medium text-foreground">{children}</span>
+      </div>
+    );
+  }
   return (
-    <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-3 text-[13px]">
+    <div className="grid grid-cols-[124px_minmax(0,1fr)] gap-3 text-[13px] leading-snug">
       <span className="flex flex-col text-muted-foreground">
         <span className="flex items-center gap-1.5">
           {Icon && <Icon className="shrink-0" size={13} />}
@@ -84,30 +119,173 @@ export function Row({
           </span>
         )}
       </span>
-      <span className="min-w-0 break-words text-foreground">{children}</span>
+      <span className="min-w-0 break-words font-medium text-foreground">{children}</span>
     </div>
   );
 }
 
 /**
- * Wizard answers, rendered verbatim.
+ * One fact as a tile: a small label over a large value.
+ *
+ * What the long label/value list could not do — a dispatcher reads six of
+ * these in one look, without following a line across the panel.
+ */
+export function Fact({
+  label,
+  hint,
+  tag,
+  children,
+}: {
+  label: string;
+  /** The prompt as the resident saw it, verbatim. */
+  hint?: string;
+  /** Which of the 5W1H this answers. */
+  tag?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex min-w-0 flex-col gap-0.5 rounded-[10px] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-3 py-2',
+        hint && 'cursor-help',
+      )}
+      // The prompt as the resident saw it. A tooltip, not a third line: shown
+      // on every tile it pushed the address and the phone number below the
+      // fold, and it is the record of the question, not the answer.
+      title={hint ? `Asked: “${hint}”` : undefined}
+    >
+      <span className="flex items-start justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        {tag && (
+          <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+            {tag}
+          </span>
+        )}
+      </span>
+      <span className="break-words text-[14.5px] font-bold leading-snug text-foreground">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Wizard answers, as tiles, rendered verbatim.
  *
  * The VALUE is never translated or prettified — the backend's triage matches
  * these strings literally, so what is displayed has to be exactly what was
  * stored, or the console and the rubric would be describing different reports.
- * The Tagalog prompt sits under the English label as the record of what the
- * resident was actually asked.
+ * The Tagalog prompt, the record of what the resident was actually asked, is
+ * the tile's tooltip.
  */
-export function Answers({ items }: { items: WizardAnswer[] }) {
+export function Answers({ items, tag }: { items: WizardAnswer[]; tag?: string }) {
   if (items.length === 0) return null;
   return (
     <>
       {items.map(a => (
-        <Row key={a.key} label={a.label} sub={a.asked ?? undefined}>
+        <Fact hint={a.asked ?? undefined} key={a.key} label={a.label} tag={tag}>
           {a.value}
-        </Row>
+        </Fact>
       ))}
     </>
+  );
+}
+
+/**
+ * Something about this report that should change how it is handled: filed
+ * with the SOS button, a reporter with false alarms on record, an unverified
+ * identity. A chip with an icon and words, never colour alone.
+ */
+export function Flag({
+  icon: Icon,
+  tone,
+  children,
+}: {
+  icon: LucideIcon;
+  tone: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold leading-tight"
+      style={{
+        color: tone,
+        borderColor: `color-mix(in srgb, ${tone} 40%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${tone} 10%, transparent)`,
+      }}
+    >
+      <Icon className="shrink-0" size={13} />
+      {children}
+    </span>
+  );
+}
+
+export interface Milestone {
+  label: string;
+  /** Already formatted. Null means it has not happened. */
+  at: string | null;
+  /** "after 2m", "50m in total". */
+  note?: string | null;
+  /** Shown in place of the time while it has not happened. */
+  pending?: string;
+  /** Colour of a reached step. Defaults to the success green. */
+  tone?: string;
+}
+
+/**
+ * The report's timestamps as a row of steps, reached ones filled.
+ *
+ * They used to be four label/value rows; as steps the order and the gaps
+ * ("dispatched after 2m") read as one line of events.
+ */
+export function Milestones({ items }: { items: Milestone[] }) {
+  return (
+    <ol
+      className="grid gap-x-2 gap-y-3"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+    >
+      {items.map((m, i) => {
+        const done = m.at !== null;
+        const tone = m.tone ?? 'var(--color-system-success)';
+        return (
+          <li className="relative flex min-w-0 flex-col gap-1" key={m.label}>
+            <span className="flex items-center gap-2">
+              <span
+                className="flex size-5 shrink-0 items-center justify-center rounded-full border-2"
+                style={done
+                  ? { backgroundColor: tone, borderColor: tone, color: '#fff' }
+                  : { borderColor: 'var(--color-border-strong)' }}
+              >
+                {done && <Check size={11} strokeWidth={3.5} />}
+              </span>
+              {i < items.length - 1 && (
+                <span
+                  className="h-0.5 flex-1 rounded-full"
+                  style={{
+                    backgroundColor: done && items[i + 1].at !== null
+                      ? tone
+                      : 'var(--color-surface-border)',
+                  }}
+                />
+              )}
+            </span>
+            <span className={cn('text-[12px] font-bold leading-tight', done ? 'text-foreground' : 'text-muted-foreground')}>
+              {m.label}
+            </span>
+            <span className="text-[12px] leading-tight text-[var(--color-text-secondary)]">
+              {m.at ?? m.pending ?? 'Not yet'}
+            </span>
+            {m.note && (
+              <span className="font-mono text-[11px] tabular-nums leading-tight text-muted-foreground">
+                {m.note}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -292,9 +470,12 @@ export function MaskedContact({
 
 export function DetailSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col gap-5">
+    <div className="flex animate-pulse flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div className="flex flex-col gap-2" key={i}>
+        <div
+          className="flex flex-col gap-2.5 rounded-[14px] border border-[var(--color-surface-border)] p-4"
+          key={i}
+        >
           <div className="h-3 w-28 rounded bg-muted" />
           <div className="h-4 w-full rounded bg-muted" />
           <div className="h-4 w-2/3 rounded bg-muted" />

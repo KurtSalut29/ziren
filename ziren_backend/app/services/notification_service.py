@@ -176,6 +176,35 @@ def create_for_user(
     )
 
 
+def create_for_users(
+    user_ids: Iterable[str],
+    *,
+    type_: str,
+    title: str,
+    body: str | None = None,
+    link: str | None = None,
+    is_important: bool = False,
+    metadata: dict | None = None,
+    chunk: int = 500,
+) -> None:
+    """Notify an explicit list of users - an audience already worked out by the
+    caller (an announcement aimed at two barangays is a list no role or agency
+    fan-out can express). Written in chunks so a province-wide alert is not one
+    enormous request. Duplicates are dropped."""
+    ids: list[str] = []
+    seen: set[str] = set()
+    for uid in user_ids:
+        s = str(uid)
+        if s and s not in seen:
+            seen.add(s)
+            ids.append(s)
+    for start in range(0, len(ids), max(1, chunk)):
+        _insert_for_recipients(
+            ids[start:start + chunk], type_=type_, title=title, body=body, link=link,
+            is_important=is_important, metadata=metadata,
+        )
+
+
 def notify_reporter(
     reporter_id: str | None,
     *,

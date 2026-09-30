@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/errors/failures.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../data/announcement_repository.dart';
 import '../domain/announcement_model.dart';
+import 'announcement_tile.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
-/// Official broadcasts from Super Admin — spec Section 24.
+/// Official broadcasts from a Provincial Admin — spec Section 24.
 ///
-/// A resident's read-only view of a role Super Admin publishes and this app
-/// only ever receives; there is no compose action here on purpose.
+/// Safety alerts for where the resident lives come first (an evacuation order,
+/// a wind signal, a hazard warning - each opening to the "are you safe?"
+/// answer), then everything else. There is still no compose action here on
+/// purpose: residents receive, they do not publish.
 class AnnouncementsScreen extends StatefulWidget {
-  const AnnouncementsScreen({super.key});
+  const AnnouncementsScreen({super.key, this.repository});
+
+  final AnnouncementRepository? repository;
 
   @override
   State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
 }
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
-  final _repo = AnnouncementRepository();
+  late final AnnouncementRepository _repo = widget.repository ?? AnnouncementRepository();
   List<AnnouncementModel>? _items;
   String? _error;
 
@@ -45,6 +51,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     }
   }
 
+  Future<void> _open(AnnouncementModel a) async {
+    await context.push('/announcements/${a.id}');
+    // They may have answered on the detail screen.
+    if (mounted) _load();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
@@ -68,11 +80,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             padding: const EdgeInsets.all(ZirenTokens.space32),
             child: Column(
               children: [
-                Icon(
-                  LucideIcons.cloud_off,
-                  size: 40,
-                  color: ZirenTokens.textMuted,
-                ),
+                Icon(LucideIcons.cloud_off, size: 40, color: ZirenTokens.textMuted),
                 const SizedBox(height: ZirenTokens.space12),
                 Text(
                   _error!,
@@ -80,10 +88,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   style: TextStyle(color: ZirenTokens.textSecondary),
                 ),
                 const SizedBox(height: ZirenTokens.space16),
-                OutlinedButton(
-                  onPressed: _load,
-                  child: Text(t.announcementsRetry),
-                ),
+                OutlinedButton(onPressed: _load, child: Text(t.announcementsRetry)),
               ],
             ),
           ),
@@ -106,11 +111,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             child: Column(
               children: [
                 const SizedBox(height: ZirenTokens.space32),
-                Icon(
-                  LucideIcons.megaphone,
-                  size: 48,
-                  color: ZirenTokens.surfaceBorder,
-                ),
+                Icon(LucideIcons.megaphone, size: 48, color: ZirenTokens.surfaceBorder),
                 const SizedBox(height: ZirenTokens.space12),
                 Text(
                   t.announcementsEmptyTitle,
@@ -124,10 +125,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 Text(
                   t.announcementsEmptyBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: ZirenTokens.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 12.5, color: ZirenTokens.textMuted),
                 ),
               ],
             ),
@@ -136,112 +134,68 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       );
     }
 
-    return ListView.separated(
+    final safety = _items!.where((a) => a.isSafety).toList()
+      // Unanswered questions first, then newest.
+      ..sort((a, b) {
+        final pa = a.canAnswer && a.myResponse == null ? 0 : 1;
+        final pb = b.canAnswer && b.myResponse == null ? 0 : 1;
+        return pa != pb ? pa - pb : b.createdAt.compareTo(a.createdAt);
+      });
+    final other = _items!.where((a) => !a.isSafety).toList();
+
+    return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(ZirenTokens.space16),
-      itemCount: _items!.length,
-      separatorBuilder: (_, __) => const SizedBox(height: ZirenTokens.space10),
-      itemBuilder: (_, i) => _AnnouncementCard(item: _items![i]),
+      padding: const EdgeInsets.fromLTRB(
+        ZirenTokens.space16,
+        ZirenTokens.space12,
+        ZirenTokens.space16,
+        ZirenTokens.space32,
+      ),
+      children: [
+        if (safety.isNotEmpty) ...[
+          _Heading(icon: LucideIcons.triangle_alert, label: t.annSafetyAlerts),
+          for (final a in safety) ...[
+            AnnouncementTile(item: a, onTap: () => _open(a)),
+            const SizedBox(height: ZirenTokens.space10),
+          ],
+          const SizedBox(height: ZirenTokens.space8),
+        ],
+        if (other.isNotEmpty) ...[
+          _Heading(icon: LucideIcons.megaphone, label: t.annUpdates),
+          for (final a in other) ...[
+            AnnouncementTile(item: a, onTap: () => _open(a)),
+            const SizedBox(height: ZirenTokens.space10),
+          ],
+        ],
+      ],
     );
   }
 }
 
-class _AnnouncementCard extends StatelessWidget {
-  const _AnnouncementCard({required this.item});
-  final AnnouncementModel item;
+class _Heading extends StatelessWidget {
+  const _Heading({required this.icon, required this.label});
 
-  (Color, IconData) get _style => switch (item.category) {
-    'emergency' => (ZirenTokens.severityCritical, LucideIcons.triangle_alert),
-    'service_interruption' => (
-      ZirenTokens.systemWarning,
-      LucideIcons.wifi_off,
-    ),
-    'maintenance' => (ZirenTokens.statusProcessing, LucideIcons.wrench),
-    'feature' => (ZirenTokens.agencyMDRRMO, LucideIcons.sparkles),
-    'reminder' => (ZirenTokens.textSecondary, LucideIcons.bell),
-    _ => (ZirenTokens.brandOrange, LucideIcons.megaphone),
-  };
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    final (color, icon) = _style;
-    return Container(
-      padding: const EdgeInsets.all(ZirenTokens.space16),
-      decoration: BoxDecoration(
-        color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        border: Border.all(color: ZirenTokens.surfaceBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: ZirenTokens.space8, top: ZirenTokens.space4),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: ZirenTokens.space10,
-                  vertical: ZirenTokens.space4,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(ZirenTokens.radius32),
-                  border: Border.all(color: color.withValues(alpha: 0.35)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 12, color: color),
-                    const SizedBox(width: 4),
-                    Text(
-                      item.categoryLabel(t),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Text(
-                _timeAgo(item.createdAt, t),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: ZirenTokens.textMuted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: ZirenTokens.space10),
+          Icon(icon, size: 15, color: ZirenTokens.textSecondary),
+          const SizedBox(width: 6),
           Text(
-            item.title,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: ZirenTokens.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            item.body,
+            label,
             style: TextStyle(
               fontSize: 13,
-              height: 1.45,
+              fontWeight: FontWeight.w700,
               color: ZirenTokens.textSecondary,
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _timeAgo(DateTime dt, AppLocalizations t) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return t.timeAgoJustNow;
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
   }
 }

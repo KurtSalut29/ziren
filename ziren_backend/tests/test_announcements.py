@@ -22,6 +22,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services import announcement_service
+from tests.fake_db import FakeDB
 
 client = TestClient(app)
 
@@ -53,68 +54,58 @@ def _auth_db(user_id, role, agency_id=None):
     return db
 
 
-def _db_with_insert(row):
-    db = MagicMock()
-    result = MagicMock()
-    result.data = [row]
-    db.table.return_value.insert.return_value.execute.return_value = result
-    return db
+def _roster_db():
+    """One account of each role, at two agencies - a real query evaluator, so a
+    wrong audience fails here instead of "passing" against a mock."""
+    return FakeDB({
+        "users": [
+            {"id": PROVINCIAL_ADMIN_UUID, "role": "provincial_admin"},
+            {"id": "u-admin-a", "role": "agency_admin", "agency_id": AGENCY_UUID_A},
+            {"id": "u-resp-a", "role": "responder", "agency_id": AGENCY_UUID_A},
+            {"id": "u-resp-b", "role": "responder", "agency_id": AGENCY_UUID_B},
+            {"id": "u-resident", "role": "resident"},
+        ],
+        "agencies": [{"id": AGENCY_UUID_A, "municipality": "Naval"}, {"id": AGENCY_UUID_B, "municipality": "Almeria"}],
+        "announcements": [], "notifications": [], "audit_logs": [],
+    })
+
+
+def _publish(db, **kw):
+    with patch("app.services.announcement_service.get_supabase", return_value=db), \
+         patch("app.services.notification_service.get_supabase", return_value=db), \
+         patch("app.services.audit_service.record") as audit_record:
+        row = announcement_service.publish(ACTOR, **kw)
+    return row, {n["recipient_id"] for n in db.rows("notifications")}, audit_record
 
 
 # ── announcement_service.publish ────────────────────────────────────────
+#
+# These used to assert that create_for_roles / create_for_agency were CALLED
+# with the right arguments. The audience is now worked out here (it can be two
+# barangays of one town), so they assert who was actually notified instead.
 
 def test_publish_to_all_notifies_every_role():
-    db = _db_with_insert({"id": "ann-1", "title": "Maintenance"})
-    with patch("app.services.announcement_service.get_supabase", return_value=db), \
-         patch("app.services.notification_service.create_for_roles") as notify_roles, \
-         patch("app.services.notification_service.create_for_agency") as notify_agency, \
-         patch("app.services.audit_service.record"):
-        announcement_service.publish(
-            ACTOR, title="Maintenance", body="Down at 2am", category="maintenance", target_type="all",
-        )
-
-    assert not notify_agency.called
-    assert notify_roles.call_args.kwargs["roles"] == ("provincial_admin", "agency_admin", "responder", "resident")
+    _, notified, _ = _publish(_roster_db(), title="Maintenance", body="Down at 2am", category="maintenance", target_type="all")
+    # Everyone except the admin who sent it.
+    assert notified == {"u-admin-a", "u-resp-a", "u-resp-b", "u-resident"}
 
 
 def test_publish_to_one_role_notifies_only_that_role():
-    db = _db_with_insert({"id": "ann-1", "title": "Reminder"})
-    with patch("app.services.announcement_service.get_supabase", return_value=db), \
-         patch("app.services.notification_service.create_for_roles") as notify_roles, \
-         patch("app.services.audit_service.record"):
-        announcement_service.publish(
-            ACTOR, title="Reminder", body="Renew your badge", category="reminder", target_type="responder",
-        )
-
-    assert notify_roles.call_args.kwargs["roles"] == ("responder",)
+    _, notified, _ = _publish(_roster_db(), title="Reminder", body="Renew your badge", category="reminder", target_type="responder")
+    assert notified == {"u-resp-a", "u-resp-b"}
 
 
 def test_publish_to_agency_notifies_only_that_agency():
-    db = _db_with_insert({"id": "ann-1", "title": "Local notice"})
-    with patch("app.services.announcement_service.get_supabase", return_value=db), \
-         patch("app.services.notification_service.create_for_agency") as notify_agency, \
-         patch("app.services.notification_service.create_for_roles") as notify_roles, \
-         patch("app.services.audit_service.record"):
-        announcement_service.publish(
-            ACTOR, title="Local notice", body="Station closed", category="general",
-            target_type="agency", target_agency_id=AGENCY_UUID_A,
-        )
-
-    assert not notify_roles.called
-    assert notify_agency.call_args.args[0] == AGENCY_UUID_A
+    _, notified, _ = _publish(
+        _roster_db(), title="Local notice", body="Station closed", category="general",
+        target_type="agency", target_agency_id=AGENCY_UUID_A,
+    )
+    assert notified == {"u-admin-a", "u-resp-a"}
 
 
 def test_publish_writes_audit_entry():
-    db = _db_with_insert({"id": "ann-1", "title": "Maintenance"})
-    with patch("app.services.announcement_service.get_supabase", return_value=db), \
-         patch("app.services.notification_service.create_for_roles"), \
-         patch("app.services.audit_service.record") as audit_record:
-        announcement_service.publish(
-            ACTOR, title="Maintenance", body="Down at 2am", category="maintenance", target_type="all",
-        )
-
+    _, _, audit_record = _publish(_roster_db(), title="Maintenance", body="Down at 2am", category="maintenance", target_type="all")
     assert audit_record.call_args.kwargs["action"] == "announcement.published"
-
 
 # ── announcement_service.list_for_user ──────────────────────────────────
 

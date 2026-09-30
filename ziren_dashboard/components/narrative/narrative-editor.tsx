@@ -33,8 +33,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, CheckCircle2, Circle, Download, FileText, Loader2, Plus, Save,
-  ShieldCheck, Trash2, TriangleAlert, UserRound,
+  ArrowLeft, BadgeCheck, CheckCircle2, Circle, ClipboardList, Download, FileText, Loader2,
+  Lock, Plus, Save, ScrollText, ShieldCheck, Trash2, TriangleAlert, UserRound, UserSearch,
+  Users, type LucideIcon,
 } from 'lucide-react';
 import { ApiError, apiClient } from '@/lib/api/client';
 import {
@@ -55,12 +56,25 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/efferd/ui/alert-dialog';
-import { Field, PersonFields, SuspectExtras } from './person-fields';
+import { Field, FieldGroup, PersonFields, SuspectExtras } from './person-fields';
 
 /** How often an unsaved draft saves itself. */
 const AUTOSAVE_MS = 60_000;
 
 type Removal = { kind: 'suspect' | 'victim'; index: number } | null;
+
+/** One icon per section, the same in the outline and on the card it points to. */
+const SECTION_ICON: Record<string, LucideIcon> = {
+  case: ClipboardList,
+  a: UserRound,
+  b: UserSearch,
+  c: Users,
+  d: ScrollText,
+  cert: BadgeCheck,
+};
+
+/** A box Ziren fills in and nobody edits: visibly not a box to type in. */
+const LOCKED_INPUT = 'cursor-default bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] focus:border-[var(--color-surface-border)] focus:shadow-none';
 
 export function NarrativeEditor({ incidentId }: { incidentId: string }) {
   const { token, isProvincialAdmin, hydrated } = useAuth();
@@ -316,6 +330,11 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
     : dirty ? 'Unsaved changes'
     : savedAt ? `All changes saved · ${savedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
     : 'Not saved yet';
+  const statusDot = saving || dirty
+    ? 'var(--color-system-warning)'
+    : savedAt ? 'var(--color-system-success)' : 'var(--color-text-muted)';
+  const doneCount = progress.filter(p => p.done).length;
+  const sectionOf = (key: string) => progress.find(p => p.key === key);
 
   return (
     <div className="min-h-full">
@@ -335,6 +354,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[15px] font-semibold text-foreground">Narrative Report</h1>
+              <span className="text-[12.5px] font-medium text-[var(--color-text-secondary)]">{categoryLabel}</span>
               <span className="font-mono text-[12.5px] text-muted-foreground">{recordNo}</span>
               {existing ? (
                 <span
@@ -352,7 +372,10 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-[12px] text-muted-foreground" data-save-state>
+            <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-muted-foreground" data-save-state>
+              {!readOnly && (
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: statusDot }} />
+              )}
               {readOnly ? 'Oversight view - filed by the assigned agency.' : statusText}
             </p>
           </div>
@@ -399,35 +422,73 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
 
       <div className="flex gap-6 px-6 py-5 md:px-7">
         {/* ── Outline ── */}
-        <nav aria-label="Sections of this report" className="hidden w-[220px] shrink-0 lg:block">
-          <ol className="sticky top-[88px] flex flex-col gap-0.5">
-            {progress.map(p => (
-              <li key={p.key}>
-                <button
-                  aria-current={active === p.key ? 'true' : undefined}
-                  className="flex w-full items-start gap-2.5 rounded-[var(--radius-control)] px-2.5 py-2 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
-                  data-outline={p.key}
-                  onClick={() => goTo(p.key)}
-                  style={active === p.key ? { backgroundColor: 'var(--color-surface-raised)' } : undefined}
-                  type="button"
-                >
-                  {p.done
-                    ? <CheckCircle2 className="mt-0.5 shrink-0" size={15} style={{ color: 'var(--color-system-success)' }} />
-                    : <Circle className="mt-0.5 shrink-0 text-[var(--color-text-tertiary)]" size={15} />}
-                  <span className="min-w-0">
-                    <span className={`block text-[13px] ${active === p.key ? 'font-semibold text-foreground' : 'font-medium text-[var(--color-text-secondary)]'}`}>
-                      {p.label}
-                    </span>
-                    <span className="block text-[11.5px] text-muted-foreground">{p.hint}</span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
+        <nav aria-label="Sections of this report" className="hidden w-[232px] shrink-0 lg:block">
+          <div className="sticky top-[88px] flex flex-col gap-3">
+            {/* How far along the whole form is, above the list that says where. */}
+            <div
+              className="rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-3.5 py-3"
+              data-progress={`${doneCount}/${progress.length}`}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">Progress</span>
+                <span className="text-[12px] font-semibold tabular-nums text-foreground">
+                  {doneCount} of {progress.length} sections
+                </span>
+              </div>
+              <div
+                aria-label={`${doneCount} of ${progress.length} sections complete`}
+                aria-valuemax={progress.length}
+                aria-valuemin={0}
+                aria-valuenow={doneCount}
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-raised)]"
+                role="progressbar"
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-300"
+                  style={{ width: `${(doneCount / progress.length) * 100}%`, backgroundColor: 'var(--color-system-success)' }}
+                />
+              </div>
+            </div>
+
+            <ol className="flex flex-col gap-0.5">
+              {progress.map(p => {
+                const on = active === p.key;
+                return (
+                  <li key={p.key}>
+                    <button
+                      aria-current={on ? 'true' : undefined}
+                      className="relative flex w-full items-start gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
+                      data-outline={p.key}
+                      onClick={() => goTo(p.key)}
+                      style={on ? { backgroundColor: 'var(--color-surface-raised)' } : undefined}
+                      type="button"
+                    >
+                      {on && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-2 bottom-2 left-0 w-[3px] rounded-full"
+                          style={{ backgroundColor: 'var(--color-brand)' }}
+                        />
+                      )}
+                      {p.done
+                        ? <CheckCircle2 className="mt-0.5 shrink-0" size={15} style={{ color: 'var(--color-system-success)' }} />
+                        : <Circle className="mt-0.5 shrink-0 text-[var(--color-text-tertiary)]" size={15} />}
+                      <span className="min-w-0">
+                        <span className={`block text-[13px] ${on ? 'font-semibold text-foreground' : 'font-medium text-[var(--color-text-secondary)]'}`}>
+                          {p.label}
+                        </span>
+                        <span className="block text-[11.5px] text-muted-foreground">{p.hint}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
         </nav>
 
         {/* ── The form ── */}
-        <fieldset className="m-0 min-w-0 flex-1 border-0 p-0" disabled={readOnly}>
+        <fieldset className="m-0 min-w-0 flex-1 border-0 p-0 [&_input]:h-10 [&_input]:text-[13.5px] [&_textarea]:text-[13.5px]" disabled={readOnly}>
           <div className="flex flex-col gap-5">
             {!detailsSupported && !readOnly && (
               <div
@@ -452,12 +513,23 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
             <_Card
               description="How this incident is filed. Filled in from the report where Ziren knows it; change anything that is wrong."
               id="case"
+              progress={sectionOf('case')}
               kicker="Case"
               title="Case details"
             >
               <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+                <FieldGroup first title="Filing" />
                 <Field className="sm:col-span-4" hint="Your own blotter / log number - not the Ziren record number" label="IRF entry number">
                   <input onChange={e => setReferenceNo(e.target.value)} placeholder="e.g. 087803000-202405-6352" type="text" value={referenceNo} />
+                </Field>
+                <Field className="sm:col-span-4" hint="Set by Ziren" label="Ziren record no.">
+                  <_Locked value={recordNo} />
+                </Field>
+                <Field className="sm:col-span-4" label="Copy for">
+                  <input list="copyfor-choices" onChange={e => patch({ copy_for: e.target.value })} type="text" value={details.copy_for} />
+                  <datalist id="copyfor-choices">
+                    {COPY_FOR_CHOICES.map(o => <option key={o} value={o} />)}
+                  </datalist>
                 </Field>
                 <Field className="sm:col-span-4" label="Type of incident">
                   <input
@@ -471,13 +543,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
                     {(OFFENSE_SUGGESTIONS[incident.incident_category ?? 'other'] ?? []).map(o => <option key={o} value={o} />)}
                   </datalist>
                 </Field>
-                <Field className="sm:col-span-4" label="Copy for">
-                  <input list="copyfor-choices" onChange={e => patch({ copy_for: e.target.value })} type="text" value={details.copy_for} />
-                  <datalist id="copyfor-choices">
-                    {COPY_FOR_CHOICES.map(o => <option key={o} value={o} />)}
-                  </datalist>
-                </Field>
-                <Field className="sm:col-span-12" hint="The law or offence, if any - as it would be written on the form" label="Statute / charge / description">
+                <Field className="sm:col-span-8" hint="The law or offence, if any - as it would be written on the form" label="Statute / charge / description">
                   <input
                     onChange={e => patch({ offense_detail: e.target.value })}
                     placeholder="e.g. Consummated the Forestry Reform Code of the Philippines (illegal logging)"
@@ -486,23 +552,22 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
                   />
                 </Field>
 
-                <Field className="sm:col-span-4" label="Date and time reported">
-                  <input readOnly type="text" value={formatDateTime(incident.created_at, display)} />
+                <FieldGroup title="When" />
+                <Field className="sm:col-span-6" hint="Set by Ziren when the report arrived" label="Date and time reported">
+                  <_Locked value={formatDateTime(incident.created_at, display)} />
                 </Field>
-                <Field className="sm:col-span-4" hint="Change this if it happened earlier than it was reported" label="Date and time of incident">
+                <Field className="sm:col-span-6" hint="Change this if it happened earlier than it was reported" label="Date and time of incident">
                   <input onChange={e => setOccurredAt(e.target.value)} type="datetime-local" value={occurredAt} />
                 </Field>
-                <Field className="sm:col-span-4" label="Ziren record no.">
-                  <input readOnly type="text" value={recordNo} />
-                </Field>
 
-                <Field className="sm:col-span-4" label="Place - barangay">
+                <FieldGroup title="Where" />
+                <Field className="sm:col-span-4" label="Barangay">
                   <input onChange={e => patch({ place_barangay: e.target.value })} type="text" value={details.place_barangay} />
                 </Field>
-                <Field className="sm:col-span-4" label="Place - town / city">
+                <Field className="sm:col-span-4" label="Town / city">
                   <input onChange={e => patch({ place_town: e.target.value })} type="text" value={details.place_town} />
                 </Field>
-                <Field className="sm:col-span-4" label="Place - province">
+                <Field className="sm:col-span-4" label="Province">
                   <input onChange={e => patch({ place_province: e.target.value })} type="text" value={details.place_province} />
                 </Field>
                 <Field className="sm:col-span-12" label="Place of incident (full address)">
@@ -515,6 +580,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
             <_Card
               description="The person who reported the incident."
               id="a"
+              progress={sectionOf('a')}
               kicker='Item "A"'
               title="Reporting person"
             >
@@ -534,6 +600,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
               )}
               description="Anyone alleged to have caused the incident. Leave empty when there is none - a fire, a flood, an accident with no one at fault."
               id="b"
+              progress={sectionOf('b')}
               kicker='Item "B"'
               title="Suspect's data"
             >
@@ -565,6 +632,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
               )}
               description="Anyone who was hurt, lost property or was otherwise affected."
               id="c"
+              progress={sectionOf('c')}
               kicker='Item "C"'
               title="Victim's data"
             >
@@ -590,14 +658,16 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
             <_Card
               description="The who, what, when, where, why and how - the confirmed account of what happened and what was done about it."
               id="d"
+              progress={sectionOf('d')}
               kicker='Item "D"'
               title="Narrative of incident"
             >
               <_Facts incident={incident} />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
+                <span className="text-[12px] font-semibold text-[var(--color-text-secondary)]">
                   Narrative <span style={{ color: 'var(--color-system-error)' }}>*</span>
+                  <span className="ml-1.5 font-normal text-muted-foreground">needed to finalize</span>
                 </span>
                 {!readOnly && residentAccount(incident) && (
                   <button
@@ -629,6 +699,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
               </p>
 
               <div className="mt-5 grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+                <FieldGroup first title="Supporting details" />
                 <Field className="sm:col-span-12" label="Witnesses">
                   <textarea onChange={e => patch({ witnesses: e.target.value })} placeholder="Names and contact details of anyone who saw it" rows={2} style={{ resize: 'vertical' }} value={details.witnesses} />
                 </Field>
@@ -645,10 +716,12 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
             <_Card
               description="Who prepared, sworn and recorded this report, and where the reporting person can follow it up."
               id="cert"
+              progress={sectionOf('cert')}
               kicker="Certification"
               title="Certification & station contacts"
             >
               <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+                <FieldGroup first title="Who signs" />
                 <Field className="sm:col-span-6" label="Prepared by">
                   <input onChange={e => setPreparedBy(e.target.value)} placeholder="Your name" type="text" value={preparedBy} />
                 </Field>
@@ -662,6 +735,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
                   <input onChange={e => patch({ certification: { ...details.certification, desk_officer_rank_name: e.target.value } })} type="text" value={details.certification.desk_officer_rank_name} />
                 </Field>
 
+                <FieldGroup title="Station contacts" />
                 <Field className="sm:col-span-6" label="Name of station">
                   <input onChange={e => patch({ station: { ...details.station, name: e.target.value } })} type="text" value={details.station.name} />
                 </Field>
@@ -733,31 +807,65 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
 // ── Pieces ────────────────────────────────────────────────────────────────
 
 function _Card({
-  id, kicker, title, description, actions, children,
+  id, kicker, title, description, actions, progress, children,
 }: {
   id: string;
   kicker: string;
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  /** This section's line from the outline, repeated on the card it describes. */
+  progress?: { hint: string; done: boolean };
   children: React.ReactNode;
 }) {
+  const Icon = SECTION_ICON[id] ?? FileText;
   return (
     <section
-      className="scroll-mt-24 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]"
+      className="scroll-mt-24 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]"
       data-section={id}
       id={`sec-${id}`}
     >
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--color-surface-border)] px-5 py-4">
-        <div className="min-w-0">
+      <header className="flex flex-wrap items-start gap-x-3.5 gap-y-3 border-b border-[var(--color-surface-border)] bg-[color-mix(in_srgb,var(--color-surface-raised)_45%,var(--color-surface-card))] px-5 py-4">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-[11px]"
+          style={{ color: 'var(--color-brand)', backgroundColor: 'color-mix(in srgb, var(--color-brand) 12%, transparent)' }}
+        >
+          <Icon size={19} />
+        </span>
+        <div className="min-w-0 flex-1 basis-[240px]">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-[var(--color-brand)]">{kicker}</p>
-          <h2 className="mt-0.5 text-[16px] font-semibold text-foreground">{title}</h2>
+          <h2 className="mt-0.5 text-[16px] leading-tight font-semibold text-foreground">{title}</h2>
           {description && <p className="mt-1 max-w-[64ch] text-[12.5px] leading-relaxed text-muted-foreground">{description}</p>}
         </div>
-        {actions}
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {progress && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] leading-none font-semibold whitespace-nowrap"
+              data-section-progress={progress.done ? 'done' : 'todo'}
+              style={progress.done
+                ? { color: 'var(--color-system-success)', borderColor: 'color-mix(in srgb, var(--color-system-success) 35%, transparent)', backgroundColor: 'color-mix(in srgb, var(--color-system-success) 9%, transparent)' }
+                : { color: 'var(--color-text-secondary)', borderColor: 'var(--color-surface-border)', backgroundColor: 'var(--color-surface-card)' }}
+            >
+              {progress.done ? <CheckCircle2 aria-hidden="true" size={12} /> : <Circle aria-hidden="true" size={12} />}
+              {progress.hint}
+            </span>
+          )}
+          {actions}
+        </div>
       </header>
       <div className="px-5 py-5">{children}</div>
     </section>
+  );
+}
+
+/** A box Ziren fills in: shown, not editable, and marked so with a lock. */
+function _Locked({ value }: { value: string }) {
+  return (
+    <span className="relative block">
+      <input className={`${LOCKED_INPUT} pr-9`} readOnly tabIndex={-1} type="text" value={value} />
+      <Lock aria-hidden="true" className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[var(--color-text-muted)]" size={13} />
+    </span>
   );
 }
 
@@ -771,11 +879,13 @@ function _PersonCard({
 }) {
   return (
     <div className="rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/40 p-4" data-person>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <UserRound className="shrink-0 text-[var(--color-text-tertiary)]" size={15} />
-          <span className="text-[12.5px] font-semibold text-foreground">{label}</span>
-          {name && <span className="truncate text-[12.5px] text-muted-foreground">· {name}</span>}
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-[var(--color-surface-border)] pb-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-card)] text-[var(--color-text-secondary)] ring-1 ring-[var(--color-surface-border)]">
+            <UserRound size={14} />
+          </span>
+          <span className="text-[13px] font-semibold text-foreground">{label}</span>
+          <span className="truncate text-[12.5px] text-muted-foreground">{name ? `· ${name}` : '· not named yet'}</span>
         </div>
         {onRemove && (
           <button
@@ -795,7 +905,7 @@ function _PersonCard({
 
 function _Empty({ text }: { text: string }) {
   return (
-    <p className="rounded-[var(--radius-control)] border border-dashed border-[var(--color-surface-border)] px-4 py-5 text-center text-[12.5px] text-muted-foreground">
+    <p className="rounded-[var(--radius-control)] border border-dashed border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/30 px-4 py-6 text-center text-[12.5px] text-muted-foreground">
       {text}
     </p>
   );

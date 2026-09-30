@@ -1676,10 +1676,17 @@ def flag_false_sos(
         assert_agency_scope(dispatcher, str(incident.get("assigned_agency_id") or ""))
 
     from app.services.incident_service import record_false_sos
-    return record_false_sos(
+    result = record_false_sos(
         reporter_id=str(incident["reporter_id"]),
         acting_dispatcher_id=dispatcher_id,
     )
+    # The flag used to change the resident's record without a word to them, and
+    # without an audit entry. Both now happen; neither can undo the flag.
+    from app.services import resident_account_service
+    resident_account_service.announce_false_sos(
+        str(incident["reporter_id"]), incident_id=incident_id, result=result, actor=dispatcher,
+    )
+    return result
 
 
 # =============================================================================

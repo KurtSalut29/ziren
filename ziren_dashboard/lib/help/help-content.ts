@@ -251,8 +251,12 @@ const PROVINCIAL_ADMIN: HelpGroup[] = [
       {
         id: 'announcements',
         title: 'Announcements',
-        summary: 'Notices to residents, stations or both.',
-        steps: ['Open Announcements and press New announcement.', 'Write it, choose the Audience, and Publish.'],
+        summary: 'Safety alerts and notices, aimed at a town or a few barangays.',
+        steps: [
+          'Open Announcements and press New announcement, then pick the kind (evacuation order, weather advisory, hazard warning…).',
+          'Fill in what that kind needs - an evacuation order asks where to go - then choose who gets it and where. The button shows how many people it will reach.',
+          'On an alert that asked residents if they are safe, press See answers for who needs help, who has not answered, and their numbers. When it is over, press Send all clear.',
+        ],
         href: '/announcements',
         hrefLabel: 'Open Announcements',
       },

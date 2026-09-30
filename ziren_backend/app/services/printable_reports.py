@@ -26,6 +26,7 @@ show a row the screen would not.
 from __future__ import annotations
 
 import io
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,7 @@ from fastapi import HTTPException, status
 
 from app.db.supabase_client import get_supabase
 from app.services import dispatch_service, incident_narrative_service, report_service
+from app.services.pdf_text import printable
 
 # A fixed +08:00, not ZoneInfo("Asia/Manila"): the Philippines keeps no
 # daylight saving, and Windows ships no tz database for ZoneInfo to read.
@@ -227,7 +229,7 @@ def _styles():
 
 def _esc(x: Any) -> str:
     from xml.sax.saxutils import escape
-    return escape(str(x)) if x not in (None, "") else ""
+    return escape(printable(str(x))) if x not in (None, "") else ""
 
 
 def _letterhead(width: float, issuer: dict, st: dict, title: str, subtitle: str) -> list:
@@ -331,6 +333,50 @@ def _fetch_records(actor: dict, *, start_date, end_date, status_filter, severity
     return rows[:MAX_RECORDS], {**counts, "total": total}, truncated
 
 
+# The resident's own words, as the Incident Records panel shows them
+# (ziren_dashboard/lib/incidents/report-text.ts, recordReportText - keep the two
+# in step). A voice report is filed as "<Category> - reported by voice
+# recording - <what was heard>": the prefix is the app's scaffolding, not
+# anything the resident said, and it repeats the Type column. Typed reports come
+# back exactly as stored.
+_VOICE_PLACEHOLDER = re.compile(
+    r"^\s*[^—]{1,60}?\s+—\s+(?:reported by voice recording|iniulat sa pamamagitan ng boses)"
+    r"(?:\s+—\s+([\s\S]*?))?\s*$"
+)
+REPORT_MAX_CHARS = 700
+NO_TRANSCRIPT = "(Voice note — no transcript)"
+
+
+def _after_placeholder(text: Any) -> str | None:
+    if not isinstance(text, str) or not text:
+        return None
+    m = _VOICE_PLACEHOLDER.match(text)
+    return None if m is None else (m.group(1) or "").strip()
+
+
+def resident_words(r: dict, limit: int | None = None) -> str:
+    """What the resident said when they reported. For a voice report, the
+    spelling-corrected transcript when there is one, else what was heard,
+    marked as a voice report; "(Voice note - no transcript)" when nothing was
+    heard. limit shortens it for print."""
+    text = (r.get("report_text") or "").strip()
+    heard = _after_placeholder(text)
+    if heard is None:
+        said = text
+    else:
+        signals = r.get("signals") if isinstance(r.get("signals"), dict) else {}
+        norm = signals.get("normalisation") if isinstance(signals.get("normalisation"), dict) else {}
+        spoken = _after_placeholder(norm.get("text")) or heard
+        if not spoken:
+            return NO_TRANSCRIPT
+        said = f"(Voice) {spoken}"
+    if not said:
+        return "—"
+    if limit and len(said) > limit:
+        said = said[: limit - 1].rstrip() + "…"
+    return said
+
+
 def _minutes_between(a: Any, b: Any) -> int | None:
     da, db_ = _ph(a), _ph(b)
     if not da or not db_:
@@ -356,6 +402,15 @@ def _record_row(r: dict) -> list:
     ]
 
 
+REPORT_HEADER = "Resident's Report"
+EXPORT_HEADERS = RECORD_HEADERS[:3] + [REPORT_HEADER] + RECORD_HEADERS[3:]
+
+
+def _export_row(r: dict) -> list:
+    row = _record_row(r)
+    return row[:3] + [resident_words(r)] + row[3:]
+
+
 def build_incident_records(
     actor: dict,
     fmt: str,
@@ -375,15 +430,18 @@ def build_incident_records(
     records, counts, truncated = _fetch_records(
         actor, start_date=start_date, end_date=end_date, status_filter=status_filter, severity=severity,
     )
-    rows = [_record_row(r) for r in records]
+    # The resident's report goes in right after the type: it is what the record
+    # is ABOUT, and a spreadsheet of records without it said where and when but
+    # never what happened.
+    rows = [_export_row(r) for r in records]
     stamp = _now_ph().strftime("%Y-%m-%d")
     filename = f"incident_records_{stamp}.{fmt}"
 
     if fmt == "csv":
-        return report_service._to_csv(RECORD_HEADERS, rows), filename, "text/csv"
+        return report_service._to_csv(EXPORT_HEADERS, rows), filename, "text/csv"
     if fmt == "xlsx":
         return (
-            report_service._to_xlsx(RECORD_HEADERS, rows),
+            report_service._to_xlsx(EXPORT_HEADERS, rows, wrap={REPORT_HEADER: 60}),
             filename,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
@@ -447,40 +505,54 @@ def _incident_records_pdf(actor, records, counts, truncated, *, start_date, end_
     els.append(strip)
     els.append(Spacer(1, 12))
 
-    # Record numbers never wrap (1.12in holds "BFP-2026-000123" in bold).
-    widths = [1.12, 1.05, 1.1, 0.62, 1.58, 1.05, 0.95, 0.72, 0.6, 0.9, 0.81]
-    col_w = [w * inch for w in widths]
-    head = ["#"] + RECORD_HEADERS[:-1]
-    # "#" takes room from Outcome, which is usually blank on open records.
-    col_w = [0.3 * inch] + col_w[:-1]
-    col_w[-1] += (W - sum(col_w))
+    # The same columns as the Excel/CSV export, Resident's Report included, minus
+    # Outcome (it is usually blank on open records and the page has no room).
+    # Widths sum to W; the report column takes the slack. Record numbers never
+    # wrap (0.98in holds "ZIR-2026-001007" in bold), nor do "Dispatch" or
+    # "Untriaged".
+    head = ["#"] + EXPORT_HEADERS[:-1]
+    widths = {
+        "#": 0.28, "Record No.": 0.98, "Date & Time Reported": 0.8, "Type of Incident": 0.62,
+        REPORT_HEADER: 0, "Severity": 0.64, "Location": 1.1, "Station": 0.8,
+        "Responder": 0.75, "Status": 0.62, "Mins. to Dispatch": 0.58, "Resolved At": 0.72,
+    }
+    col_w = [widths[h] * inch for h in head]
+    report_col = head.index(REPORT_HEADER)
+    col_w[report_col] = W - sum(col_w)
+    severity_col = head.index("Severity")
     header_row = [Paragraph(_esc(h), st["th"]) for h in head]
 
     if not records:
         els.append(_meta_grid(W, [("Records", "No incident matches this period and these filters.")], st))
     else:
         data = [header_row]
-        for i, r in enumerate(records, start=1):
-            row = _record_row(r)[:-1]
-            cells = [Paragraph(str(i), st["td"])]
-            for j, v in enumerate(row):
-                if j == 3 and (r.get("severity") or r.get("suggested_severity") or "").lower() in SEV_HEX:
-                    # Severity is coloured AND spelled out — never colour alone.
-                    hexcol = SEV_HEX[(r.get("severity") or r.get("suggested_severity")).lower()]
-                    cells.append(Paragraph(f'<font color="{hexcol}"><b>{_esc(v)}</b></font>', st["td"]))
-                else:
-                    cells.append(Paragraph(_esc(v), st["tdb"] if j == 0 else st["td"]))
-            data.append(cells)
-        table = Table(data, colWidths=col_w, repeatRows=1)
-        table.setStyle(TableStyle([
+        style = [
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(HEAD)),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor(ZEBRA)]),
-            ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor(RULE)),
             ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(RULE)),
+            ("INNERGRID", (0, 1), (-1, -1), 0.4, colors.HexColor(RULE)),
             ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
             ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        ]
+        for i, r in enumerate(records, start=1):
+            row = [str(i)] + _export_row(r)[:-1]
+            row[report_col] = resident_words(r, limit=REPORT_MAX_CHARS)
+            cells = []
+            for j, v in enumerate(row):
+                sev = (r.get("severity") or r.get("suggested_severity") or "").lower()
+                if j == severity_col and sev in SEV_HEX:
+                    # Severity is coloured AND spelled out — never colour alone.
+                    cells.append(Paragraph(f'<font color="{SEV_HEX[sev]}"><b>{_esc(v)}</b></font>', st["td"]))
+                elif j == report_col and v == NO_TRANSCRIPT:
+                    # The app's note, not the resident's words: set apart.
+                    cells.append(Paragraph(f'<font color="{MUTED}"><i>{_esc(v)}</i></font>', st["td"]))
+                else:
+                    cells.append(Paragraph(_esc(v), st["tdb"] if j == 1 else st["td"]))
+            data.append(cells)
+            if i % 2 == 0:
+                style.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor(ZEBRA)))
+        table = Table(data, colWidths=col_w, repeatRows=1)
+        table.setStyle(TableStyle(style))
         els.append(table)
 
     if truncated:

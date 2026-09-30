@@ -12,11 +12,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ChevronDown, Keyboard, LifeBuoy, Lightbulb, Search } from 'lucide-react';
+import { Keyboard, LifeBuoy, Search } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { helpFor, type HelpTopic } from '@/lib/help/help-content';
+import { helpFor } from '@/lib/help/help-content';
+import { HelpTopicItem, filterHelp } from '@/components/help/help-topic';
 import { Button } from '@/components/efferd/ui/button';
-import { cn } from '@/lib/utils';
 
 export default function HelpPage() {
   const { isProvincialAdmin } = useAuth();
@@ -25,16 +25,7 @@ export default function HelpPage() {
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();
-  const filtered = useMemo(() => {
-    if (!q) return groups;
-    return groups
-      .map(g => ({
-        ...g,
-        topics: g.topics.filter(t =>
-          [t.title, t.summary, ...t.steps, t.tip ?? ''].join(' ').toLowerCase().includes(q)),
-      }))
-      .filter(g => g.topics.length > 0);
-  }, [groups, q]);
+  const filtered = useMemo(() => filterHelp(groups, query), [groups, query]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5 lg:flex-row lg:items-start">
@@ -75,7 +66,7 @@ export default function HelpPage() {
             <h3 className="mb-2 text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</h3>
             <ul className="flex flex-col gap-2">
               {group.topics.map(topic => (
-                <TopicItem
+                <HelpTopicItem
                   key={topic.id}
                   onToggle={() => setOpen(open === topic.id ? null : topic.id)}
                   open={open === topic.id || q.length > 0}
@@ -109,57 +100,6 @@ export default function HelpPage() {
         </div>
       </aside>
     </div>
-  );
-}
-
-function TopicItem({ topic, open, onToggle }: { topic: HelpTopic; open: boolean; onToggle: () => void }) {
-  const bodyId = `help-${topic.id}`;
-  return (
-    <li
-      className={cn(
-        'overflow-hidden rounded-[12px] border bg-[var(--color-surface-card)] transition-colors',
-        open ? 'border-[color-mix(in_srgb,var(--color-brand)_45%,transparent)]' : 'border-[var(--color-surface-border)]',
-      )}
-    >
-      <button
-        aria-controls={bodyId}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-surface-hover)]"
-        onClick={onToggle}
-        type="button"
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block text-[14px] font-semibold text-foreground">{topic.title}</span>
-          <span className="block text-[12.5px] text-muted-foreground">{topic.summary}</span>
-        </span>
-        <ChevronDown aria-hidden="true" className={cn('size-4 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <div className="border-t border-[var(--color-surface-border)] px-4 pb-4 pt-3" id={bodyId}>
-          <ol className="flex flex-col gap-2.5">
-            {topic.steps.map((step, i) => (
-              <li className="flex gap-3 text-[13.5px] leading-relaxed text-foreground" key={i}>
-                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-[11px] font-bold text-white">{i + 1}</span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-          {topic.tip && (
-            <p className="mt-3 flex gap-2 rounded-lg bg-[color-mix(in_srgb,var(--color-system-info)_9%,transparent)] px-3 py-2 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
-              <Lightbulb aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-[var(--color-system-info)]" />
-              {topic.tip}
-            </p>
-          )}
-          {topic.href && (
-            <Button asChild className="mt-3" size="sm">
-              <Link href={topic.href}>
-                {topic.hrefLabel ?? 'Open'} <ArrowRight data-icon="inline-end" size={14} />
-              </Link>
-            </Button>
-          )}
-        </div>
-      )}
-    </li>
   );
 }
 

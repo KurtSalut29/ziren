@@ -23,6 +23,17 @@ import '../../../core/network/authorized_http.dart';
 ///  * [message]       it, or the crew, wrote to the resident.
 ///
 /// Each used to be invisible, or arrived as a bare "Cancelled".
+///
+/// The last three are about the ACCOUNT, not a report: an admin warned the
+/// resident for a violation, suspended them from reporting, or let them back
+/// in. They belong to no incident, so [AppNotification.incidentId] is empty.
+///
+/// [announcement] is a SAFETY ALERT a Provincial Admin sent to where the
+/// resident lives - an evacuation order, a wind signal, a hazard warning, the
+/// all clear. It is put on screen like any other notice, because an evacuation
+/// order that waits in a list until someone opens it is not a warning.
+/// [helpAcknowledged] is a station saying it has the resident's "I need help".
+/// Neither belongs to an incident either.
 enum NotificationKind {
   status,
   accepted,
@@ -30,6 +41,11 @@ enum NotificationKind {
   clarification,
   cancelled,
   message,
+  accountWarning,
+  accountSuspended,
+  accountReinstated,
+  announcement,
+  helpAcknowledged,
 }
 
 /// In-app notification model.
@@ -46,6 +62,16 @@ class AppNotification {
     this.serverId,
     this.eventKey,
     this.serverTitle,
+    this.violation,
+    this.violationLabel,
+    this.suspendedUntil,
+    this.indefinite = false,
+    this.warningsLeft,
+    this.wasSuspended = false,
+    this.announcementId,
+    this.announcementCategory,
+    this.asksResponse = false,
+    this.station,
   });
 
   final String incidentId;
@@ -79,8 +105,46 @@ class AppNotification {
   /// wording depends on who acted (a message from the agency or from the crew).
   final String? serverTitle;
 
+  /// Which rule was broken, as the server's key (`false_report`, `spam`...) -
+  /// the app has its own words for each - and the server's own wording, used
+  /// for a violation this build has never heard of.
+  final String? violation;
+  final String? violationLabel;
+
+  /// When a suspension ends; null with [indefinite] for "until further notice".
+  final DateTime? suspendedUntil;
+  final bool indefinite;
+
+  /// How many more warnings before the account is suspended by itself.
+  final int? warningsLeft;
+
+  /// On a reinstatement: a suspension was lifted (as against warnings cleared).
+  final bool wasSuspended;
+
+  /// The announcement a safety-alert notice is about, and its kind
+  /// (vacuation, weather...).
+  final String? announcementId;
+  final String? announcementCategory;
+
+  /// The alert asks "are you safe?".
+  final bool asksResponse;
+
+  /// Who has the resident's call for help (a help-acknowledged notice).
+  final String? station;
+
+  /// About an announcement - opens it, not a report.
+  bool get isAnnouncement =>
+      kind == NotificationKind.announcement ||
+      kind == NotificationKind.helpAcknowledged;
+
   /// Something the agency decided or said, as against the workflow moving.
   bool get isAgencyAct => kind != NotificationKind.status;
+
+  /// About the account itself - there is no report to open.
+  bool get isAccount =>
+      kind == NotificationKind.accountWarning ||
+      kind == NotificationKind.accountSuspended ||
+      kind == NotificationKind.accountReinstated;
 
   String get shortId =>
       incidentId.length >= 8 ? incidentId.substring(0, 8) : incidentId;
@@ -97,6 +161,16 @@ class AppNotification {
     serverId: id,
     eventKey: eventKey,
     serverTitle: serverTitle,
+    violation: violation,
+    violationLabel: violationLabel,
+    suspendedUntil: suspendedUntil,
+    indefinite: indefinite,
+    warningsLeft: warningsLeft,
+    wasSuspended: wasSuspended,
+    announcementId: announcementId,
+    announcementCategory: announcementCategory,
+    asksResponse: asksResponse,
+    station: station,
   );
 }
 
@@ -117,6 +191,13 @@ String statusEventKey(String incidentId, String status, String? at) =>
 
 /// A report can only be cancelled once.
 String cancelEventKey(String incidentId) => '$incidentId:cancelled';
+
+/// A notice about the account. Each is its own stored row, so the row is the
+/// identity - there is no live copy to match it against.
+String accountEventKey(String serverId) => 'account:$serverId';
+
+/// A safety alert, or a station answering a call for help - one stored row each.
+String announcementEventKey(String serverId) => 'announcement:$serverId';
 
 /// One message in the report's thread, by its own id.
 String messageEventKey(String incidentId, String? noteId) =>
@@ -503,8 +584,118 @@ class NotificationProvider extends ChangeNotifier {
         'incident.en_route' => (kind: NotificationKind.status, status: 'en_route'),
         'incident.arrived' => (kind: NotificationKind.status, status: 'arrived'),
         'incident.resolved' => (kind: NotificationKind.status, status: 'resolved'),
+        'account.warned' => (
+          kind: NotificationKind.accountWarning,
+          status: 'account_warned',
+        ),
+        'account.suspended' => (
+          kind: NotificationKind.accountSuspended,
+          status: 'account_suspended',
+        ),
+        'account.reinstated' => (
+          kind: NotificationKind.accountReinstated,
+          status: 'account_reinstated',
+        ),
+        'announcement.published' => (
+          kind: NotificationKind.announcement,
+          status: 'announcement',
+        ),
+        'announcement.help_acknowledged' => (
+          kind: NotificationKind.helpAcknowledged,
+          status: 'help_acknowledged',
+        ),
         _ => null,
       };
+
+  static bool _isAccountKind(NotificationKind k) =>
+      k == NotificationKind.accountWarning ||
+      k == NotificationKind.accountSuspended ||
+      k == NotificationKind.accountReinstated;
+
+  /// Turn one stored row into a notification, or null when it is not for this
+  /// app (an agency admin's own alerts share the table) or is malformed.
+  /// Exposed so the mapping can be tested without a server.
+  @visibleForTesting
+  static AppNotification? fromStoredRow(Map<String, dynamic> row) {
+    final mapped = _storedKind(row['type'] as String?);
+    final meta = row['metadata'];
+    final serverId = row['id'] as String?;
+    if (mapped == null || meta is! Map || serverId == null) return null;
+    final receivedAt =
+        DateTime.tryParse(row['created_at'] as String? ?? '')?.toLocal() ??
+        DateTime.now();
+
+    if (_isAccountKind(mapped.kind)) {
+      final note = (meta['note'] as String?)?.trim();
+      return AppNotification(
+        incidentId: '',
+        reportText: '',
+        newStatus: mapped.status,
+        receivedAt: receivedAt,
+        kind: mapped.kind,
+        detail: (note == null || note.isEmpty) ? null : note,
+        serverId: serverId,
+        eventKey: accountEventKey(serverId),
+        serverTitle: row['title'] as String?,
+        violation: meta['violation'] as String?,
+        violationLabel: meta['violation_label'] as String?,
+        suspendedUntil: DateTime.tryParse(
+          meta['suspended_until'] as String? ?? '',
+        ),
+        indefinite: meta['indefinite'] == true,
+        warningsLeft: (meta['warnings_left'] as num?)?.toInt(),
+        wasSuspended: meta['was_suspended'] == true,
+      );
+    }
+
+    if (mapped.kind == NotificationKind.announcement ||
+        mapped.kind == NotificationKind.helpAcknowledged) {
+      final announcementId = meta['announcement_id'] as String?;
+      if (announcementId == null) return null;
+      // Only a SAFETY alert is announced on screen. An ordinary notice (a
+      // relief schedule, maintenance) stays in the notifications list, where
+      // the announcements feed already shows it.
+      if (mapped.kind == NotificationKind.announcement && meta['urgent'] != true) {
+        return null;
+      }
+      final body = (row['body'] as String?)?.trim();
+      return AppNotification(
+        incidentId: '',
+        reportText: '',
+        newStatus: mapped.status,
+        receivedAt: receivedAt,
+        kind: mapped.kind,
+        detail: (body == null || body.isEmpty) ? null : body,
+        serverId: serverId,
+        eventKey: announcementEventKey(serverId),
+        serverTitle: (meta['title'] as String?) ?? row['title'] as String?,
+        announcementId: announcementId,
+        announcementCategory: meta['category'] as String?,
+        asksResponse: meta['asks_response'] == true,
+        station: meta['station'] as String?,
+      );
+    }
+
+    final incidentId = meta['incident_id'] as String?;
+    if (incidentId == null) return null;
+    var detail = row['body'] as String?;
+    if (mapped.kind == NotificationKind.cancelled && detail != null) {
+      detail = _stripReasonLabel(detail);
+    }
+    // A plain status change carries no words of the agency's own.
+    if (mapped.kind == NotificationKind.status) detail = null;
+    return AppNotification(
+      incidentId: incidentId,
+      reportText: '',
+      newStatus: mapped.status,
+      receivedAt: receivedAt,
+      kind: mapped.kind,
+      detail: detail,
+      serverId: serverId,
+      eventKey: _storedKey(mapped.kind, mapped.status, incidentId, meta),
+      serverTitle: row['title'] as String?,
+    );
+  }
 
   static String _storedKey(
     NotificationKind kind,
@@ -564,20 +755,11 @@ class NotificationProvider extends ChangeNotifier {
       var changed = false;
       for (final raw in (body['items'] as List? ?? const [])) {
         final row = raw as Map<String, dynamic>;
-        final mapped = _storedKind(row['type'] as String?);
-        final meta = row['metadata'];
-        if (mapped == null || meta is! Map) continue;
-        final incidentId = meta['incident_id'] as String?;
-        final serverId = row['id'] as String?;
-        if (incidentId == null || serverId == null) continue;
-
-        final key = _storedKey(mapped.kind, mapped.status, incidentId, meta);
-        var detail = row['body'] as String?;
-        if (mapped.kind == NotificationKind.cancelled && detail != null) {
-          detail = _stripReasonLabel(detail);
-        }
-        // A plain status change carries no words of the agency's own.
-        if (mapped.kind == NotificationKind.status) detail = null;
+        final incoming = fromStoredRow(row);
+        if (incoming == null) continue;
+        final serverId = incoming.serverId!;
+        final key = incoming.eventKey!;
+        final detail = incoming.detail;
 
         final at = _unread.indexWhere((n) => n.eventKey == key);
         if (at >= 0) {
@@ -598,21 +780,7 @@ class NotificationProvider extends ChangeNotifier {
           continue;
         }
 
-        _unread.add(
-          AppNotification(
-            incidentId: incidentId,
-            reportText: '',
-            newStatus: mapped.status,
-            receivedAt:
-                DateTime.tryParse(row['created_at'] as String? ?? '')?.toLocal() ??
-                DateTime.now(),
-            kind: mapped.kind,
-            detail: detail,
-            serverId: serverId,
-            eventKey: key,
-            serverTitle: row['title'] as String?,
-          ),
-        );
+        _unread.add(incoming);
         changed = true;
       }
       if (changed) {

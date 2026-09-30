@@ -32,7 +32,7 @@ import { useRouter } from 'next/navigation';
 import { Popover as PopoverPrimitive } from 'radix-ui';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertCircle, Bell, BellRing, Building2, Check, CheckCheck, Handshake, Inbox,
+  AlertCircle, Bell, BellRing, Building2, Check, CheckCheck, Handshake, Inbox, LifeBuoy,
   Loader2, Megaphone, RefreshCw, Settings2, ShieldCheck, Siren, UserPlus, UserRound,
 } from 'lucide-react';
 import { Button } from '@/components/efferd/ui/button';
@@ -81,6 +81,11 @@ function kindOf(n: NotificationItem): Kind {
   }
   if (t.startsWith('station.') || t.startsWith('agency_admin.') || t.startsWith('account.') || t.startsWith('verification.')) {
     return { Icon: Building2, color: 'var(--color-status-processing)', bg: 'var(--color-status-processing-bg)', label: 'Accounts' };
+  }
+  // A resident answered a safety alert with "I need help". A person in danger
+  // right now, so it takes the critical colour.
+  if (t === 'announcement.help_requested') {
+    return { Icon: LifeBuoy, color: 'var(--color-severity-critical)', bg: 'var(--color-severity-critical-bg)', label: 'Needs help' };
   }
   if (t.startsWith('announcement.')) {
     return { Icon: Megaphone, color: 'var(--color-text-secondary)', bg: 'var(--color-surface-raised)', label: 'Announcement' };

@@ -815,7 +815,9 @@ export function ActiveIncidentsView() {
                   onValueChange={v => setPerPage(Number(v))}
                   value={String(perPage)}
                 >
-                  <SelectTrigger className="w-[104px]" size="sm">
+                  {/* Sized by its own text, not a fixed width: at 104px
+                      "25 / page" had 2px to spare and "100 / page" was cut. */}
+                  <SelectTrigger className="shrink-0 gap-2 pr-2 pl-3" size="sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

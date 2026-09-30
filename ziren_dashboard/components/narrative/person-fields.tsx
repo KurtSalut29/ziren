@@ -32,12 +32,30 @@ export function Field({
 }) {
   return (
     <label className={`flex min-w-0 flex-col gap-1 ${className}`}>
-      <span className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
+      {/* Sentence case at a readable size. These were 10.5px capitals, which
+          on a form of sixty boxes is a wall of identical grey shouting. */}
+      <span className="text-[12px] leading-tight font-semibold text-[var(--color-text-secondary)]">
         {label}
       </span>
       {children}
-      {hint && <span className="text-[11px] text-[var(--color-text-muted)]">{hint}</span>}
+      {hint && <span className="text-[11px] leading-snug text-[var(--color-text-muted)]">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * A named run of boxes inside a card: "Name", "Personal details", "Address".
+ * A person is twenty boxes; without these the eye has nothing to hold on to
+ * between the first one and the last.
+ */
+export function FieldGroup({ title, first = false }: { title: string; first?: boolean }) {
+  return (
+    <p
+      className={`flex items-center gap-3 text-[10.5px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] sm:col-span-12 ${first ? '' : 'mt-2'}`}
+    >
+      {title}
+      <span aria-hidden="true" className="h-px flex-1 bg-[var(--color-surface-border)]" />
+    </p>
   );
 }
 
@@ -70,6 +88,7 @@ export function PersonFields<T extends NarrativePerson>({
 
   return (
     <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+      <FieldGroup first title="Name" />
       <Field className="sm:col-span-4" label="Family name">
         <input autoComplete="off" onChange={set('family_name')} type="text" value={value.family_name} />
       </Field>
@@ -80,16 +99,17 @@ export function PersonFields<T extends NarrativePerson>({
         <input autoComplete="off" onChange={set('middle_name')} type="text" value={value.middle_name} />
       </Field>
 
-      <Field className="sm:col-span-3" label="Qualifier" hint="Jr., Sr., III">
-        <input onChange={set('qualifier')} type="text" value={value.qualifier} />
+      <Field className="sm:col-span-6" label="Qualifier">
+        <input onChange={set('qualifier')} placeholder="Jr., Sr., III" type="text" value={value.qualifier} />
       </Field>
-      <Field className="sm:col-span-3" label="Nickname">
+      <Field className="sm:col-span-6" label="Nickname">
         <input onChange={set('nickname')} type="text" value={value.nickname} />
       </Field>
-      <Field className="sm:col-span-3" label="Citizenship">
+      <FieldGroup title="Personal details" />
+      <Field className="sm:col-span-6" label="Citizenship">
         <input onChange={set('citizenship')} placeholder="Filipino" type="text" value={value.citizenship} />
       </Field>
-      <Field className="sm:col-span-3" label="Gender">
+      <Field className="sm:col-span-6" label="Gender">
         <input list={`${uid}-gender`} onChange={set('gender')} type="text" value={value.gender} />
         {list('gender', GENDER_CHOICES)}
       </Field>
@@ -130,7 +150,8 @@ export function PersonFields<T extends NarrativePerson>({
         {list('rel', RELATION_CHOICES)}
       </Field>
 
-      <Field className="sm:col-span-12" label="Address (house number / street) village / sitio">
+      <FieldGroup title="Address" />
+      <Field className="sm:col-span-12" label="House number / street, village / sitio">
         <input onChange={set('address_street')} type="text" value={value.address_street} />
       </Field>
       <Field className="sm:col-span-4" label="Barangay">
@@ -160,10 +181,8 @@ export function SuspectExtras({
 
   return (
     <div className="mt-4 border-t border-dashed border-[var(--color-surface-border)] pt-4">
-      <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-        Police / group record and description
-      </p>
       <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+        <FieldGroup first title="Police / group record" />
         <Field className="sm:col-span-4" label="Rank (AFP / PNP personnel)">
           <input onChange={set('rank')} type="text" value={value.rank} />
         </Field>
@@ -183,6 +202,7 @@ export function SuspectExtras({
           <input onChange={set('previous_case_status')} type="text" value={value.previous_case_status} />
         </Field>
 
+        <FieldGroup title="Physical description" />
         <Field className="sm:col-span-3" label="Height">
           <input onChange={set('height')} placeholder="e.g. 170 cm" type="text" value={value.height} />
         </Field>
@@ -206,10 +226,8 @@ export function SuspectExtras({
         </Field>
       </div>
 
-      <p className="mb-3 mt-5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-        For children in conflict with the law
-      </p>
-      <div className="grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+      <div className="mt-3 grid grid-cols-1 gap-x-3 gap-y-3 sm:grid-cols-12">
+        <FieldGroup title="For children in conflict with the law" />
         <Field className="sm:col-span-6" label="Name of guardian">
           <input onChange={set('guardian_name')} type="text" value={value.guardian_name} />
         </Field>

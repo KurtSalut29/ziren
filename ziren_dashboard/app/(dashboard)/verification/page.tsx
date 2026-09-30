@@ -29,8 +29,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  BadgeCheck, Clock, Copy, FileWarning, IdCard, ImageOff, MapPin, Phone, ScanFace,
-  ShieldAlert, ShieldCheck, ShieldX, Siren, UserRound, UserSearch,
+  BadgeCheck, CalendarClock, Clock, Copy, ExternalLink, FileWarning, Gavel, Hash, IdCard,
+  ImageOff, Info, MapPin, Phone, ScanFace, ShieldAlert, ShieldCheck, ShieldX, Siren,
+  Trash2, UserRound, UserSearch, type LucideIcon,
 } from 'lucide-react';
 import { signOut, useAuth } from '@/lib/hooks/useAuth';
 import { ApiError } from '@/lib/api/client';
@@ -51,8 +52,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/efferd/ui/alert-dialog';
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/efferd/ui/dialog';
 import {
   Card,
@@ -62,14 +62,16 @@ import { OptionPicker } from '@/components/ui/option-picker';
 import { SearchInput } from '@/components/ui/search-input';
 import { AccessRequestsTab } from '@/components/accounts/access-requests-tab';
 import { ResponderVerificationTab } from '@/components/verification/responder-verification-tab';
+import { ResidentAccountsTab } from '@/components/verification/resident-accounts-tab';
+import { ActionButton } from '@/components/incidents/incident-action-button';
 import { Building2, UserCog, Users } from 'lucide-react';
 import { NavTabs } from '@/components/ui/nav-tabs';
 import {
-  DataHead, DataRow, DataTableFrame, DataTd, DataTh,
+  DataHead, DataRow, DataTableFrame, DataTd, DataTh, Initials,
 } from '@/components/ui/data-table';
 import { useNotice } from '@/lib/toast';
 
-type VerificationTab = 'residents' | 'agency_admins' | 'responders';
+type VerificationTab = 'residents' | 'accounts' | 'agency_admins' | 'responders';
 
 /**
  * Verification — centralized account review.
@@ -90,7 +92,10 @@ export default function VerificationPage() {
   const [tab, setTab] = useState<VerificationTab>('residents');
 
   const tabs = [
-    { key: 'residents', label: 'Residents', icon: UserRound, hint: 'Residents who submitted an ID and are waiting to be verified' },
+    { key: 'residents', label: 'ID review', icon: IdCard, hint: 'Residents who submitted an ID and are waiting to be verified' },
+    // Where a resident goes once they are verified, and where an account is
+    // warned or suspended. Both admin roles, like the review queue beside it.
+    { key: 'accounts', label: 'Resident accounts', icon: UserRound, hint: 'Verified residents, and how each account stands' },
     ...(isProvincialAdmin
       ? [
           { key: 'agency_admins', label: 'Agency Admins', icon: UserCog, hint: 'People asking to run an agency’s dashboard' },
@@ -122,7 +127,13 @@ export default function VerificationPage() {
         <PurposeStrip tab={tab} />
       </div>
 
-      {tab === 'residents' && <ResidentVerificationTab />}
+      {tab === 'residents' && <ResidentVerificationTab onSeeAccounts={() => setTab('accounts')} />}
+
+      {tab === 'accounts' && token && (
+        <div className="px-6 py-5 md:px-7">
+          <ResidentAccountsTab token={token} />
+        </div>
+      )}
 
       {tab === 'agency_admins' && token && (
         <div className="px-6 py-5 md:px-7">
@@ -152,6 +163,12 @@ const PURPOSE: Record<VerificationTab, {
     who: () => 'Any admin — Agency or Provincial. Residents belong to no agency, so there is one shared queue.',
     effect: 'Adds a “verified” mark dispatchers can read. It never blocks anyone: an unverified resident can still report an emergency.',
   },
+  accounts: {
+    title: 'Resident accounts',
+    what: 'Every resident who has been verified, with their details, their reports and any warnings. Warn or suspend an account that breaks the reporting rules.',
+    who: () => 'Any admin. An Agency Admin sees their own municipality, and anyone who has reported to their agency.',
+    effect: 'A warning notifies the resident; the third one suspends them. A suspended account cannot send reports until it ends or you lift it.',
+  },
   agency_admins: {
     title: 'Agency admin access requests',
     what: 'Someone asked, through Request Access, to run one agency’s dashboard.',
@@ -166,25 +183,43 @@ const PURPOSE: Record<VerificationTab, {
   },
 };
 
+const PURPOSE_ICON: Record<VerificationTab, LucideIcon> = {
+  residents: IdCard,
+  accounts: UserRound,
+  agency_admins: UserCog,
+  responders: Users,
+};
+
 function PurposeStrip({ tab }: { tab: VerificationTab }) {
   const p = PURPOSE[tab];
+  const Icon = PURPOSE_ICON[tab];
   return (
     <section
       aria-label="What this view is for"
       className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]"
     >
-      <h2 className="border-b border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/60 px-5 py-2.5 text-[13px] font-semibold text-foreground">
-        {p.title}
-      </h2>
+      <div className="flex items-center gap-3 border-b border-[var(--color-surface-border)] bg-[color-mix(in_srgb,var(--color-surface-raised)_45%,var(--color-surface-card))] px-5 py-3">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
+          style={{ color: 'var(--color-brand)', backgroundColor: 'color-mix(in srgb, var(--color-brand) 12%, transparent)' }}
+        >
+          <Icon size={18} />
+        </span>
+        <h2 className="text-[15px] font-semibold text-foreground">{p.title}</h2>
+      </div>
       <dl className="grid grid-cols-1 divide-y divide-[var(--color-surface-border)] md:grid-cols-3 md:divide-x md:divide-y-0">
         {([
-          ['What it is', p.what],
-          ['Who decides', p.who()],
-          ['What it changes', p.effect],
-        ] as const).map(([label, text]) => (
-          <div className="px-5 py-3" key={label}>
-            <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">{label}</dt>
-            <dd className="mt-1 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{text}</dd>
+          ['What it is', p.what, Info],
+          ['Who decides', p.who(), Gavel],
+          ['What it changes', p.effect, ShieldCheck],
+        ] as const).map(([label, text, RowIcon]) => (
+          <div className="px-5 py-3.5" key={label}>
+            <dt className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+              <RowIcon aria-hidden="true" size={12} />
+              {label}
+            </dt>
+            <dd className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{text}</dd>
           </div>
         ))}
       </dl>
@@ -192,7 +227,7 @@ function PurposeStrip({ tab }: { tab: VerificationTab }) {
   );
 }
 
-function ResidentVerificationTab() {
+function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void }) {
   const { token } = useAuth();
 
   const [queue, setQueue] = useState<VerificationSummary[]>([]);
@@ -291,7 +326,7 @@ function ResidentVerificationTab() {
       setNotice({
         type: 'success',
         text: approve
-          ? `${selected.full_name} verified. Their ID and selfie have been deleted.`
+          ? `${selected.full_name} verified and moved to Resident accounts. Their ID and selfie have been deleted.`
           : `${selected.full_name} left unverified. Their submitted images have been deleted.`,
       });
       setSelected(null);
@@ -360,7 +395,7 @@ function ResidentVerificationTab() {
       const verb = approve ? 'verified' : 'rejected';
       setNotice(
         res.failed.length === 0
-          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}. Their photographs were deleted.` }
+          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}${approve ? ' and moved to Resident accounts' : ''}. Their photographs were deleted.` }
           : { type: 'error', text: `${res.decided} ${verb}, ${res.failed.length} could not be: ${res.failed[0].reason}` },
       );
       setPicked(new Set());
@@ -481,7 +516,7 @@ function ResidentVerificationTab() {
             Loading…
           </p>
         ) : queue.length === 0 ? (
-          <EmptyQueue />
+          <EmptyQueue onSeeAccounts={onSeeAccounts} />
         ) : (
           <div className="flex flex-col">
             {/* The running count. Always shown, so a search that matches two of
@@ -532,8 +567,8 @@ function ResidentVerificationTab() {
                     />
                   </DataTh>
                   <DataTh>Resident</DataTh>
-                  <DataTh width="176px">ID submitted</DataTh>
-                  <DataTh width="176px">Place</DataTh>
+                  <DataTh width="160px">ID submitted</DataTh>
+                  <DataTh width="160px">Place</DataTh>
                   <DataTh width="330px">Signals</DataTh>
                   <DataTh width="112px">Submitted</DataTh>
                   <DataTh align="right" width="112px"><span className="sr-only">Review</span></DataTh>
@@ -592,17 +627,23 @@ function ResidentVerificationTab() {
   );
 }
 
-function EmptyQueue() {
+function EmptyQueue({ onSeeAccounts }: { onSeeAccounts: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-10 text-center">
-      <BadgeCheck className="h-7 w-7 text-[var(--color-text-muted)]" />
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        Nothing waiting.
+    <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <span className="flex size-12 items-center justify-center rounded-full bg-[var(--color-system-success-bg)] text-[var(--color-system-success)]">
+        <BadgeCheck className="size-6" />
+      </span>
+      <p className="mt-1 text-[15px] font-semibold text-foreground">
+        Nothing waiting
       </p>
-      <p className="max-w-sm text-meta text-[var(--color-text-muted)]">
+      <p className="max-w-sm text-[13px] leading-relaxed text-muted-foreground">
         Residents who skipped verification do not appear here — they have not
         asked for anything and are not blocked. Only submitted IDs queue up.
       </p>
+      <Button className="mt-2" onClick={onSeeAccounts} size="sm" variant="outline">
+        <UserRound data-icon="inline-start" />
+        See verified residents
+      </Button>
     </div>
   );
 }
@@ -640,8 +681,13 @@ function QueueRow({
         />
       </DataTd>
       <DataTd>
-        <p className="truncate font-semibold text-foreground">{row.full_name || row.email}</p>
-        {row.full_name && <p className="truncate text-meta text-muted-foreground">{row.email}</p>}
+        <div className="flex items-center gap-3">
+          <Initials name={row.full_name || row.email} />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-foreground">{row.full_name || row.email}</p>
+            {row.full_name && <p className="truncate text-meta text-muted-foreground">{row.email}</p>}
+          </div>
+        </div>
       </DataTd>
       <DataTd>
         <p className="inline-flex items-center gap-1.5 text-[13px] text-foreground">
@@ -756,13 +802,23 @@ function ReviewModal({
 
   const idLabel = detail.valid_id_type
     ? (ID_TYPE_LABELS[detail.valid_id_type] ?? detail.valid_id_type)
-    : '—';
+    : null;
+  const provesResidency = detail.valid_id_type
+    ? RESIDENCY_PROVING_IDS.has(detail.valid_id_type)
+    : false;
   // An LGU document corroborates the address; a national one does not, so the
   // method recorded against the decision differs.
   const method: VerificationMethod =
     detail.valid_id_type && RESIDENCY_PROVING_IDS.has(detail.valid_id_type)
       ? (detail.valid_id_type === 'pwd_id' ? 'pwd_id' : 'barangay_official')
       : 'government_id';
+  const address = [detail.purok_sitio, detail.street_address, detail.barangay,
+    detail.municipality_address].filter(Boolean).join(', ') || null;
+  const warnings = detail.review_flags?.sos_warning_count ?? 0;
+  // With a photograph missing the comparison cannot be made at all, so
+  // Verify is not offered: it would record "a person compared a face to a
+  // card" about a card nobody could see.
+  const canCompare = Boolean(detail.id_image_url && detail.selfie_url);
 
   return (
     /* Radix, not the project's own Modal. That component's header states it
@@ -770,116 +826,187 @@ function ReviewModal({
        documents behind an irreversible pair of buttons — the one place on this
        console where a keyboard user falling out of the dialog and hitting the
        page behind it would be worst. */
-    <Dialog onOpenChange={o => { if (!o) onClose(); }} open>
-      <DialogContent className="flex max-h-[88vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[720px]">
-        <DialogHeader className="shrink-0 border-b border-[var(--color-surface-border)] px-6 py-4 text-left">
-          <DialogTitle>Check this submission</DialogTitle>
-          <DialogDescription>
-            Does the name and number on the account match the card, and is the
-            face in the selfie the face on the card?
-          </DialogDescription>
+    <Dialog onOpenChange={o => { if (!o && !deciding) onClose(); }} open>
+      <DialogContent
+        className="flex max-h-[92vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[880px]"
+        data-testid="review-modal"
+      >
+        <DialogHeader className="shrink-0 border-b border-[var(--color-surface-border)] py-4 pr-14 pl-5 text-left sm:pl-6">
+          <div className="flex items-center gap-3.5">
+            <span
+              aria-hidden="true"
+              className="flex size-11 shrink-0 items-center justify-center rounded-[12px]"
+              style={{ color: 'var(--color-brand)', backgroundColor: 'color-mix(in srgb, var(--color-brand) 12%, transparent)' }}
+            >
+              <UserSearch size={21} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px]">
+                <span className="truncate">{detail.full_name || detail.email}</span>
+                {warnings > 0 && (
+                  <FlagChip
+                    color="var(--color-system-warning)"
+                    icon={<ShieldAlert className="size-3" />}
+                    label={`${warnings} warning${warnings === 1 ? '' : 's'} on record`}
+                  />
+                )}
+              </DialogTitle>
+              <DialogDescription className="mt-0.5">
+                Does the name and number on the account match the card, and is the
+                face in the selfie the face on the card?
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-6 py-4">
-      <div className="flex flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Evidence label="ID document" url={detail.id_image_url} />
-          <Evidence label="Selfie" url={detail.selfie_url} />
+        <div className="scroll-slim min-h-0 flex-1 overflow-y-auto bg-[var(--color-surface-raised)]/40 px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-3.5">
+            {/* Step 1: the two photographs, side by side and whole. They were
+                cropped to fill their boxes, which cut the number off a card
+                photographed at an angle - the one thing being compared. */}
+            <ReviewCard icon={ScanFace} step="1" title="Compare the two photographs">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Evidence label="ID document" url={detail.id_image_url} />
+                <Evidence label="Selfie" url={detail.selfie_url} />
+              </div>
+
+              {/* Directly under the two photographs, because it is about them. */}
+              <div className="mt-3">
+                <_FaceMatchSummary detail={detail} />
+              </div>
+
+              {detail.liveness_method === 'none' && (
+                <p className="mt-2.5 text-meta text-[var(--color-text-muted)]">
+                  This selfie was taken manually — the on-device face check did not
+                  run. That is common and not suspicious in itself; it just means the
+                  comparison is entirely yours to make.
+                </p>
+              )}
+            </ReviewCard>
+
+            {/* Step 2: what was TYPED, to read against the card above. */}
+            <ReviewCard icon={IdCard} step="2" title="Check it against what was typed">
+              <dl className="grid gap-2.5 sm:grid-cols-3" data-testid="review-compare">
+                <CompareTile icon={UserRound} label="Name on account" value={detail.name_on_file} />
+                <CompareTile icon={Hash} label="ID number" mono value={detail.valid_id_number} />
+                <CompareTile icon={CalendarClock} label="Date of birth" value={detail.date_of_birth} />
+              </dl>
+              <dl className="mt-3.5 grid gap-x-6 gap-y-2.5 border-t border-[var(--color-surface-border)] pt-3.5 sm:grid-cols-2">
+                <Field
+                  hint={idLabel ? (provesResidency ? 'LGU-issued: also evidence of living here' : 'Proves identity, not residency') : undefined}
+                  icon={IdCard}
+                  label="ID type"
+                  value={idLabel}
+                />
+                <Field icon={Phone} label="Mobile" value={detail.phone_number} />
+                <Field icon={MapPin} label="Address" value={address} />
+                {detail.is_pwd && <Field icon={BadgeCheck} label="PWD ID" value={detail.pwd_id_number} />}
+              </dl>
+            </ReviewCard>
+
+            <p className="flex items-start gap-2.5 rounded-[12px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
+              <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <span>
+                Deciding either way <strong className="font-semibold text-foreground">deletes both photographs</strong>, which
+                is the retention rule for identity documents. The ID type and number
+                stay on the record. A verified resident moves to <strong className="font-semibold text-foreground">Resident accounts</strong>;
+                neither decision changes what they can do in the app.
+              </span>
+            </p>
+          </div>
         </div>
 
-        {/* Directly under the two photographs, because it is about them.
-            Placed before the typed fields on purpose: this is the answer to
-            the question the dialog's own subtitle asks, and a reviewer should
-            see what the machine thought while they are still looking at the
-            faces rather than after they have scrolled past them. */}
-        <_FaceMatchSummary detail={detail} />
-
-        {detail.liveness_method === 'none' && (
-          <p className="text-meta text-[var(--color-text-muted)]">
-            This selfie was taken manually — the on-device face check did not
-            run. That is common and not suspicious in itself; it just means the
-            comparison below is entirely yours to make.
-          </p>
-        )}
-
-        <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-          <Field label="Name on account" value={detail.name_on_file} emphasis />
-          <Field label="ID type" value={idLabel} />
-          <Field label="ID number" value={detail.valid_id_number} emphasis />
-          <Field label="Date of birth" value={detail.date_of_birth} />
-          <Field
-            label="Address"
-            value={[detail.purok_sitio, detail.street_address, detail.barangay,
-                    detail.municipality_address].filter(Boolean).join(', ') || null}
+        <div
+          className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-6"
+          data-testid="review-actions"
+        >
+          {canCompare ? (
+            <ActionButton
+              color="var(--color-system-success)"
+              hint="The card, the face and the typed details all match"
+              icon={ShieldCheck}
+              label={deciding ? 'Saving…' : 'Verify resident'}
+              onClick={() => { if (!deciding) onDecide(true, method); }}
+              solidText="var(--color-on-success)"
+            />
+          ) : (
+            <p className="col-span-2 flex items-center gap-2 text-[12.5px] text-[var(--color-text-secondary)] sm:col-span-1" data-testid="review-cannot-verify">
+              <ImageOff aria-hidden="true" className="size-4 shrink-0" style={{ color: 'var(--color-system-warning)' }} />
+              A photograph is missing, so this cannot be verified.
+            </p>
+          )}
+          <ActionButton
+            color="var(--color-severity-critical)"
+            hint="Leave this resident unverified"
+            icon={ShieldX}
+            label="Does not match"
+            onClick={() => { if (!deciding) onDecide(false); }}
           />
-          <Field label="Mobile" value={detail.phone_number} />
-          {detail.is_pwd && <Field label="PWD ID" value={detail.pwd_id_number} />}
-        </dl>
-
-        <p className="rounded-[var(--radius-card)] bg-[var(--color-surface-raised)] px-4 py-3 text-meta text-[var(--color-text-secondary)]">
-          Deciding either way <strong>deletes both photographs</strong>, which
-          is the retention rule for identity documents. The ID type and number
-          stay on the record. Neither decision changes what this resident can
-          do in the app.
-        </p>
-      </div>
-        </div>
-
-        {/* mb-0: DialogFooter ships a negative bottom margin sized to cancel
-            the container's default padding, which this dialog sets to zero.
-            Left uncompensated it hangs the buttons past the clipped edge. */}
-        <DialogFooter className="mb-0 shrink-0 flex-wrap gap-2 border-t border-[var(--color-surface-border)] px-6 py-3">
-          <Button disabled={deciding} onClick={onClose} size="sm" variant="outline">
-            Cancel
-          </Button>
           <Button
+            className="h-10 w-full rounded-[11px] px-4 text-[13px] font-semibold max-sm:col-span-2 sm:ml-auto sm:h-[38px] sm:w-auto"
             disabled={deciding}
-            onClick={() => onDecide(false)}
-            size="sm"
+            onClick={onClose}
             variant="outline"
           >
-            <ShieldX data-icon="inline-start" />
-            Does not match
+            Cancel
           </Button>
-          <Button
-            disabled={deciding}
-            onClick={() => onDecide(true, method)}
-            size="sm"
-            style={{
-              backgroundColor: 'var(--color-brand)',
-              color: 'var(--color-text-inverse)',
-            }}
-          >
-            <ShieldCheck data-icon="inline-start" />
-            {deciding ? 'Saving…' : 'Verify resident'}
-          </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
+/** One numbered step of the review: what to look at, in the order to do it. */
+function ReviewCard({ step, title, icon: Icon, children }: {
+  step: string; title: string; icon: LucideIcon; children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[14px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4">
+      <header className="mb-3 flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-[12px] font-bold"
+          style={{ color: 'var(--color-text-inverse)', backgroundColor: 'var(--color-brand)' }}
+        >
+          {step}
+        </span>
+        <h3 className="flex-1 text-[13.5px] font-semibold text-foreground">{title}</h3>
+        <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      </header>
+      {children}
+    </section>
+  );
+}
+
 function Evidence({ label, url }: { label: string; url: string | null }) {
   return (
-    <figure className="flex flex-col gap-1">
-      <figcaption className="text-meta font-semibold text-[var(--color-text-muted)]">
-        {label}
+    <figure className="overflow-hidden rounded-[12px] border border-[var(--color-surface-border)]" data-evidence={url ? 'present' : 'missing'}>
+      <figcaption className="flex items-center justify-between gap-2 border-b border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/60 px-3 py-1.5">
+        <span className="text-[12px] font-semibold text-[var(--color-text-secondary)]">{label}</span>
+        {url && (
+          <a
+            className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[var(--color-brand)] underline-offset-2 hover:underline"
+            href={url}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Full size <ExternalLink aria-hidden="true" className="size-3" />
+          </a>
+        )}
       </figcaption>
       {url ? (
         // Plain <img>: these are short-lived signed URLs from a private
         // bucket, so next/image's optimiser would cache a link that has
         // already expired and would need the host allow-listed for a URL that
         // is different on every request.
-        <a href={url} target="_blank" rel="noreferrer">
+        // object-contain on a dark ground: the whole card, never a crop of it.
+        <a className="block bg-[#111]" href={url} rel="noreferrer" target="_blank">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={url}
-            alt={label}
-            className="h-48 w-full rounded-[var(--radius-card)] border border-[var(--color-surface-border)] object-cover"
-          />
+          <img alt={label} className="h-64 w-full object-contain" src={url} />
         </a>
       ) : (
-        <div className="flex h-48 items-center justify-center rounded-[var(--radius-card)] border border-dashed border-[var(--color-surface-border)] text-meta text-[var(--color-text-muted)]">
+        <div className="flex h-64 flex-col items-center justify-center gap-2 bg-[var(--color-surface-raised)]/40 text-meta text-[var(--color-text-muted)]">
+          <ImageOff aria-hidden="true" className="size-6" />
           Not submitted
         </div>
       )}
@@ -887,28 +1014,50 @@ function Evidence({ label, url }: { label: string; url: string | null }) {
   );
 }
 
+/** One of the three things read straight off the card: large, and alone. */
+function CompareTile({ icon: Icon, label, value, mono = false }: {
+  icon: LucideIcon; label: string; value: string | null; mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0 rounded-[11px] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/60 px-3.5 py-2.5">
+      <dt className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-text-tertiary)]">
+        <Icon aria-hidden="true" className="size-3 shrink-0" />
+        {label}
+      </dt>
+      <dd
+        className={[
+          'mt-1 text-[15px] leading-snug font-semibold break-words',
+          mono ? 'font-mono tabular-nums' : '',
+          value ? 'text-foreground' : 'text-muted-foreground',
+        ].join(' ')}
+      >
+        {value || 'Not given'}
+      </dd>
+    </div>
+  );
+}
+
 function Field({
   label,
   value,
-  emphasis = false,
+  icon: Icon,
+  hint,
 }: {
   label: string;
   value: string | null;
-  emphasis?: boolean;
+  icon: LucideIcon;
+  hint?: string;
 }) {
   return (
-    <div>
-      <dt className="text-meta text-[var(--color-text-muted)]">{label}</dt>
-      <dd
-        className={[
-          'text-sm',
-          emphasis
-            ? 'font-semibold text-[var(--color-text-primary)]'
-            : 'text-[var(--color-text-secondary)]',
-        ].join(' ')}
-      >
-        {value || '—'}
-      </dd>
+    <div className="flex min-w-0 items-start gap-2.5">
+      <Icon aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+      <div className="min-w-0">
+        <dt className="text-[11px] font-semibold text-[var(--color-text-tertiary)]">{label}</dt>
+        <dd className="text-[13px] break-words text-foreground">
+          {value || <span className="text-muted-foreground">Not given</span>}
+        </dd>
+        {hint && <p className="text-meta text-muted-foreground">{hint}</p>}
+      </div>
     </div>
   );
 }

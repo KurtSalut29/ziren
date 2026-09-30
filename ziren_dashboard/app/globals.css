@@ -1320,3 +1320,88 @@ body {
   60% { transform: rotate(8deg); }
   80% { transform: rotate(-6deg); }
 }
+
+/* ── "Ask Ziren for help" mascot (components/help/ziren-help.tsx) ─────────────
+   CSS rather than Framer Motion on purpose: these loop for a whole shift, and
+   as plain animations they are stopped by BOTH reduced-motion switches above
+   (the OS media query and the .a11y-reduced-motion preference). */
+@keyframes ziren-ring {
+  0%   { transform: scale(0.92); opacity: 0.55; }
+  70%  { opacity: 0; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+@keyframes ziren-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes ziren-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-9deg); }
+  75%      { transform: rotate(9deg); }
+}
+.ziren-ring      { animation: ziren-ring 2.6s cubic-bezier(0.2, 0.6, 0.4, 1) infinite; }
+.ziren-ring-late { animation-delay: 1.3s; }
+.ziren-float     { animation: ziren-float 3.2s ease-in-out infinite; }
+.ziren-wiggle    { transform-origin: 50% 85%; }
+.group:hover .ziren-wiggle,
+.group:focus-visible .ziren-wiggle { animation: ziren-wiggle 0.6s ease-in-out 2; }
+/* A ring frozen mid-spread would sit there as a stray outline. */
+@media (prefers-reduced-motion: reduce) {
+  .ziren-ring { opacity: 0; }
+}
+.a11y-reduced-motion .ziren-ring { opacity: 0; }
+
+/* The help dialog's scrollbar: a rounded brand-orange pill on a faint track,
+   instead of the browser's grey line (asked for 2026-09-30).
+
+   The standard scrollbar-width/scrollbar-color properties are given to
+   Firefox ONLY. Chrome and Edge (121+) also understand them, and the moment
+   either is set they ignore every ::-webkit-scrollbar rule below, which is the
+   only way to get a rounded, inset thumb. */
+.scroll-ziren {
+  scrollbar-gutter: stable;
+}
+@supports (-moz-appearance: none) {
+  .scroll-ziren {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-brand) 60%, transparent) transparent;
+  }
+}
+.scroll-ziren::-webkit-scrollbar {
+  width: 14px;
+}
+.scroll-ziren::-webkit-scrollbar-track {
+  margin: 10px 0;
+  border-radius: 999px;
+  /* Inset with a transparent border, the same trick as the thumb. */
+  border: 4px solid transparent;
+  background-clip: content-box;
+  background-color: color-mix(in srgb, var(--color-brand) 10%, transparent);
+}
+.scroll-ziren::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border-radius: 999px;
+  border: 4px solid transparent;
+  background-clip: content-box;
+  background-color: color-mix(in srgb, var(--color-brand) 55%, transparent);
+}
+.scroll-ziren::-webkit-scrollbar-thumb:hover {
+  border-width: 3px;
+  background-color: var(--color-brand);
+}
+.scroll-ziren::-webkit-scrollbar-thumb:active {
+  border-width: 3px;
+  background-color: var(--color-brand-hover, var(--color-brand));
+}
+
+/* ── Room for the help mascot ─────────────────────────────────────────────
+   "Ask Ziren for help" sits fixed in the bottom-right corner of every page.
+   Scrolled to the bottom, the last row of a table ended up underneath it,
+   and its buttons could not be pressed - found 2026-10-01 on Responders,
+   where the mascot covered the last row's "Approve again". Every scrolling
+   page now ends with room for it. Padding on the page's own root, not a box
+   after it: a min-h-full page that is shorter than the screen gains no
+   scrollbar, and the map (h-full, never scrolls) is left alone. */
+#main-content > :last-child:not(.h-full) {
+  padding-bottom: 88px;
+}

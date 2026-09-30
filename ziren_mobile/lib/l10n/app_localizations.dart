@@ -7992,6 +7992,564 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The route follows the roads on the map. Watch for closed or flooded roads.'**
   String get respNavRoadNote;
+
+  /// No description provided for @accountNoticeEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Account notice'**
+  String get accountNoticeEyebrow;
+
+  /// No description provided for @accountWarnedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You received a warning'**
+  String get accountWarnedTitle;
+
+  /// Which rule was broken.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}.'**
+  String accountWarnedBody(String reason);
+
+  /// How many warnings are left before an automatic suspension.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One more warning and your account will be suspended from reporting.} other{{count} more warnings and your account will be suspended from reporting.}}'**
+  String accountWarnedLeft(int count);
+
+  /// No description provided for @accountSuspendedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reporting is suspended'**
+  String get accountSuspendedTitle;
+
+  /// When the suspension ends.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot send reports until {date}.'**
+  String accountSuspendedUntil(String date);
+
+  /// No description provided for @accountSuspendedIndefinite.
+  ///
+  /// In en, this message translates to:
+  /// **'You cannot send reports until further notice.'**
+  String get accountSuspendedIndefinite;
+
+  /// No description provided for @accountSuspendedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'In a real emergency, call 911 or a hotline. To appeal, contact your municipal MDRRMO office.'**
+  String get accountSuspendedHelp;
+
+  /// No description provided for @accountOpenHotlines.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency hotlines'**
+  String get accountOpenHotlines;
+
+  /// No description provided for @accountReinstatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You can send reports again'**
+  String get accountReinstatedTitle;
+
+  /// No description provided for @accountReinstatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your suspension was lifted.'**
+  String get accountReinstatedBody;
+
+  /// No description provided for @accountWarningsClearedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your warnings were cleared.'**
+  String get accountWarningsClearedBody;
+
+  /// No description provided for @violationFalseReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending a false or prank report'**
+  String get violationFalseReport;
+
+  /// No description provided for @violationFalseSos.
+  ///
+  /// In en, this message translates to:
+  /// **'Misusing the SOS button'**
+  String get violationFalseSos;
+
+  /// No description provided for @violationSpam.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending repeated or duplicate reports'**
+  String get violationSpam;
+
+  /// No description provided for @violationAbusive.
+  ///
+  /// In en, this message translates to:
+  /// **'Abusive or threatening messages'**
+  String get violationAbusive;
+
+  /// No description provided for @violationFakeIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Using a false or borrowed identity'**
+  String get violationFakeIdentity;
+
+  /// No description provided for @violationOther.
+  ///
+  /// In en, this message translates to:
+  /// **'A violation of the reporting rules'**
+  String get violationOther;
+
+  /// No description provided for @annWholeProvince.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole province'**
+  String get annWholeProvince;
+
+  /// No description provided for @annKindEvacuation.
+  ///
+  /// In en, this message translates to:
+  /// **'Evacuation order'**
+  String get annKindEvacuation;
+
+  /// No description provided for @annKindWeather.
+  ///
+  /// In en, this message translates to:
+  /// **'Weather advisory'**
+  String get annKindWeather;
+
+  /// No description provided for @annKindHazard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hazard warning'**
+  String get annKindHazard;
+
+  /// No description provided for @annKindRoadClosure.
+  ///
+  /// In en, this message translates to:
+  /// **'Road closure'**
+  String get annKindRoadClosure;
+
+  /// No description provided for @annKindMissingPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing person'**
+  String get annKindMissingPerson;
+
+  /// No description provided for @annKindAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'All clear'**
+  String get annKindAllClear;
+
+  /// No description provided for @annKindRelief.
+  ///
+  /// In en, this message translates to:
+  /// **'Relief distribution'**
+  String get annKindRelief;
+
+  /// No description provided for @annKindHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health advisory'**
+  String get annKindHealth;
+
+  /// No description provided for @annKindDrill.
+  ///
+  /// In en, this message translates to:
+  /// **'Drill'**
+  String get annKindDrill;
+
+  /// No description provided for @annKindUtility.
+  ///
+  /// In en, this message translates to:
+  /// **'Power / water interruption'**
+  String get annKindUtility;
+
+  /// No description provided for @annHazardFlood.
+  ///
+  /// In en, this message translates to:
+  /// **'Flood'**
+  String get annHazardFlood;
+
+  /// No description provided for @annHazardLandslide.
+  ///
+  /// In en, this message translates to:
+  /// **'Landslide'**
+  String get annHazardLandslide;
+
+  /// No description provided for @annHazardStormSurge.
+  ///
+  /// In en, this message translates to:
+  /// **'Storm surge'**
+  String get annHazardStormSurge;
+
+  /// No description provided for @annHazardEarthquake.
+  ///
+  /// In en, this message translates to:
+  /// **'Earthquake'**
+  String get annHazardEarthquake;
+
+  /// No description provided for @annHazardTsunami.
+  ///
+  /// In en, this message translates to:
+  /// **'Tsunami'**
+  String get annHazardTsunami;
+
+  /// No description provided for @annHazardVolcanic.
+  ///
+  /// In en, this message translates to:
+  /// **'Volcanic activity'**
+  String get annHazardVolcanic;
+
+  /// No description provided for @annHazardFire.
+  ///
+  /// In en, this message translates to:
+  /// **'Fire'**
+  String get annHazardFire;
+
+  /// No description provided for @annHazardOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other hazard'**
+  String get annHazardOther;
+
+  /// No description provided for @annRainfallYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow rainfall warning'**
+  String get annRainfallYellow;
+
+  /// No description provided for @annRainfallOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange rainfall warning'**
+  String get annRainfallOrange;
+
+  /// No description provided for @annRainfallRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red rainfall warning'**
+  String get annRainfallRed;
+
+  /// No description provided for @annSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'Signal No. {n}'**
+  String annSignal(int n);
+
+  /// No description provided for @annEvacForced.
+  ///
+  /// In en, this message translates to:
+  /// **'Forced'**
+  String get annEvacForced;
+
+  /// No description provided for @annEvacPreemptive.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-emptive'**
+  String get annEvacPreemptive;
+
+  /// No description provided for @annReopens.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopens {when}'**
+  String annReopens(String when);
+
+  /// No description provided for @annAge.
+  ///
+  /// In en, this message translates to:
+  /// **'Age {age}'**
+  String annAge(int age);
+
+  /// No description provided for @annGoTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get annGoTo;
+
+  /// No description provided for @annBring.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring'**
+  String get annBring;
+
+  /// No description provided for @annArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get annArea;
+
+  /// No description provided for @annClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get annClosed;
+
+  /// No description provided for @annUseInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Use instead'**
+  String get annUseInstead;
+
+  /// No description provided for @annName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get annName;
+
+  /// No description provided for @annLastSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Last seen'**
+  String get annLastSeen;
+
+  /// No description provided for @annLooksLike.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks like'**
+  String get annLooksLike;
+
+  /// No description provided for @annCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get annCall;
+
+  /// No description provided for @annWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where'**
+  String get annWhere;
+
+  /// No description provided for @annFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get annFrom;
+
+  /// No description provided for @annNeedHelpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for help'**
+  String get annNeedHelpTitle;
+
+  /// No description provided for @annNeedHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The stations of your town are told at once, with where your phone is. Add a line if you can - how many of you, what is happening.'**
+  String get annNeedHelpBody;
+
+  /// No description provided for @annNeedHelpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Three of us on the roof, water rising'**
+  String get annNeedHelpHint;
+
+  /// No description provided for @annNeedHelpSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send: I need help'**
+  String get annNeedHelpSend;
+
+  /// No description provided for @annCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get annCancel;
+
+  /// No description provided for @annSentSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent: you are safe. Thank you.'**
+  String get annSentSafe;
+
+  /// No description provided for @annSentHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent. The stations of your town have been told.'**
+  String get annSentHelp;
+
+  /// No description provided for @annEndedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This alert has ended'**
+  String get annEndedTitle;
+
+  /// No description provided for @annEndedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An all clear was sent or it expired, so it takes no more answers. If you still need help, call a hotline.'**
+  String get annEndedBody;
+
+  /// No description provided for @annNotSentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer was not sent'**
+  String get annNotSentTitle;
+
+  /// No description provided for @annNotSentHelpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ziren could not reach the server. If you need help now, call a hotline - a call needs only signal.'**
+  String get annNotSentHelpBody;
+
+  /// No description provided for @annNotSentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ziren could not reach the server. Try again when you have a connection.'**
+  String get annNotSentBody;
+
+  /// No description provided for @annAreYouSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you safe?'**
+  String get annAreYouSafe;
+
+  /// No description provided for @annImSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'I am safe'**
+  String get annImSafe;
+
+  /// No description provided for @annINeedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'I need help'**
+  String get annINeedHelp;
+
+  /// No description provided for @annYouSaidSafe.
+  ///
+  /// In en, this message translates to:
+  /// **'You said you are safe.'**
+  String get annYouSaidSafe;
+
+  /// No description provided for @annYouAskedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'You asked for help. The stations have been told.'**
+  String get annYouAskedHelp;
+
+  /// No description provided for @annHelpReached.
+  ///
+  /// In en, this message translates to:
+  /// **'A station has your call for help and is responding.'**
+  String get annHelpReached;
+
+  /// No description provided for @annHelpWhileWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay where it is safest. If it gets worse, call a hotline.'**
+  String get annHelpWhileWaiting;
+
+  /// No description provided for @annChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get annChange;
+
+  /// No description provided for @annSafetyAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety alerts'**
+  String get annSafetyAlerts;
+
+  /// No description provided for @annUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get annUpdates;
+
+  /// No description provided for @annIssuedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'From {office}'**
+  String annIssuedBy(String office);
+
+  /// No description provided for @annUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String annUntil(String date);
+
+  /// No description provided for @annEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get annEnded;
+
+  /// No description provided for @annEndsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends: {title}'**
+  String annEndsTitle(String title);
+
+  /// No description provided for @annEndedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended by: {title}'**
+  String annEndedBy(String title);
+
+  /// No description provided for @annNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get annNotFoundTitle;
+
+  /// No description provided for @annNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This announcement was taken down, or it is not for your area.'**
+  String get annNotFoundBody;
+
+  /// No description provided for @annHomeMore.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more alert} other{{count} more alerts}}'**
+  String annHomeMore(int count);
+
+  /// No description provided for @annSeeDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'See details'**
+  String get annSeeDetails;
+
+  /// No description provided for @annNoticeEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety alert'**
+  String get annNoticeEyebrow;
+
+  /// No description provided for @annNoticeEyebrowInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement'**
+  String get annNoticeEyebrowInfo;
+
+  /// No description provided for @annRespondNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer: are you safe?'**
+  String get annRespondNow;
+
+  /// No description provided for @annOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get annOpen;
+
+  /// No description provided for @annHelpAckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your call for help was received'**
+  String get annHelpAckTitle;
+
+  /// No description provided for @annHelpAckBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{station} has your request and is responding. Stay where it is safest.'**
+  String annHelpAckBody(String station);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

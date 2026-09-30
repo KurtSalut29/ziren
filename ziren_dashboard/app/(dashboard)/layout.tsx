@@ -15,6 +15,7 @@ import { useIncidentAlerts } from '@/lib/hooks/useIncidentAlerts';
 import { useAssistInbox } from '@/lib/hooks/useAssistInbox';
 import { AssistInboxProvider } from '@/components/assist/assist-context';
 import { AssistAlerts } from '@/components/assist/assist-alerts';
+import { ZirenHelp } from '@/components/help/ziren-help';
 import { getRouteMeta } from '@/lib/utils/route-meta';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -139,6 +140,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const routeMeta = getRouteMeta(pathname ?? '', isProvincialAdmin, agencyType);
 
+  // The assist cards shown bottom-right, worked out once: the help mascot
+  // shares that corner and steps aside while any of them is up.
+  const assistCards = !isAgencyAdmin
+    ? []
+    : pathname === '/assist-requests'
+      // Already on the page: only a request card for something not
+      // currently open still needs to break through.
+      ? assistInbox.alerts.filter(a => a.kind === 'request')
+      : assistInbox.alerts;
+
   return (
     <>
       {/* Applies the saved display and accessibility preferences on EVERY page
@@ -194,15 +205,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           the same clipping reason as the incident alerts below. */}
       {isAgencyAdmin && (
         <AssistAlerts
-          alerts={pathname === '/assist-requests'
-            // Already on the page: only a request card for something not
-            // currently open still needs to break through.
-            ? assistInbox.alerts.filter(a => a.kind === 'request')
-            : assistInbox.alerts}
+          alerts={assistCards}
           onDismiss={assistInbox.dismissAlert}
           onOpen={assistInbox.markRead}
         />
       )}
+
+      {/* "Ask Ziren for help": the mascot's head, bottom-right on every page,
+          for both admin roles — each gets its own topics. Outside the shell
+          frame for the same clipping reason as the alerts. */}
+      <ZirenHelp
+        hidden={assistCards.length > 0}
+        isProvincialAdmin={Boolean(isProvincialAdmin)}
+        pageTitle={routeMeta.title}
+        pathname={pathname ?? ''}
+      />
 
       {/* Live incident alerts — driven by the agency's notification_rules.
           Deliberately OUTSIDE the shell frame: these are viewport-fixed

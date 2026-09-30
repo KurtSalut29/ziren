@@ -99,7 +99,6 @@ export function MapTab({
         <MapToolbar
           agencies={agencies}
           agencyCounts={agencyCounts}
-          lastRefresh={new Date(data.generated_at)}
           layerCounts={layerCounts}
           layers={layers}
           onAgenciesChange={setAgencies}
@@ -107,7 +106,6 @@ export function MapTab({
           onSeveritiesChange={setSeverities}
           severities={severities}
           severityCounts={severityCounts}
-          stale={false}
         />
         <div className="relative h-[max(460px,calc(var(--app-h,100svh)-360px))]">
           <ZirenMap

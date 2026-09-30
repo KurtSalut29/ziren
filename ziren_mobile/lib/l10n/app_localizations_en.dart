@@ -4176,4 +4176,319 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get respNavRoadNote => 'The route follows the roads on the map. Watch for closed or flooded roads.';
+
+  @override
+  String get accountNoticeEyebrow => 'Account notice';
+
+  @override
+  String get accountWarnedTitle => 'You received a warning';
+
+  @override
+  String accountWarnedBody(String reason) {
+    return 'Reason: $reason.';
+  }
+
+  @override
+  String accountWarnedLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more warnings and your account will be suspended from reporting.',
+      one: 'One more warning and your account will be suspended from reporting.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSuspendedTitle => 'Reporting is suspended';
+
+  @override
+  String accountSuspendedUntil(String date) {
+    return 'You cannot send reports until $date.';
+  }
+
+  @override
+  String get accountSuspendedIndefinite => 'You cannot send reports until further notice.';
+
+  @override
+  String get accountSuspendedHelp => 'In a real emergency, call 911 or a hotline. To appeal, contact your municipal MDRRMO office.';
+
+  @override
+  String get accountOpenHotlines => 'Emergency hotlines';
+
+  @override
+  String get accountReinstatedTitle => 'You can send reports again';
+
+  @override
+  String get accountReinstatedBody => 'Your suspension was lifted.';
+
+  @override
+  String get accountWarningsClearedBody => 'Your warnings were cleared.';
+
+  @override
+  String get violationFalseReport => 'Sending a false or prank report';
+
+  @override
+  String get violationFalseSos => 'Misusing the SOS button';
+
+  @override
+  String get violationSpam => 'Sending repeated or duplicate reports';
+
+  @override
+  String get violationAbusive => 'Abusive or threatening messages';
+
+  @override
+  String get violationFakeIdentity => 'Using a false or borrowed identity';
+
+  @override
+  String get violationOther => 'A violation of the reporting rules';
+
+  @override
+  String get annWholeProvince => 'Whole province';
+
+  @override
+  String get annKindEvacuation => 'Evacuation order';
+
+  @override
+  String get annKindWeather => 'Weather advisory';
+
+  @override
+  String get annKindHazard => 'Hazard warning';
+
+  @override
+  String get annKindRoadClosure => 'Road closure';
+
+  @override
+  String get annKindMissingPerson => 'Missing person';
+
+  @override
+  String get annKindAllClear => 'All clear';
+
+  @override
+  String get annKindRelief => 'Relief distribution';
+
+  @override
+  String get annKindHealth => 'Health advisory';
+
+  @override
+  String get annKindDrill => 'Drill';
+
+  @override
+  String get annKindUtility => 'Power / water interruption';
+
+  @override
+  String get annHazardFlood => 'Flood';
+
+  @override
+  String get annHazardLandslide => 'Landslide';
+
+  @override
+  String get annHazardStormSurge => 'Storm surge';
+
+  @override
+  String get annHazardEarthquake => 'Earthquake';
+
+  @override
+  String get annHazardTsunami => 'Tsunami';
+
+  @override
+  String get annHazardVolcanic => 'Volcanic activity';
+
+  @override
+  String get annHazardFire => 'Fire';
+
+  @override
+  String get annHazardOther => 'Other hazard';
+
+  @override
+  String get annRainfallYellow => 'Yellow rainfall warning';
+
+  @override
+  String get annRainfallOrange => 'Orange rainfall warning';
+
+  @override
+  String get annRainfallRed => 'Red rainfall warning';
+
+  @override
+  String annSignal(int n) {
+    return 'Signal No. $n';
+  }
+
+  @override
+  String get annEvacForced => 'Forced';
+
+  @override
+  String get annEvacPreemptive => 'Pre-emptive';
+
+  @override
+  String annReopens(String when) {
+    return 'Reopens $when';
+  }
+
+  @override
+  String annAge(int age) {
+    return 'Age $age';
+  }
+
+  @override
+  String get annGoTo => 'Go to';
+
+  @override
+  String get annBring => 'Bring';
+
+  @override
+  String get annArea => 'Area';
+
+  @override
+  String get annClosed => 'Closed';
+
+  @override
+  String get annUseInstead => 'Use instead';
+
+  @override
+  String get annName => 'Name';
+
+  @override
+  String get annLastSeen => 'Last seen';
+
+  @override
+  String get annLooksLike => 'Looks like';
+
+  @override
+  String get annCall => 'Call';
+
+  @override
+  String get annWhere => 'Where';
+
+  @override
+  String get annFrom => 'From';
+
+  @override
+  String get annNeedHelpTitle => 'Ask for help';
+
+  @override
+  String get annNeedHelpBody => 'The stations of your town are told at once, with where your phone is. Add a line if you can - how many of you, what is happening.';
+
+  @override
+  String get annNeedHelpHint => 'e.g. Three of us on the roof, water rising';
+
+  @override
+  String get annNeedHelpSend => 'Send: I need help';
+
+  @override
+  String get annCancel => 'Cancel';
+
+  @override
+  String get annSentSafe => 'Sent: you are safe. Thank you.';
+
+  @override
+  String get annSentHelp => 'Sent. The stations of your town have been told.';
+
+  @override
+  String get annEndedTitle => 'This alert has ended';
+
+  @override
+  String get annEndedBody => 'An all clear was sent or it expired, so it takes no more answers. If you still need help, call a hotline.';
+
+  @override
+  String get annNotSentTitle => 'Your answer was not sent';
+
+  @override
+  String get annNotSentHelpBody => 'Ziren could not reach the server. If you need help now, call a hotline - a call needs only signal.';
+
+  @override
+  String get annNotSentBody => 'Ziren could not reach the server. Try again when you have a connection.';
+
+  @override
+  String get annAreYouSafe => 'Are you safe?';
+
+  @override
+  String get annImSafe => 'I am safe';
+
+  @override
+  String get annINeedHelp => 'I need help';
+
+  @override
+  String get annYouSaidSafe => 'You said you are safe.';
+
+  @override
+  String get annYouAskedHelp => 'You asked for help. The stations have been told.';
+
+  @override
+  String get annHelpReached => 'A station has your call for help and is responding.';
+
+  @override
+  String get annHelpWhileWaiting => 'Stay where it is safest. If it gets worse, call a hotline.';
+
+  @override
+  String get annChange => 'Change';
+
+  @override
+  String get annSafetyAlerts => 'Safety alerts';
+
+  @override
+  String get annUpdates => 'Updates';
+
+  @override
+  String annIssuedBy(String office) {
+    return 'From $office';
+  }
+
+  @override
+  String annUntil(String date) {
+    return 'Until $date';
+  }
+
+  @override
+  String get annEnded => 'Ended';
+
+  @override
+  String annEndsTitle(String title) {
+    return 'Ends: $title';
+  }
+
+  @override
+  String annEndedBy(String title) {
+    return 'Ended by: $title';
+  }
+
+  @override
+  String get annNotFoundTitle => 'Not available';
+
+  @override
+  String get annNotFoundBody => 'This announcement was taken down, or it is not for your area.';
+
+  @override
+  String annHomeMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more alerts',
+      one: '1 more alert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get annSeeDetails => 'See details';
+
+  @override
+  String get annNoticeEyebrow => 'Safety alert';
+
+  @override
+  String get annNoticeEyebrowInfo => 'Announcement';
+
+  @override
+  String get annRespondNow => 'Answer: are you safe?';
+
+  @override
+  String get annOpen => 'Open';
+
+  @override
+  String get annHelpAckTitle => 'Your call for help was received';
+
+  @override
+  String annHelpAckBody(String station) {
+    return '$station has your request and is responding. Stay where it is safest.';
+  }
 }

@@ -44,6 +44,9 @@ export interface UseMapLibreOptions {
   rotate?: boolean;
   /** Force a basemap instead of following Settings → Map & Location. */
   basemap?: Basemap;
+  /** Corner for the credits (i) button. Bottom-right unless something else
+   *  already sits there. */
+  credits?: 'bottom-left' | 'bottom-right';
 }
 
 export interface MapLibreHandle {
@@ -89,18 +92,35 @@ export function useMapLibre(
         dragRotate: Boolean(o.rotate),
         pitchWithRotate: false,
         touchPitch: false,
-        attributionControl: { compact: true },
+        attributionControl: o.credits && o.credits !== 'bottom-right' ? false : { compact: true },
         // Hand the dispatcher's own clicks to the page, not to a MapLibre
         // hash in the URL.
         hash: false,
       });
       if (!o.rotate) map.touchZoomRotate.disableRotation();
+      if (o.credits && o.credits !== 'bottom-right') {
+        map.addControl(new maplibre.AttributionControl({ compact: true }), o.credits);
+      }
       if (o.controls !== false) {
         map.addControl(
           new maplibre.NavigationControl({ showCompass: Boolean(o.rotate), visualizePitch: false }),
           o.controls ?? 'top-left',
         );
       }
+      // The imagery and map-data credits start COLLAPSED behind the (i) button
+      // instead of as a line of text across the bottom of the map. MapLibre's
+      // compact control opens itself on load and only closes once the map is
+      // dragged, so on a map nobody drags (the incident dialog's) the line
+      // "Imagery © Esri, Maxar… © OpenStreetMap contributors" sat over the
+      // picture for good. The credits are a licence condition of both sources,
+      // so they are collapsed, not removed: one click on (i) shows them.
+      const collapseCredits = () => {
+        const credits = container.querySelector('.maplibregl-ctrl-attrib');
+        credits?.classList.remove('maplibregl-compact-show');
+        credits?.removeAttribute('open');
+      };
+      collapseCredits();
+      map.once('load', collapseCredits);
       appliedRef.current = `${kind}:${dark}`;
       map.on('style.load', () => setStyleEpoch(e => e + 1));
       built = map;

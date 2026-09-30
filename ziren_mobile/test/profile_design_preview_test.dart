@@ -52,7 +52,7 @@ void main() {
                 size: 92,
               ),
               displayName: 'Kurt Michael Salut',
-              subtitle: 'kurtsalut18@gmail.com',
+              subtitle: 'resident@ziren.test',
               chips: [
                 ProfileChip(
                   label: 'Not verified',
@@ -71,7 +71,7 @@ void main() {
               title: 'Personal Info',
               children: [
                 ProfileTile(icon: LucideIcons.user, label: 'Name', value: 'Kurt Michael Salut', onTap: () {}),
-                ProfileTile(icon: LucideIcons.mail, label: 'Email', value: 'kurtsalut18@gmail.com', onTap: () {}),
+                ProfileTile(icon: LucideIcons.mail, label: 'Email', value: 'resident@ziren.test', onTap: () {}),
                 ProfileTile(icon: LucideIcons.phone, label: 'Phone', value: '0917 555 0142', onTap: () {}),
                 ProfileTile(icon: LucideIcons.map_pin, label: 'Address', value: 'Larrazabal, Naval', onTap: () {}),
               ],

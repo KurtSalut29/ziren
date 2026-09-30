@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../features/notifications/domain/notification_provider.dart';
+import '../../features/settings/domain/profile_provider.dart';
 import '../../features/notifications/presentation/open_report.dart';
 import '../../features/notifications/presentation/notice_view.dart';
 import '../../features/notifications/presentation/widgets/status_update_sheet.dart';
@@ -110,6 +111,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     final target = found;
     _shown.add(_key(target));
     _sheetOnScreen = true;
+    // A warning or a suspension changes what Home says and what the report
+    // buttons do. Read the profile again now, not at the next launch.
+    if (target.isAccount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(context.read<ProfileProvider>().loadProfile(force: true));
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -127,6 +135,12 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
             await openReportById(context, target.incidentId);
           case NoticeAction.openChat:
             await openReportChatById(context, target.incidentId);
+          case NoticeAction.hotlines:
+            await context.push('/hotlines');
+          case NoticeAction.openAnnouncement:
+            if (target.announcementId != null) {
+              await context.push('/announcements/${target.announcementId}');
+            }
           case NoticeAction.dismiss:
             break;
         }
@@ -219,7 +233,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                         isActive: i == currentIndex,
                         // Reports carries the unread dot: a status change on
                         // your own report is what you would go there to read.
-                        showBadge: i == 1 && notifications.hasUnread,
+                        // A safety alert is not about a report: it does not light
+                        // the dot on a tab that would not show it.
+                        showBadge: i == 1 && notifications.unread.any((n) => !n.isAnnouncement),
                         onTap: () => _onTap(i),
                       ),
                     ),

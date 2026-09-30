@@ -443,9 +443,12 @@ def _to_csv(headers: list[str], rows: list[list[Any]]) -> bytes:
     return buf.getvalue().encode("utf-8")
 
 
-def _to_xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
+def _to_xlsx(headers: list[str], rows: list[list[Any]], wrap: dict[str, int] | None = None) -> bytes:
+    """`wrap` names long-text columns (header -> width): they get that fixed
+    width and wrapped, top-aligned cells, so a paragraph reads as a paragraph
+    instead of one line running off the sheet at the 40-character cap."""
     from openpyxl import Workbook
-    from openpyxl.styles import Font
+    from openpyxl.styles import Alignment, Font
 
     wb = Workbook()
     ws = wb.active
@@ -454,9 +457,22 @@ def _to_xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
         cell.font = Font(bold=True)
     for row in rows:
         ws.append(row)
+    wrap = wrap or {}
     for col in ws.columns:
+        header = col[0].value
+        if header in wrap:
+            ws.column_dimensions[col[0].column_letter].width = wrap[header]
+            for c in col[1:]:
+                c.alignment = Alignment(wrap_text=True, vertical="top")
+            continue
         width = max((len(str(c.value)) for c in col if c.value is not None), default=10)
         ws.column_dimensions[col[0].column_letter].width = min(max(width + 2, 10), 40)
+    if wrap:
+        # Wrapped rows grow tall; keep the other cells of a row at its top too.
+        for row in ws.iter_rows(min_row=2):
+            for c in row:
+                if c.alignment is None or not c.alignment.wrap_text:
+                    c.alignment = Alignment(vertical="top")
 
     buf = io.BytesIO()
     wb.save(buf)

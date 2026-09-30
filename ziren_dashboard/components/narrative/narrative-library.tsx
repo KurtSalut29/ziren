@@ -25,11 +25,12 @@
  * not show.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  CheckCircle2, Circle, Download, FilePenLine, FileText, HelpCircle, LayoutGrid,
-  Loader2, RefreshCw, ShieldCheck,
+  CalendarCheck, ChevronRight, Circle, Download, FilePenLine, FileText, HelpCircle,
+  LayoutGrid, Loader2, MapPin, ShieldCheck, UserRound,
 } from 'lucide-react';
 import {
   downloadNarrativeReportPdf, fetchHistory, fetchNarrativeReports,
@@ -37,6 +38,7 @@ import {
 } from '@/lib/api/dispatch';
 import { ApiError } from '@/lib/api/client';
 import { signOut, useAuth } from '@/lib/hooks/useAuth';
+import { useFillHeight } from '@/lib/hooks/useFillHeight';
 import { toast } from '@/lib/toast';
 import { formatDate, formatTime } from '@/lib/format/datetime';
 import { displayPrefs, type DisplayPrefs } from '@/lib/prefs/definitions';
@@ -54,6 +56,7 @@ import type { OptionItem } from '@/components/ui/option-dialog';
 import {
   AGENCY_ICON, AG_COLOR, CATEGORY_ICON,
 } from '@/components/incidents/incident-vocabulary';
+import { CategoryTile, TABLE_HEAD_CELL } from '@/components/incidents/incident-table-parts';
 
 const PAGE_SIZE = 25;
 
@@ -75,6 +78,7 @@ function typeIcon(key: string) {
 export function NarrativeLibrary() {
   const { token, isProvincialAdmin, hydrated } = useAuth();
   const display = displayPrefs.use();
+  const router = useRouter();
 
   const [mode, setMode] = useState<Mode>('reports');
   const [category, setCategory] = useState<string>('all');
@@ -89,7 +93,6 @@ export function NarrativeLibrary() {
   const [awaiting, setAwaiting] = useState<HistoryIncident[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
 
   const load = useCallback(async (silent = false) => {
@@ -106,7 +109,6 @@ export function NarrativeLibrary() {
         offset: page * PAGE_SIZE,
       });
       setData(res);
-      setUpdatedAt(new Date());
       setError(null);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) { signOut(); return; }
@@ -197,6 +199,17 @@ export function NarrativeLibrary() {
   const filtersOn = category !== 'all' || status !== 'all' || range !== null || days !== 0 || q.trim() !== '';
   const clearAll = () => { setCategory('all'); setStatus('all'); setRange(null); setDays(0); setQ(''); };
 
+  // The list scrolls inside its own frame, sized to what is left of the screen,
+  // so the column names stay put while the rows move under them. One ref: only
+  // one of the two lists (reports, awaiting) is on screen at a time.
+  const listRef = useRef<HTMLDivElement>(null);
+  const listMaxHeight = useFillHeight(
+    listRef,
+    // The page's bottom padding, plus the pager when there is one.
+    mode === 'reports' && pages > 1 ? 84 : 28,
+    [mode, shown.length, awaitingShown.length, loading, error],
+  );
+
   if (!hydrated) return null;
 
   return (
@@ -221,17 +234,6 @@ export function NarrativeLibrary() {
             </>
           )}
           <div className="flex flex-1 basis-[440px] flex-wrap items-center justify-end gap-3 self-end">
-            {mode === 'reports' && (
-              <button
-                aria-label="Refresh the list"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-surface-border)] px-2.5 py-1.5 text-[12px] font-semibold text-foreground transition-colors hover:bg-[var(--color-surface-hover)]"
-                onClick={() => void load(true)}
-                type="button"
-              >
-                <RefreshCw size={12} />
-                {updatedAt ? `Updated ${updatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Refresh'}
-              </button>
-            )}
             <SearchInput
               className="min-w-[220px] max-w-[420px] flex-1"
               label="Search narrative reports"
@@ -334,17 +336,28 @@ export function NarrativeLibrary() {
                 title={filtersOn ? 'No reports found' : 'No narrative reports yet'}
               />
             ) : (
-              <div className="overflow-x-auto rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
-                <table className="w-full min-w-[980px] border-collapse text-left" data-library-table>
+              <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]">
+                {/* border-separate, not collapse: under collapse the border
+                    belongs to the table, so a sticky header leaves its rule
+                    behind when the rows scroll. */}
+                <div className="scroll-slim overflow-auto" data-list-scroll ref={listRef} style={{ maxHeight: listMaxHeight }}>
+                <table className="w-full min-w-[1100px] table-fixed border-separate border-spacing-0 text-left" data-library-table>
+                  <colgroup>
+                    <col className="w-[176px]" />
+                    <col className="w-[228px]" />
+                    <col />
+                    <col className="w-[168px]" />
+                    <col className="w-[112px]" />
+                    <col className="w-[168px]" />
+                  </colgroup>
                   <thead>
-                    <tr className="[&>th]:border-b [&>th]:border-[var(--color-surface-border)] [&>th]:px-4 [&>th]:py-2.5 [&>th]:text-[11px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.06em] [&>th]:text-[var(--color-text-tertiary)]">
-                      <th className="w-[150px]">Type</th>
-                      <th className="w-[170px]">Record / entry no.</th>
-                      <th>Reporting person &amp; place</th>
-                      <th className="w-[130px]">Saved</th>
-                      <th className="w-[150px]">Prepared by</th>
-                      <th className="w-[110px]">Status</th>
-                      <th className="w-[190px] text-right">Actions</th>
+                    <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-[2] [&>th]:border-b [&>th]:border-[var(--color-border-strong)] [&>th]:px-4">
+                      <th className={TABLE_HEAD_CELL} scope="col">Type</th>
+                      <th className={TABLE_HEAD_CELL} scope="col">Record / entry no.</th>
+                      <th className={TABLE_HEAD_CELL} scope="col">Reporting person &amp; place</th>
+                      <th className={TABLE_HEAD_CELL} scope="col">Last saved</th>
+                      <th className={TABLE_HEAD_CELL} scope="col">Status</th>
+                      <th className={`${TABLE_HEAD_CELL} text-right`} scope="col">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -355,11 +368,13 @@ export function NarrativeLibrary() {
                         item={item}
                         key={item.id}
                         onDownload={() => void download(item)}
+                        onOpen={() => router.push(`/narrative-reports/${item.incident_id}`)}
                         readOnly={isProvincialAdmin}
                       />
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
 
@@ -391,32 +406,46 @@ export function NarrativeLibrary() {
                 title={awaiting.length === 0 ? 'All caught up' : 'Nothing found'}
               />
             ) : (
-              <ul className="flex flex-col gap-2" data-awaiting-list>
+              <div
+                className="scroll-slim overflow-auto rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]"
+                data-list-scroll
+                ref={listRef}
+                style={{ maxHeight: listMaxHeight }}
+              >
+              <ul data-awaiting-list>
                 {awaitingShown.map(i => {
                   const cat = i.incident_category && CATEGORY_ICON[i.incident_category] ? i.incident_category : 'other';
-                  const Icon = typeIcon(cat);
                   return (
                     <li
-                      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3"
+                      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--color-surface-border)] px-4 py-3 transition-colors last:border-b-0 hover:bg-[var(--color-surface-hover)]"
                       data-awaiting-row
                       key={i.id}
                     >
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
-                        <Icon size={16} />
-                      </span>
+                      <CategoryTile category={cat} className="size-9" />
                       <div className="min-w-0 flex-1 basis-[260px]">
                         <p className="flex flex-wrap items-baseline gap-x-2">
                           <span className="font-mono text-[13px] font-semibold text-foreground">{i.record_number ?? i.id.slice(0, 8)}</span>
-                          <span className="text-[12.5px] text-muted-foreground">{TYPE_LABEL[cat]}</span>
+                          <span className="text-[12.5px] font-medium text-[var(--color-text-secondary)]">{TYPE_LABEL[cat]}</span>
                         </p>
-                        <p className="truncate text-[12.5px] text-muted-foreground">
-                          {i.location_address ?? 'No location given'}
-                          {i.users?.full_name ? ` · ${i.users.full_name}` : ''}
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px] text-muted-foreground">
+                          <span className="inline-flex min-w-0 items-center gap-1.5">
+                            <MapPin aria-hidden="true" className="shrink-0" size={12} />
+                            <span className="truncate">{i.location_address ?? 'No location given'}</span>
+                          </span>
+                          {i.users?.full_name && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <UserRound aria-hidden="true" className="shrink-0" size={12} />
+                              {i.users.full_name}
+                            </span>
+                          )}
                         </p>
                       </div>
-                      <span className="shrink-0 text-[12px] text-muted-foreground">
-                        Resolved {i.resolved_at ? formatDate(i.resolved_at, display) : ''}
-                      </span>
+                      {i.resolved_at && (
+                        <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+                          <CalendarCheck aria-hidden="true" size={13} />
+                          Resolved <span className="font-mono tabular-nums text-[var(--color-text-secondary)]">{formatDate(i.resolved_at, display)}</span>
+                        </span>
+                      )}
                       <Button asChild size="sm">
                         <Link href={`/narrative-reports/${i.id}`}>
                           <FilePenLine data-icon="inline-start" size={14} /> Write report
@@ -426,6 +455,7 @@ export function NarrativeLibrary() {
                   );
                 })}
               </ul>
+              </div>
             )}
           </>
         )}
@@ -437,85 +467,112 @@ export function NarrativeLibrary() {
 // ── Pieces ────────────────────────────────────────────────────────────────
 
 function _ReportRow({
-  item, display, downloading, readOnly, onDownload,
+  item, display, downloading, readOnly, onDownload, onOpen,
 }: {
   item: NarrativeListItem;
   display: DisplayPrefs;
   downloading: boolean;
   readOnly: boolean;
   onDownload: () => void;
+  onOpen: () => void;
 }) {
-  const Icon = typeIcon(item.incident_category);
   const finalized = item.status === 'finalized';
   const AgIcon = item.agency_type ? AGENCY_ICON[item.agency_type] : null;
   const savedIso = finalized && item.finalized_at ? item.finalized_at : item.updated_at;
   const href = `/narrative-reports/${item.incident_id}`;
+  const statusColor = finalized ? 'var(--color-system-success)' : 'var(--color-system-warning)';
+  // A draft is unfinished work, so its button is the one that stands out.
+  const resume = !readOnly && !finalized;
 
   return (
+    // The whole row opens the report. The record number is still a real link,
+    // which is what a keyboard and a screen reader reach.
     <tr
-      className="border-b border-[var(--color-surface-border)] align-top transition-colors last:border-b-0 hover:bg-[var(--color-surface-hover)]"
+      className="group cursor-pointer align-middle transition-colors hover:bg-[var(--color-surface-hover)] [&>td]:border-b [&>td]:border-[var(--color-surface-border)] last:[&>td]:border-b-0"
       data-report-row={item.id}
       data-report-status={item.status}
       data-report-type={item.incident_category}
+      onClick={onOpen}
     >
       <td className="px-4 py-3">
-        <span className="inline-flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
-            <Icon size={14} />
-          </span>
-          {TYPE_LABEL[item.incident_category] ?? 'Other'}
-        </span>
-        {item.offense && (
-          <p className="mt-1 max-w-[140px] truncate pl-9 text-[11.5px] text-muted-foreground" title={item.offense}>{item.offense}</p>
-        )}
+        <div className="flex items-center gap-2.5">
+          <CategoryTile category={item.incident_category} />
+          <div className="min-w-0">
+            <p className="text-[13px] leading-tight font-medium text-foreground">
+              {TYPE_LABEL[item.incident_category] ?? 'Other'}
+            </p>
+            {item.offense && (
+              <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground" title={item.offense}>{item.offense}</p>
+            )}
+          </div>
+        </div>
       </td>
       <td className="px-4 py-3">
-        <Link className="font-mono text-[12.5px] font-semibold text-foreground underline-offset-2 hover:underline" href={href}>
+        <Link
+          className="font-mono text-[12.5px] font-semibold text-foreground underline-offset-2 group-hover:underline"
+          href={href}
+          onClick={e => e.stopPropagation()}
+        >
           {item.record_number ?? item.incident_id.slice(0, 8)}
         </Link>
-        <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground" title={item.reference_no ?? undefined}>
+        <p className="mt-0.5 truncate text-[11.5px] tabular-nums text-muted-foreground" title={item.reference_no ?? undefined}>
           {item.reference_no ? `Entry ${item.reference_no}` : 'No entry number'}
         </p>
       </td>
       <td className="px-4 py-3">
-        <p className="text-[13px] font-medium text-foreground">{item.reporting_person_name ?? 'Reporting person not named'}</p>
-        <p className="mt-0.5 line-clamp-2 text-[12px] text-muted-foreground">{item.place_of_incident ?? 'No place given'}</p>
-        {(item.station_name || item.agency_type) && (
-          <p className="mt-1 inline-flex items-center gap-1 text-[11.5px] text-muted-foreground">
-            {AgIcon && item.agency_type && <AgIcon size={11} style={{ color: AG_COLOR[item.agency_type] }} />}
-            {item.station_name ?? item.agency_type}
+        <p className={`truncate text-[13px] font-medium ${item.reporting_person_name ? 'text-foreground' : 'text-muted-foreground'}`}>
+          {item.reporting_person_name ?? 'Reporting person not named'}
+        </p>
+        <p className="mt-0.5 flex items-start gap-1.5 text-[12px] text-muted-foreground">
+          <MapPin aria-hidden="true" className="mt-[2px] shrink-0" size={12} />
+          <span className="line-clamp-1" title={item.place_of_incident ?? undefined}>{item.place_of_incident ?? 'No place given'}</span>
+        </p>
+        {/* Which station wrote it: only where that varies. Every row an Agency
+            Admin sees is their own station's, so the line said the same thing
+            on every row and made each one a line taller. */}
+        {readOnly && (item.station_name || item.agency_type) && (
+          <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
+            {AgIcon && item.agency_type && <AgIcon aria-hidden="true" className="shrink-0" size={12} style={{ color: AG_COLOR[item.agency_type] }} />}
+            <span className="truncate">{item.station_name ?? item.agency_type}</span>
           </p>
         )}
       </td>
-      <td className="px-4 py-3 text-[12.5px] text-[var(--color-text-secondary)]">
-        {formatDate(savedIso, display)}
-        <p className="mt-0.5 text-[11.5px] text-muted-foreground">{formatTime(savedIso, display)}</p>
-      </td>
-      <td className="px-4 py-3 text-[12.5px] text-[var(--color-text-secondary)]">
-        {item.prepared_by_name ?? <span className="text-muted-foreground">-</span>}
+      <td className="px-4 py-3">
+        <p className="font-mono text-[12.5px] leading-tight tabular-nums whitespace-nowrap text-foreground">
+          {formatDate(savedIso, display)}
+          <span className="ml-1.5 text-[11.5px] text-muted-foreground">{formatTime(savedIso, display)}</span>
+        </p>
+        <p className="mt-0.5 truncate text-[11.5px] text-muted-foreground" title={item.prepared_by_name ?? undefined}>
+          {item.prepared_by_name ? `by ${item.prepared_by_name}` : 'No preparer named'}
+        </p>
       </td>
       <td className="px-4 py-3">
         <span
-          className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-          style={finalized
-            ? { color: 'var(--color-system-success)', borderColor: 'color-mix(in srgb, var(--color-system-success) 45%, transparent)', backgroundColor: 'color-mix(in srgb, var(--color-system-success) 10%, transparent)' }
-            : { color: 'var(--color-system-warning)', borderColor: 'color-mix(in srgb, var(--color-system-warning) 45%, transparent)', backgroundColor: 'color-mix(in srgb, var(--color-system-warning) 10%, transparent)' }}
+          className="inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] text-[11.5px] leading-tight font-semibold whitespace-nowrap"
+          style={{ color: statusColor, backgroundColor: `color-mix(in srgb, ${statusColor} 12%, transparent)` }}
         >
-          {finalized ? <CheckCircle2 size={11} /> : <FilePenLine size={11} />}
+          {finalized ? <ShieldCheck aria-hidden="true" size={12} /> : <FilePenLine aria-hidden="true" size={12} />}
           {finalized ? 'Finalized' : 'Draft'}
         </span>
       </td>
       <td className="px-4 py-3">
-        <div className="flex justify-end gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={href}>
-              <FileText data-icon="inline-start" size={14} />
-              {readOnly ? 'View' : finalized ? 'Open' : 'Continue'}
-            </Link>
-          </Button>
-          <Button aria-label={`Download the PDF for ${item.record_number ?? 'this report'}`} disabled={downloading} onClick={onDownload} size="sm" variant="outline">
+        <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+          <Button
+            aria-label={`Download the PDF for ${item.record_number ?? 'this report'}`}
+            disabled={downloading}
+            onClick={onDownload}
+            size="sm"
+            title="Download the PDF"
+            variant="outline"
+          >
             {downloading ? <Loader2 className="animate-spin" data-icon="inline-start" size={14} /> : <Download data-icon="inline-start" size={14} />}
             PDF
+          </Button>
+          <Button asChild size="sm" variant={resume ? 'default' : 'outline'}>
+            <Link href={href}>
+              {readOnly ? 'View' : finalized ? 'Open' : 'Continue'}
+              <ChevronRight data-icon="inline-end" size={14} />
+            </Link>
           </Button>
         </div>
       </td>
@@ -538,7 +595,7 @@ function _Empty({ title, body, onClear }: { title: string; body: string; onClear
 
 function _Skeleton() {
   return (
-    <div className="animate-pulse overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)]">
+    <div className="animate-pulse overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
       {Array.from({ length: 6 }).map((_, i) => (
         <div className="flex items-center gap-4 border-b border-[var(--color-surface-border)] px-4 py-4 last:border-b-0" key={i}>
           <div className="h-7 w-32 rounded bg-muted" />

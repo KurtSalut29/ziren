@@ -7,6 +7,7 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/pending_approval_screen.dart';
 import '../../features/assistant/presentation/ziren_ai_screen.dart';
+import '../../features/announcements/presentation/announcement_detail_screen.dart';
 import '../../features/announcements/presentation/announcements_screen.dart';
 import '../../features/help/presentation/help_screen.dart';
 import '../../features/hotlines/presentation/hotlines_view.dart';
@@ -284,6 +285,12 @@ class ZirenRouter {
           GoRoute(
             path: '/announcements',
             builder: (_, __) => const AnnouncementsScreen(),
+          ),
+          // One announcement - opened from a safety-alert notice, the Home card
+          // or the list. Where "are you safe?" is answered.
+          GoRoute(
+            path: '/announcements/:id',
+            builder: (_, state) => AnnouncementDetailScreen(id: state.pathParameters['id']!),
           ),
           // Station hotlines — every official BFP/PNP/MDRRMO number, usable
           // with no internet (the list ships inside the app). The old

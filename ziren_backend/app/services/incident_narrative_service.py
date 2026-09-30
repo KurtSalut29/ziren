@@ -629,6 +629,8 @@ def irf_flowables(incident: dict, report: dict) -> list:
     )
     from xml.sax.saxutils import escape
 
+    from app.services.pdf_text import printable
+
     details = report.get("details") if isinstance(report.get("details"), dict) else {}
     station = incident.get("stations") or {}
     agency = station.get("agencies") or {}
@@ -644,7 +646,7 @@ def irf_flowables(incident: dict, report: dict) -> list:
     foot = ParagraphStyle("Foot", parent=styles["Normal"], fontName="Helvetica", fontSize=7.4, leading=9.4, textColor=colors.HexColor("#888888"))
 
     def esc(x) -> str:
-        return escape(str(x)) if x not in (None, "") else ""
+        return escape(printable(str(x))) if x not in (None, "") else ""
 
     def cell(caption: str, value="") -> list:
         """One boxed cell: caption above, entry below."""

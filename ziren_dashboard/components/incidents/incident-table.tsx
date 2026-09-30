@@ -37,22 +37,17 @@
  * Severity stays a WORD as well as a colour, per the console's colour rules.
  */
 
-import Link from 'next/link';
-import {
-  Building2, MapPin, MoreHorizontal, Siren, Tag,
-  UserPlus, UserRound,
-} from 'lucide-react';
+import { Building2, ChevronRight, MapPin, UserRound } from 'lucide-react';
 import type { QueueIncident } from '@/lib/api/dispatch';
 import { CATEGORY_LABELS } from '@/lib/charts/queue-series';
 import { AckBadge, isAckOverdue } from './ack-badge';
 import {
-  AGENCY_ICON, AG_COLOR, AWAITING_STATUSES, CATEGORY_ICON, SEV_COLOR,
-  STATUS_STYLE, dueState, longestWait, sevOf, shortId, statusLabel, timeShort,
-  urgencyTimeColor,
+  AGENCY_ICON, AG_COLOR, AWAITING_STATUSES, DUE_COLOR, SEV_COLOR,
+  dueState, formatDue, longestWait, sevOf, shortId, timeShort, urgencyTimeColor,
 } from './incident-vocabulary';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/efferd/ui/dropdown-menu';
+  CategoryTile, SeverityChip, SosChip, StatusPill, TABLE_HEAD_CELL, queueStateLabel,
+} from './incident-table-parts';
 
 /**
  * The columns, with the question each one answers.
@@ -87,9 +82,9 @@ function columnsFor(
     ...(isProvincialAdmin
       ? [{ key: 'agency', label: 'Station', help: 'Which of your agency’s stations this report was routed to.' }]
       : []),
-    { key: 'status',   label: 'Status',   help: 'Where the report is in the workflow — separate from how severe it is.' },
-    { key: 'waiting',  label: 'Waiting',  help: 'How long the reporter has been waiting since it landed. Amber near this severity’s dispatch target, red past it.' },
-    { key: 'actions',  label: '',         help: 'Actions', align: 'right' },
+    { key: 'status',   label: 'Status',   help: 'What the report is waiting for — separate from how severe it is.' },
+    { key: 'waiting',  label: 'Waiting',  help: 'How long the reporter has been waiting since it landed, and how long until this severity’s dispatch target. Amber near it, red past it.' },
+    { key: 'actions',  label: '',         help: 'Open the report', align: 'right' },
   ];
 }
 
@@ -172,72 +167,39 @@ export function IncidentTable({
   isProvincialAdmin: boolean;
   onOpen: (id: string) => void;
 }) {
-  // ALWAYS overflow-x-auto, not lg:overflow-x-visible. That toggle assumed
-  // "lg and up" meant "wide enough that the 900px table always fits" — it
-  // does not. This page's own chrome already spends most of a 1024px (lg)
-  // viewport before the table gets a pixel: the shell nav (236px expanded)
-  // + this page's own padding (2×28px) + the QueueOverview rail (268px)
-  // + its gap (16px) is ~584px gone before the table starts, leaving ~440px
-  // for something that needs 900. The table was overflowing its own rounded
-  // card with no scrollbar to reach the rest — reported 2026-09-15 as
-  // content "cannot be seen" at ordinary laptop widths, and worse at any
-  // browser zoom above 100% (zooming in shrinks the effective CSS viewport
-  // the same way a narrower window would). True fit without scrolling only
-  // starts around a ~1536px+ viewport with the nav expanded — there is no
-  // sane breakpoint below that where turning the scrollbar off is safe.
-  //
-  // The risk being traded away: the comment this replaced warned that an
-  // always-on overflow-x-auto turns this div into a scroll container, which
-  // can change what a `position: sticky` descendant sticks relative to. In
-  // practice this div is never height-constrained — it is always exactly as
-  // tall as the table, so its own scrollport never has an independent
-  // vertical offset to stick against, and the header should keep tracking
-  // page scroll as before. Worth confirming the sticky header still follows
-  // correctly on a long table now that this is live; that regression would
-  // be far more recoverable than the reported one (content with no way to
-  // reach it at all).
+  // ALWAYS overflow-x-auto, not lg:overflow-x-visible. This page's own chrome
+  // (shell nav, padding, the QueueOverview rail) spends ~584px of a 1024px
+  // viewport before the table gets a pixel, so the table was overflowing its
+  // card with no scrollbar to reach the rest (reported 2026-09-15). True fit
+  // without scrolling only starts around a ~1536px viewport.
   return (
     <div className="scroll-slim overflow-x-auto">
       <table className="w-full min-w-[760px] border-collapse text-left">
         <colgroup>
           {/* Provincial Admin drops the # column — there's no working order
               to have a place in when nothing here is ever dispatched. */}
-          {!isProvincialAdmin && <col className="w-[64px]" />}
+          {!isProvincialAdmin && <col className="w-[60px]" />}
           <col />
-          <col className="w-[200px]" />
+          <col className="w-[190px]" />
           {isProvincialAdmin && <col className="w-[132px]" />}
-          <col className="w-[148px]" />
-          <col className="w-[96px]" />
+          <col className="w-[156px]" />
+          <col className="w-[104px]" />
           <col className="w-[48px]" />
         </colgroup>
         <thead>
-          <tr className="[&>th]:border-b [&>th]:border-[var(--color-surface-border)]">
+          <tr className="[&>th]:border-b [&>th]:border-[var(--color-border-strong)]">
             {columnsFor(isProvincialAdmin).map(c => (
               <th
-                /* NOT sticky any more. This wrapper is now unconditionally
-                   overflow-x-auto (see the div below) so the table is never
-                   silently unreachable when it doesn't fit — but a sticky
-                   descendant sticks relative to its nearest scroll-container
-                   ancestor, and overflow-x-auto makes THIS div that ancestor
-                   (per the CSS overflow spec, setting only one axis forces
-                   the other to compute as auto too), not the page. The
-                   result, seen live 2026-09-15: the header re-anchored
-                   105px below the top of a container that never itself
-                   scrolls, rendering stuck in the middle of the table on top
-                   of row content instead of floating above it. A header
-                   that scrolls normally with the page is a smaller loss than
-                   one that renders in the wrong place. */
-                className={[
-                  'bg-[var(--color-surface-card)] px-3 py-2.5',
-                  'text-section-label font-semibold whitespace-nowrap',
-                  c.align === 'right' ? 'text-right' : 'text-left',
-                ].join(' ')}
+                /* NOT sticky. The wrapper is overflow-x-auto, which makes it
+                   the scroll container a sticky header sticks to — and it
+                   never scrolls vertically, so the header rendered stuck in
+                   the middle of the table (seen live 2026-09-15). */
+                className={[TABLE_HEAD_CELL, c.align === 'right' ? 'text-right' : 'text-left'].join(' ')}
                 key={c.key}
                 scope="col"
-                style={{ color: 'var(--color-text-tertiary)' }}
                 title={c.help}
               >
-                {c.label}
+                {c.label || <span className="sr-only">Open</span>}
               </th>
             ))}
           </tr>
@@ -288,7 +250,8 @@ function _Fragment({ children }: { children: React.ReactNode }) {
  *
  * It carries the instruction, not only the label. "Critical" is a
  * classification; "Dispatch these first" is what to do about it, and the
- * second is what a dispatcher under pressure is actually reading for.
+ * second is what a dispatcher under pressure is actually reading for. The
+ * instruction used to be a tooltip, which nobody under pressure hovers for.
  */
 function _GroupHeading({
   group,
@@ -305,25 +268,29 @@ function _GroupHeading({
   return (
     <tr>
       <th
-        className="border-y border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-left"
+        className="relative border-y border-[var(--color-surface-border)] px-3 py-2 text-left"
         colSpan={columnsFor(isProvincialAdmin).length}
         scope="colgroup"
+        style={{ backgroundColor: `color-mix(in srgb, ${meta.color} 7%, var(--color-surface-card))` }}
       >
+        <span
+          aria-hidden="true"
+          className="absolute top-0 bottom-0 left-0 w-[3px]"
+          style={{ backgroundColor: meta.color }}
+        />
         <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span
-            aria-hidden="true"
-            className="size-2 shrink-0 rounded-full"
-            style={{ backgroundColor: meta.color }}
-          />
           <span
             className="text-[11.5px] font-bold tracking-wide uppercase"
             style={{ color: meta.color }}
           >
             {meta.label}
           </span>
-          <span className="text-meta text-muted-foreground" title={instruction}>
-            {rows.length} waiting
-            {waited && ` · longest ${waited}`}
+          <span className="text-[12px] font-medium text-[var(--color-text-secondary)]">
+            {instruction}
+          </span>
+          <span className="ml-auto text-meta font-normal text-muted-foreground">
+            {rows.length} {rows.length === 1 ? 'report' : 'reports'}
+            {waited && ` · longest wait ${waited}`}
           </span>
         </span>
       </th>
@@ -355,20 +322,15 @@ function _Row({
   // the station is the fact that actually varies row to row for them.
   const stationName = incident.stations?.name ?? null;
   const wholeLabel = isProvincialAdmin ? (stationName ?? 'Unrouted') : (agType ?? 'Unrouted');
-  const sc = STATUS_STYLE[incident.status] ?? STATUS_STYLE.received;
   const category = incident.incident_category;
-  const CategoryIcon = category ? (CATEGORY_ICON[category] ?? Tag) : Tag;
   const categoryLabel =
     category && category !== 'other' ? (CATEGORY_LABELS[category] ?? null) : null;
   const overdue = isAckOverdue(incident.ack);
   const waiting = AWAITING_STATUSES.includes(incident.status);
   const due = dueState(incident);
-  const late = waiting && due.bucket === 'late';
 
   // Time alone reads as "this morning" no matter how old the report actually
-  // is — a report 13 days late still just said "09:34", indistinguishable
-  // from one that landed nine minutes ago. The date only earns its place
-  // once it's not today; today's reports stay exactly as compact as before.
+  // is. The date only earns its place once it's not today.
   const createdAt = new Date(incident.created_at);
   const receivedToday = createdAt.toDateString() === new Date().toDateString();
   const received = receivedToday
@@ -379,10 +341,13 @@ function _Row({
 
   return (
     <tr
-      className="group border-b border-[var(--color-surface-border)] align-top transition-colors last:border-b-0 hover:bg-[var(--color-surface-hover)]"
+      // The whole row opens the report. The title below is still a real
+      // button, which is what a keyboard and a screen reader reach.
+      className="group cursor-pointer border-b border-[var(--color-surface-border)] align-middle transition-colors last:border-b-0 hover:bg-[var(--color-surface-hover)]"
       // What "Show in list" scrolls to - see ActiveIncidentsView.
       data-incident-id={incident.id}
       data-new={isNew ? '' : undefined}
+      onClick={() => onOpen(incident.id)}
       style={{
         // The row at the head of a group is tinted in THAT group's colour, not
         // in red. On a quiet shift the only thing waiting may be a medium one,
@@ -392,23 +357,18 @@ function _Row({
         backgroundColor: isNext
           ? `color-mix(in srgb, ${sevColor} 7%, transparent)`
           : isNew
-            ? 'color-mix(in srgb, var(--color-brand) 8%, transparent)'
+            ? 'color-mix(in srgb, var(--color-brand) 6%, transparent)'
             : undefined,
       }}
     >
       {/* ── Place in this group ─────────────────────────────────
-          Provincial Admin drops this cell entirely, not just its content —
-          there's no working order to have a place in when nothing on this
-          page is ever dispatched. The overdue signal this cell's accent bar
-          used to also carry isn't lost: the Waiting column already renders
-          its own independent LATE flag off the same `overdue`/`late` state,
-          colour AND text, not just this bar. */}
+          Provincial Admin drops this cell entirely — there's no working order
+          to have a place in when nothing on this page is ever dispatched. */}
       {!isProvincialAdmin && (
-        <td className="relative px-3 py-3">
+        <td className="relative px-3 py-2.5">
           {/* The accent bar sits on the first cell rather than on the row: a
               border-left on a <tr> is not painted by every engine at
-              border-collapse, which is how this stripe silently disappeared in
-              the first draft. */}
+              border-collapse. */}
           {(isNext || overdue) && (
             <span
               aria-hidden="true"
@@ -426,9 +386,9 @@ function _Row({
               —
             </span>
           ) : (
-            <>
+            <span className="flex flex-col items-start gap-1">
               <span
-                className="font-mono text-[13px] font-bold tabular-nums"
+                className="font-mono text-[13px] leading-none font-bold tabular-nums"
                 style={{
                   color: isNext ? 'var(--color-brand)' : 'var(--color-text-muted)',
                 }}
@@ -445,55 +405,46 @@ function _Row({
                   "the job to pick up right now". */}
               {isNext && (
                 <span
-                  className="mt-1 block font-mono text-[9.5px] font-bold tracking-wide"
-                  style={{ color: 'var(--color-brand)' }}
+                  className="rounded-[5px] px-1.5 py-[3px] text-[9.5px] leading-none font-bold tracking-wide"
+                  style={{
+                    backgroundColor: 'var(--color-brand)',
+                    color: 'var(--color-text-inverse)',
+                  }}
                 >
                   NEXT
                 </span>
               )}
-            </>
+            </span>
           )}
         </td>
       )}
 
       {/* ── The report ────────────────────────────────────────── */}
-      <td className="px-3 py-3">
-        <div className="flex items-start gap-2">
-          {/* The category, as an icon with its name on hover. It was a word
-              here too, which pushed the meta line onto a second row and made
-              every row in the table taller than the fact deserved. */}
-          <CategoryIcon
-            className="mt-0.5 shrink-0"
-            size={14}
-            style={{ color: sevColor }}
-          >
-            <title>{categoryLabel ?? 'Category not chosen by the reporter'}</title>
-          </CategoryIcon>
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-3">
+          <CategoryTile category={category} color={sevColor} />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              {/* A button, not a link: the detail opens OVER the queue so the
-                  dispatcher keeps their filters, their page and their place. */}
-              <button
-                className="line-clamp-2 max-w-full text-left text-[13.5px] leading-snug font-semibold text-foreground hover:underline"
-                onClick={() => onOpen(incident.id)}
-                type="button"
-              >
-                {incident.report_text}
-              </button>
-              {incident.sos_flagged && (
-                <span
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
-                  style={{
-                    backgroundColor: 'var(--color-severity-critical-bg)',
-                    color: 'var(--color-severity-critical)',
-                  }}
-                >
-                  <Siren size={10} /> SOS
-                </span>
+            {/* A button, not a link: the detail opens OVER the queue so the
+                dispatcher keeps their filters, their page and their place. */}
+            <button
+              className="line-clamp-2 max-w-full text-left text-[13.5px] leading-snug font-semibold text-foreground group-hover:underline"
+              onClick={e => { e.stopPropagation(); onOpen(incident.id); }}
+              type="button"
+            >
+              {incident.report_text}
+            </button>
+            {/* One line under the report: how bad, what kind, and anything
+                unusual about it. These used to stack as three separate lines,
+                which made every row a different height. */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <SeverityChip severity={sev} />
+              {categoryLabel && (
+                <span className="text-[11.5px] text-muted-foreground">{categoryLabel}</span>
               )}
+              {incident.sos_flagged && <SosChip />}
               {isNew && (
                 <span
-                  className="shrink-0 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                  className="shrink-0 rounded-[5px] px-1.5 py-[3px] text-[10px] leading-none font-bold tracking-wide uppercase"
                   style={{
                     backgroundColor: 'var(--color-brand)',
                     color: 'var(--color-text-inverse)',
@@ -503,69 +454,51 @@ function _Row({
                 </span>
               )}
             </div>
-
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px]">
-              {/* Severity as a word. Never the row tint alone — the console's
-                  colour rules put a label beside every severity hue. */}
-              <span
-                className="rounded-[var(--radius-sm)] border px-1.5 py-px text-[10px] font-bold tracking-wide uppercase"
-                style={{
-                  color: sevColor,
-                  borderColor: `color-mix(in srgb, ${sevColor} 45%, transparent)`,
-                }}
-              >
-                {sev ?? 'untriaged'}
-              </span>
-            </div>
           </div>
         </div>
       </td>
 
       {/* ── Where ─────────────────────────────────────────────── */}
-      <td className="px-3 py-3 text-[12.5px] leading-tight text-muted-foreground">
+      <td className="px-3 py-2.5 text-[12.5px] leading-snug">
         {incident.location_address ? (
-          <span className="line-clamp-2">{incident.location_address}</span>
+          <span className="flex items-start gap-1.5 text-[var(--color-text-secondary)]">
+            <MapPin aria-hidden="true" className="mt-[3px] shrink-0 text-muted-foreground" size={12} />
+            <span className="line-clamp-2" title={incident.location_address}>
+              {incident.location_address}
+            </span>
+          </span>
         ) : (
           <span
-            className="inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 font-medium"
             style={{ color: 'var(--color-system-warning)' }}
             title="No address resolved for this report."
           >
-            <MapPin size={11} /> No address
+            <MapPin aria-hidden="true" size={12} /> No address
           </span>
         )}
       </td>
 
       {/* ── Which station (Provincial Admin only) ─────────────── */}
       {isProvincialAdmin && (
-      <td className="px-3 py-3">
-        <span
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold whitespace-nowrap"
-          style={{ color: agColor }}
-          title={isProvincialAdmin && stationName ? `${agType} · ${stationName}` : undefined}
-        >
-          <AgencyIcon aria-hidden="true" size={13} />
-          {wholeLabel}
-        </span>
-      </td>
+        <td className="px-3 py-2.5">
+          <span
+            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold whitespace-nowrap"
+            style={{ color: agColor }}
+            title={stationName ? `${agType} · ${stationName}` : undefined}
+          >
+            <AgencyIcon aria-hidden="true" size={13} />
+            {wholeLabel}
+          </span>
+        </td>
       )}
 
       {/* ── Where in the workflow ─────────────────────────────── */}
-      <td className="px-3 py-3">
+      <td className="px-3 py-2.5">
         <div className="flex flex-col items-start gap-1">
-          <span
-            className="rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap"
-            style={{ backgroundColor: sc.bg, color: sc.text }}
-          >
-            {statusLabel(incident.status)}
-          </span>
+          <StatusPill label={queueStateLabel(incident)} status={incident.status} />
           {/* Whether the crew has answered. Only ever present on rows that
-              have been dispatched, which is where the question exists.
-
-              The size is set HERE, not in the badge: it sizes to its context,
-              and a table cell inherits the document's 14px where the card gave
-              it 12. Unwrapped, "NO ANSWER FROM CREW" wrapped onto two lines
-              and made every dispatched row taller than the ones above it. */}
+              have been dispatched, which is where the question exists. The
+              size is set HERE, not in the badge: it sizes to its context. */}
           <span className="text-[11px] leading-tight">
             <AckBadge ack={incident.ack} />
           </span>
@@ -574,64 +507,41 @@ function _Row({
 
       {/* ── How long the reporter has been waiting ────────────── */}
       {/* Coloured against THIS severity's target, not one threshold for the
-          whole console. The flag is the only thing the target is used for now;
-          it changes no order, so it can never contradict the headings. */}
-      <td className="px-3 py-3">
+          whole console. The target changes no order, so it can never
+          contradict the headings. Under the time, the same line the detail
+          dialog's clock shows: how long until the target, or how far past. */}
+      <td className="px-3 py-2.5">
         <span
-          className="font-mono text-[14px] font-bold tabular-nums"
+          className="block font-mono text-[14px] leading-none font-bold tabular-nums"
           style={{ color: urgencyTimeColor(incident.created_at, incident.status, sev) }}
           title={`Received ${received}. Target for ${sev ?? 'untriaged'} reports is ${due.targetMinutes} minutes.`}
         >
           {timeShort(incident.created_at)}
         </span>
-        {late && (
+        {waiting && (
           <span
-            className="mt-0.5 block text-[10px] font-bold tracking-wide uppercase"
-            style={{ color: 'var(--color-severity-critical)' }}
-            title={`Past the ${due.targetMinutes}-minute dispatch target for ${sev ?? 'untriaged'} reports by ${Math.abs(due.minutesLeft)} minutes.`}
+            className="mt-1 block text-[10.5px] leading-none font-semibold whitespace-nowrap"
+            style={{ color: due.bucket === 'ontime' ? 'var(--color-text-muted)' : DUE_COLOR[due.bucket] }}
           >
-            Late
+            {formatDue(due)}
           </span>
         )}
       </td>
 
-
-      {/* ── What to do about it ───────────────────────────────── */}
-      <td className="px-2 py-3 text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label={`Actions for incident INC-${shortId(incident.id)}`}
-            className="inline-flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-muted-foreground transition-colors hover:bg-[var(--color-surface-raised)] hover:text-foreground"
-          >
-            <MoreHorizontal size={15} />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onOpen(incident.id)}>
-              <MapPin data-icon="inline-start" />
-              Open detail
-            </DropdownMenuItem>
-            {/* A Provincial Admin oversees every station of their agency_type
-                and dispatches for none of them, so Assign is an action they
-                can never take. */}
-            {isProvincialAdmin ? (
-              <DropdownMenuItem asChild>
-                <Link href={`/map?incident=${incident.id}`}>
-                  <MapPin data-icon="inline-start" />
-                  View on map
-                </Link>
-              </DropdownMenuItem>
-            ) : (
-              // Opens the detail modal (Dispatch lives in its action bar
-              // now) instead of navigating to the full page's #assign
-              // anchor — a dispatcher deciding who to send should not have
-              // to leave the queue to do it.
-              <DropdownMenuItem onClick={() => onOpen(incident.id)}>
-                <UserPlus data-icon="inline-start" />
-                Assign a responder
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* ── Open it ───────────────────────────────────────────── */}
+      {/* This was a "⋯" menu whose two items, "Open detail" and "Assign a
+          responder", both opened the same dialog. One plain button says what
+          the row does; assigning is done from the dialog's own action bar. */}
+      <td className="px-2 py-2.5 text-right">
+        <button
+          aria-label={`Open incident INC-${shortId(incident.id)}`}
+          className="inline-flex size-7 items-center justify-center rounded-full border border-[var(--color-surface-border)] text-muted-foreground transition-colors group-hover:border-[var(--color-border-strong)] group-hover:bg-[var(--color-surface-card)] group-hover:text-foreground"
+          onClick={e => { e.stopPropagation(); onOpen(incident.id); }}
+          title="Open this report"
+          type="button"
+        >
+          <ChevronRight aria-hidden="true" size={15} />
+        </button>
       </td>
     </tr>
   );

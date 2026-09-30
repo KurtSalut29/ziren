@@ -189,6 +189,11 @@ class UserProfile(BaseModel):
     push_notifications_enabled: bool       = True
     emergency_contact_name:     str | None = None
     emergency_contact_number:   str | None = None
+    # How the account stands: warnings on record, and the end of a suspension
+    # from reporting (a date in the past is not a suspension). See
+    # resident_account_service.
+    sos_warning_count:          int | None = 0
+    sos_suspended_until:        datetime | None = None
     # Phase 012 — structured residency.
     # verification_level is tiered trust: 0 unverified, 1 phone-verified,
     # 2 resident-verified. It is shown to dispatchers as reporter credibility

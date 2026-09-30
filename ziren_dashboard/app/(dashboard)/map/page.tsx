@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useMapData } from '@/lib/hooks/useMapData';
 import { mapPrefs } from '@/lib/prefs/definitions';
 import { IncidentDetailModal } from '@/components/incidents/incident-detail-modal';
-import { MapToolbar } from '@/components/map/map-toolbar';
+import { MapLiveBadge, MapToolbar } from '@/components/map/map-toolbar';
 import {
   AGENCY_KEYS,
   ALL_AGENCIES,
@@ -147,7 +147,6 @@ function MapView() {
   return (
     <div className="flex h-full flex-col">
       <MapToolbar
-        lastRefresh={lastRefresh}
         layerCounts={layerCounts}
         layers={layers}
         agencies={agencies}
@@ -157,7 +156,6 @@ function MapView() {
         onSeveritiesChange={setSeverities}
         severities={severities}
         severityCounts={severityCounts}
-        stale={Boolean(error)}
       />
 
       {/* min-h-0 so this pane can shrink inside the flex column. Without it a
@@ -194,6 +192,16 @@ function MapView() {
             layers={layers}
             onOpenIncident={setOpenId}
             severities={severities}
+          />
+        )}
+
+        {/* Beside the credits (i) button, bottom-left: the one corner nothing
+            else on this page uses. */}
+        {data && (
+          <MapLiveBadge
+            className="absolute bottom-2.5 left-12 z-[900]"
+            lastRefresh={lastRefresh}
+            stale={Boolean(error)}
           />
         )}
 

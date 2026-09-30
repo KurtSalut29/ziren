@@ -14,6 +14,11 @@ Routes:
   GET  /barangays                           — Admin: barangay reference list for place filters
   GET  /provincial/counts                   — Provincial Admin: standing totals (own agency_type; counts only, no rows)
   POST /verification/residents/bulk         — Admin: one decision applied to many residents
+  GET  /residents                           — Admin: resident accounts and how each one stands
+  GET  /residents/{id}                      — Admin: one resident, their reports and their history
+  POST /residents/{id}/warn                 — Admin: put a warning on record (the third one suspends)
+  POST /residents/{id}/suspend              — Admin: stop a resident from reporting
+  POST /residents/{id}/reinstate            — Admin: lift a suspension
 """
 
 from datetime import datetime, timedelta, timezone
@@ -27,7 +32,7 @@ from typing import Optional
 from app.core.config import settings
 from app.core.dependencies import assert_agency_scope, get_current_user, require_role
 from app.models.user import UserProfile, UpdateProfileRequest, MessageResponse
-from app.services import user_service, audit_service
+from app.services import user_service, audit_service, resident_account_service
 from app.core.rate_limit import limiter
 from app.db.supabase_client import get_supabase, new_supabase_client
 
@@ -1138,7 +1143,8 @@ def list_barangays(
     db = get_supabase()
     result = (
         db.table("barangays")
-        .select("name, municipality, psgc_code")
+        # id too: the announcement composer targets barangays by id.
+        .select("id, name, municipality, psgc_code")
         .order("municipality", desc=False)
         .order("name", desc=False)
         .execute()
@@ -1444,6 +1450,83 @@ def decide_resident_verification(
         reviewer_id=str(current_user.get("id")),
         purge_images=body.purge_images,
         current_user=current_user,
+    )
+
+
+# ============================================================
+# Resident accounts — where a resident goes once they are verified
+#
+# Verification decides who someone is. This is what happens after: an admin can
+# see the account, warn it for a violation, suspend it from reporting and lift
+# that again. Unlike verification_level, a suspension IS a permission - it is
+# the one thing on this router that stops a report being sent - so every change
+# is audited and the resident is told on their phone. See
+# resident_account_service for the rules.
+# ============================================================
+
+class ResidentWarning(BaseModel):
+    violation: str
+    # What happened, in the admin's words. The resident reads it.
+    note: str
+    # The report the warning is about, when there is one.
+    incident_id: Optional[str] = None
+
+
+class ResidentSuspension(BaseModel):
+    violation: str
+    note: str
+    # None means "until further notice".
+    days: Optional[int] = None
+
+
+class ResidentReinstatement(BaseModel):
+    note: Optional[str] = None
+    # Also wipe the warnings, so the next one is not an instant suspension.
+    clear_warnings: bool = False
+
+
+@router.get("/residents")
+def list_resident_accounts(
+    standing: str = Query("verified", description="verified, unverified, warned, suspended or all"),
+    q: Optional[str] = Query(None, max_length=80),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    current_user: dict = _admin_only,
+):
+    """Resident accounts and how each one stands. An Agency Admin sees their own municipality."""
+    return resident_account_service.list_residents(
+        standing=standing, q=q, limit=limit, offset=offset, current_user=current_user,
+    )
+
+
+@router.get("/residents/{user_id}")
+def get_resident_account(user_id: str, current_user: dict = _admin_only):
+    """One resident: profile, recent reports, and every warning and suspension."""
+    return resident_account_service.get_resident(user_id, current_user=current_user)
+
+
+@router.post("/residents/{user_id}/warn")
+def warn_resident(user_id: str, body: ResidentWarning, current_user: dict = _admin_only):
+    """Put a warning on record and tell the resident. The third warning suspends for 30 days."""
+    return resident_account_service.warn(
+        user_id, violation=body.violation, note=body.note,
+        incident_id=body.incident_id, actor=current_user,
+    )
+
+
+@router.post("/residents/{user_id}/suspend")
+def suspend_resident(user_id: str, body: ResidentSuspension, current_user: dict = _admin_only):
+    """Stop a resident from sending reports, for `days` or until further notice."""
+    return resident_account_service.suspend(
+        user_id, violation=body.violation, note=body.note, days=body.days, actor=current_user,
+    )
+
+
+@router.post("/residents/{user_id}/reinstate")
+def reinstate_resident(user_id: str, body: ResidentReinstatement, current_user: dict = _admin_only):
+    """Lift a suspension. The resident is told they can report again."""
+    return resident_account_service.reinstate(
+        user_id, note=body.note, clear_warnings=body.clear_warnings, actor=current_user,
     )
 
 

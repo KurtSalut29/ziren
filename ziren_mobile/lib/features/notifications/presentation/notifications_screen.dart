@@ -7,6 +7,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../announcements/data/announcement_repository.dart';
 import '../../announcements/domain/announcement_model.dart';
+import '../../announcements/presentation/announcement_style.dart';
 import '../../auth/domain/auth_provider.dart';
 import '../../incident_report/presentation/incident_labels.dart';
 import '../../responder/domain/responder_notification_provider.dart';
@@ -86,8 +87,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       else
         for (var i = 0; i < provider.unread.length; i++)
           _buildIncidentEntry(t, provider, provider.unread[i], i),
+      // The same alert can arrive both ways - as a notice (a safety alert) and
+      // in the announcements feed. Shown once, as the notice.
       for (final a in _announcements)
-        if (!_dismissedAnnouncementIds.contains(a.id))
+        if (!_dismissedAnnouncementIds.contains(a.id) &&
+            !provider.unread.any((n) => n.announcementId == a.id))
           _buildAnnouncementEntry(t, a),
     ]..sort((a, b) => b.time.compareTo(a.time));
 
@@ -159,6 +163,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         // chat, where it is answered.
         onTap: () async {
           provider.dismiss(index);
+          // A safety alert opens the alert, where it is answered.
+          if (n.isAnnouncement) {
+            if (n.announcementId != null) {
+              await context.push('/announcements/${n.announcementId}');
+            }
+            return;
+          }
+          // A notice about the account has no report behind it. A suspension
+          // opens the one thing that still works - the hotlines.
+          if (n.isAccount) {
+            if (view.primary == NoticeAction.hotlines) {
+              await context.push('/hotlines');
+            }
+            return;
+          }
           if (view.primary == NoticeAction.openChat) {
             await openReportChatById(context, n.incidentId);
           } else {
@@ -209,36 +228,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   // ── Announcement-derived entries ──────────────────────────
   //
-  // Real mapping from AnnouncementModel.category (Section 24 broadcasts):
-  //   emergency / service_interruption -> "Safety Advisory" (blue, a
-  //     hazard/service broadcast that is not tied to one incident report)
-  //   maintenance / feature / reminder / general -> "System Message"
-  //     (indigo — app-authored, not safety-critical)
+  // Each kind in its own words and colour - the same table the announcements
+  // screen and the dashboard use (announcementStyle). This used to fold every
+  // broadcast into "Safety Advisory" or "System Message", so an evacuation
+  // order and a maintenance notice read almost alike.
 
   _FeedEntry _buildAnnouncementEntry(AppLocalizations t, AnnouncementModel a) {
-    final bool isAdvisory =
-        a.category == 'emergency' || a.category == 'service_interruption';
+    final (icon, color) = announcementStyle(a.category);
     return _FeedEntry(
       time: a.createdAt,
       child: _NotificationTile(
         key: ValueKey('ann_${a.id}'),
-        icon: isAdvisory ? LucideIcons.info : LucideIcons.message_circle,
-        color:
-            isAdvisory
-                ? ZirenTokens.systemInfo
-                // Indigo, not aiSuggested purple — purple is reserved
-                // strictly for actual AI/machine-generated output in this
-                // app's color contract, and a Super Admin broadcast is
-                // human-authored, not machine output.
-                : ZirenTokens.statusProcessing,
-        title:
-            isAdvisory
-                ? t.notifCategorySafetyAdvisory
-                : t.notifCategorySystemMessage,
+        icon: icon,
+        color: color,
+        title: a.categoryLabel(t),
         body: a.title,
-        meta: _timeAgo(t, a.createdAt),
+        meta: '${a.placeLine(t)} · ${_timeAgo(t, a.createdAt)}',
         onDismiss:
             () => setState(() => _dismissedAnnouncementIds.add(a.id)),
+        onTap: () => context.push('/announcements/${a.id}'),
       ),
     );
   }

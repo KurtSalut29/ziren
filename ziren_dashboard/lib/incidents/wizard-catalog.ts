@@ -79,6 +79,22 @@ export const OVERLAP_LABELS: Record<string, string> = {
   none:           'None',
 };
 
+/**
+ * A stored value that means "nobody answered this", per key.
+ *
+ * `people_count: 'notsure'` is written by the phone on EVERY voice report
+ * (incident_provider.dart, stopVoiceNote), as the default of a question the
+ * app no longer shows anywhere: nothing calls setPeopleCount. The console
+ * was drawing it as a fact of the report, "people count · notsure", which
+ * told a dispatcher nothing and looked like something the resident had said.
+ * The backend already treats it as no answer (triage_service's
+ * _COUNT_ANSWERS leaves it out on purpose). A real count from an older report
+ * ('2people', '4plus') is still shown.
+ */
+const NO_ANSWER: Record<string, string> = {
+  people_count: 'notsure',
+};
+
 export interface WizardAnswer {
   key: string;
   label: string;
@@ -104,6 +120,7 @@ export function groupWizardAnswers(
     if (raw === null || raw === undefined || raw === '') continue;
     const value = Array.isArray(raw) ? raw.join(', ') : String(raw);
     if (!value.trim()) continue;
+    if (NO_ANSWER[key] === value) continue;
 
     const q = WIZARD_QUESTIONS[key];
     out[q?.facet ?? 'how'].push({

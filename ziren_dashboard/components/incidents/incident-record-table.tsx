@@ -24,8 +24,10 @@
  *                worse than none.
  *   Agency /     Provincial Admin only. An Agency Admin's rows all share one
  *   Station      agency, so the column would repeat one value down the page.
- *   Date, Time   Two columns, not one timestamp — so a run of incidents can be
- *                read down by day, and matched against a logbook by hour.
+ *   Reported     The date with the time under it, in one column. They were two
+ *                columns, which pushed Status off the right edge of a laptop
+ *                screen; stacked, the date still reads down the page by day and
+ *                the hour still sits beside it for matching against a logbook.
  *   Severity     A word inside the chip as well as a colour. Never colour alone.
  *   Status       Dot plus word, for the same reason.
  *   Responder    Who was sent. A name, not an id.
@@ -42,16 +44,16 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Building2, CheckCircle2, FilePenLine, FileText, MapPin, Mic, Siren, Tag } from 'lucide-react';
+import { Building2, CheckCircle2, FilePenLine, FileText, MapPin, Mic } from 'lucide-react';
 import { OUTCOME_LABEL, type HistoryIncident } from '@/lib/api/dispatch';
 import { CATEGORY_LABELS } from '@/lib/charts/queue-series';
 import { recordReportText, withoutVoicePlaceholder } from '@/lib/incidents/report-text';
 import { formatDate, formatTime } from '@/lib/format/datetime';
 import { DISPLAY_DEFAULTS, displayPrefs, type DisplayPrefs } from '@/lib/prefs/definitions';
+import { AGENCY_ICON, AG_COLOR, sevOf, shortId, statusLabel } from './incident-vocabulary';
 import {
-  AGENCY_ICON, AG_COLOR, CATEGORY_ICON, SEV_COLOR, STATUS_STYLE,
-  sevOf, shortId, statusLabel,
-} from './incident-vocabulary';
+  CategoryTile, SeverityChip, SosChip, StatusPill, TABLE_HEAD_CELL,
+} from './incident-table-parts';
 
 /**
  * Everything a row shows, as one lower-case string to search.
@@ -115,27 +117,28 @@ interface Column {
  * carries what the resident actually said was cut to two words, and Outcome fell
  * off the right edge entirely. Report now has a real width (300px, about sixty
  * characters over its two lines) and the table scrolls sideways for the rest.
+ *
+ * 2026-09-30: everything up to and including Status now fits a 1440px screen
+ * without scrolling (1,080px of the 1,118 available). Before, Status was cut
+ * in half by the right edge, so the one column that says how a report ended
+ * needed a sideways scroll to read.
  */
 const COLUMNS: Column[] = [
   { key: 'record',    label: 'Record no.',       width: 148 },
-  { key: 'type',      label: 'Type',             width: 136 },
-  { key: 'report',    label: 'Report',           width: 300 },
+  { key: 'type',      label: 'Type',             width: 150 },
+  { key: 'report',    label: 'Report',           width: 270 },
   { key: 'location',  label: 'Location',         width: 180 },
   { key: 'agency',    label: 'Agency / Station', width: 168, provincialOnly: true },
-  { key: 'date',      label: 'Date',             width: 96 },
-  { key: 'time',      label: 'Time',             width: 60 },
-  { key: 'severity',  label: 'Severity',         width: 96 },
-  { key: 'status',    label: 'Status',           width: 118 },
-  { key: 'responder', label: 'Responder',        width: 128 },
-  { key: 'outcome',   label: 'Outcome',          width: 164 },
+  { key: 'reported',  label: 'Reported',         width: 104 },
+  { key: 'severity',  label: 'Severity',         width: 112 },
+  { key: 'status',    label: 'Status',           width: 116 },
+  { key: 'responder', label: 'Responder',        width: 132 },
+  { key: 'outcome',   label: 'Outcome',          width: 150 },
   // Resolved rows only — see _Row. The PNP-blotter-style prose account an
   // Agency Admin files after the fact, distinct from Outcome's brief tally.
-  // Labelled "Actions", not "Narrative" — a column header saying "Narrative"
-  // sat right next to the existing "Report" column (the resident's own
-  // report text) and the button read as a plain "Report", which is exactly
-  // the ambiguity this rename fixes: the button now names the action itself
-  // ("Create Narrative Report").
-  { key: 'narrative', label: 'Actions',          width: 196 },
+  // Headed "Narrative report" so the short button labels under it ("Write",
+  // "Draft", "Filed") cannot be mistaken for the resident's own Report column.
+  { key: 'narrative', label: 'Narrative report', width: 136 },
 ];
 
 /** The first column stays put while the rest scroll under it, so a row is
@@ -263,21 +266,20 @@ export function IncidentRecordTable({
             ))}
           </colgroup>
           <thead>
-            <tr className="[&>th]:border-b [&>th]:border-[var(--color-surface-border)]">
+            <tr className="[&>th]:border-b [&>th]:border-[var(--color-border-strong)]">
               {columns.map((c, i) => (
                 <th
                   className={[
                     // Opaque, or rows would show through as they scroll under.
                     // Above the body's sticky first column (z-1); the corner cell
                     // is above both, since it is the one that pins on both axes.
-                    'sticky top-0 bg-[var(--color-surface-card)] px-3 py-2.5 text-section-label font-semibold whitespace-nowrap',
+                    'sticky top-0', TABLE_HEAD_CELL,
                     i === 0
                       ? 'left-0 z-[4] shadow-[1px_0_0_var(--color-surface-border)]'
                       : 'z-[3]',
                   ].join(' ')}
                   key={c.key}
                   scope="col"
-                  style={{ color: 'var(--color-text-tertiary)' }}
                 >
                   {c.label}
                 </th>
@@ -324,13 +326,10 @@ function _Row({
   display: DisplayPrefs;
 }) {
   const sev = sevOf(incident);
-  const sevColor = sev ? (SEV_COLOR[sev] ?? 'var(--color-text-muted)') : 'var(--color-text-muted)';
-  const sc = STATUS_STYLE[incident.status] ?? STATUS_STYLE.received;
 
   const category = incident.incident_category;
   const categoryLabel =
     category && category !== 'other' ? (CATEGORY_LABELS[category] ?? null) : null;
-  const CategoryIcon = category ? (CATEGORY_ICON[category] ?? Tag) : Tag;
 
   const agType = incident.stations?.agencies?.agency_type ?? null;
   const agColor = agType ? (AG_COLOR[agType] ?? 'var(--color-brand)') : 'var(--color-text-muted)';
@@ -357,13 +356,13 @@ function _Row({
     // border belongs to the table and does not travel with the cell), and a
     // <tr> border does nothing in that mode.
     <tr
-      className="group cursor-pointer align-top transition-colors hover:bg-[var(--color-surface-hover)] [&>td]:border-b [&>td]:border-[var(--color-surface-border)] last:[&>td]:border-b-0"
+      className="group cursor-pointer align-middle transition-colors hover:bg-[var(--color-surface-hover)] [&>td]:border-b [&>td]:border-[var(--color-surface-border)] last:[&>td]:border-b-0"
       onClick={() => onOpen(incident.id)}
     >
       {/* The record number is the row's real button. The <tr> click above is a
           convenience for the mouse; this is what a keyboard and a screen
           reader reach, so opening a record never depends on the pointer. */}
-      <td className={`px-3 py-3 ${STICKY_CELL}`}>
+      <td className={`px-3 py-2.5 ${STICKY_CELL}`}>
         <button
           className="font-mono text-[12.5px] font-semibold tabular-nums whitespace-nowrap text-foreground hover:underline focus-visible:underline focus-visible:outline-none"
           onClick={e => { e.stopPropagation(); onOpen(incident.id); }}
@@ -373,29 +372,19 @@ function _Row({
         </button>
       </td>
 
-      <td className="px-3 py-3">
-        <div className="flex flex-col items-start gap-1">
-          <span className="flex items-center gap-1.5 text-[13px] text-foreground">
-            <CategoryIcon className="shrink-0 text-muted-foreground" size={14} />
-            {categoryLabel ?? 'Uncategorised'}
-          </span>
-          {incident.sos_flagged && (
-            <span
-              className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide"
-              style={{
-                color: 'var(--color-severity-critical)',
-                borderColor: 'color-mix(in srgb, var(--color-severity-critical) 40%, transparent)',
-                backgroundColor: 'color-mix(in srgb, var(--color-severity-critical) 8%, transparent)',
-              }}
-            >
-              <Siren aria-hidden="true" size={11} />
-              SOS
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <CategoryTile category={category} />
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <span className="text-[13px] leading-tight font-medium text-foreground">
+              {categoryLabel ?? 'Uncategorised'}
             </span>
-          )}
+            {incident.sos_flagged && <SosChip />}
+          </div>
         </div>
       </td>
 
-      <td className="px-3 py-3">
+      <td className="px-3 py-2.5">
         {/* Two lines of what the resident said; hover for all of it. The full
             text is one click away in the record panel, so this column only has
             to be enough to recognise the report by.
@@ -430,7 +419,7 @@ function _Row({
         )}
       </td>
 
-      <td className="px-3 py-3">
+      <td className="px-3 py-2.5">
         <div className="flex flex-col gap-0.5 text-[12.5px] leading-snug">
           <span className="flex items-start gap-1.5 text-foreground">
             <MapPin aria-hidden="true" className="mt-0.5 shrink-0 text-muted-foreground" size={12} />
@@ -447,7 +436,7 @@ function _Row({
       </td>
 
       {isProvincialAdmin && (
-        <td className="px-3 py-3">
+        <td className="px-3 py-2.5">
           <span
             className="flex items-center gap-1.5 text-[12.5px] font-semibold"
             style={{ color: agColor }}
@@ -459,39 +448,26 @@ function _Row({
         </td>
       )}
 
-      <td className="px-3 py-3 font-mono text-[12.5px] tabular-nums whitespace-nowrap text-foreground">
-        {formatDate(incident.created_at, display)}
-      </td>
-      <td className="px-3 py-3 font-mono text-[12.5px] tabular-nums whitespace-nowrap text-foreground">
-        {formatTime(incident.created_at, display)}
-      </td>
-
-      <td className="px-3 py-3">
-        {/* Word inside the chip — severity is never colour alone. */}
-        <span
-          className="inline-block rounded-[var(--radius-sm)] border px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide whitespace-nowrap"
-          style={{
-            color: sevColor,
-            borderColor: `color-mix(in srgb, ${sevColor} 45%, transparent)`,
-            backgroundColor: `color-mix(in srgb, ${sevColor} 10%, transparent)`,
-          }}
-        >
-          {sev ?? 'untriaged'}
+      <td className="px-3 py-2.5 font-mono tabular-nums whitespace-nowrap">
+        <span className="block text-[12.5px] leading-tight text-foreground">
+          {formatDate(incident.created_at, display)}
+        </span>
+        <span className="mt-0.5 block text-[11.5px] leading-tight text-muted-foreground">
+          {formatTime(incident.created_at, display)}
         </span>
       </td>
 
-      <td className="px-3 py-3">
+      <td className="px-3 py-2.5">
+        {/* Icon and word inside the chip — severity is never colour alone. */}
+        <SeverityChip severity={sev} />
+      </td>
+
+      <td className="px-3 py-2.5">
         {/* Dot plus word, for the same reason. */}
-        <span
-          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1 text-[10.5px] font-bold uppercase tracking-wide"
-          style={{ backgroundColor: sc.bg, color: sc.text }}
-        >
-          <span aria-hidden="true" className="size-1.5 rounded-full" style={{ backgroundColor: sc.text }} />
-          {statusLabel(incident.status)}
-        </span>
+        <StatusPill status={incident.status} />
       </td>
 
-      <td className="px-3 py-3 text-[12.5px]">
+      <td className="px-3 py-2.5 text-[12.5px]">
         {responderName ? (
           <span className="line-clamp-2 text-foreground">{responderName}</span>
         ) : (
@@ -499,10 +475,12 @@ function _Row({
         )}
       </td>
 
-      <td className="px-3 py-3 text-[12.5px]">
+      <td className="px-3 py-2.5 text-[12.5px]">
         {incident.outcome ? (
           <div className="flex flex-col gap-0.5">
-            <span className="text-foreground">{OUTCOME_LABEL[incident.outcome]}</span>
+            {/* An outcome this build has no label for is shown as stored. The
+                cell used to render empty, which reads as "no outcome". */}
+            <span className="text-foreground">{OUTCOME_LABEL[incident.outcome] ?? incident.outcome.replace(/_/g, ' ')}</span>
             {(injured > 0 || fatal > 0) && (
               <span className="font-mono text-[11.5px] tabular-nums whitespace-nowrap text-muted-foreground">
                 {injured > 0 && `${injured} injured`}
@@ -523,7 +501,7 @@ function _Row({
         )}
       </td>
 
-      <td className="px-3 py-3">
+      <td className="px-3 py-2.5">
         {/* Resolved only — a narrative report describes what happened, and
             nothing has happened in the past tense on a report still open.
             incident_narrative_service.save_narrative_report enforces the
@@ -558,17 +536,19 @@ function _NarrativeButton({
   status: 'draft' | 'finalized' | null;
   onClick: () => void;
 }) {
-  const { label, icon: Icon, color } =
+  const { label, hint, icon: Icon, color } =
     status === 'finalized'
-      ? { label: 'View Finalized Report', icon: CheckCircle2, color: 'var(--color-system-success)' }
+      ? { label: 'Filed', hint: 'View the finalized narrative report', icon: CheckCircle2, color: 'var(--color-system-success)' }
       : status === 'draft'
-        ? { label: 'View Draft Report', icon: FilePenLine, color: 'var(--color-system-warning)' }
-        : { label: 'Create Narrative Report', icon: FileText, color: 'var(--color-brand)' };
+        ? { label: 'Draft', hint: 'Continue the draft narrative report', icon: FilePenLine, color: 'var(--color-system-warning)' }
+        : { label: 'Write', hint: 'Create the narrative report', icon: FileText, color: 'var(--color-brand)' };
 
   return (
     <button
-      className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border px-2 py-1 text-[11.5px] font-semibold whitespace-nowrap transition-colors hover:brightness-105"
+      aria-label={hint}
+      className="inline-flex items-center gap-1.5 rounded-[8px] border px-2.5 py-1.5 text-[11.5px] leading-none font-semibold whitespace-nowrap transition-colors hover:brightness-105"
       onClick={e => { e.stopPropagation(); onClick(); }}
+      title={hint}
       style={{
         color,
         borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,

@@ -96,7 +96,7 @@ class StatusUpdateSheet {
 
     final chosen = await showZirenDialog<NoticeAction>(
       context,
-      leading: _Leading(view: view, eyebrow: t.notifStatusTitle),
+      leading: _Leading(view: view, eyebrow: view.eyebrow ?? t.notifStatusTitle),
       accent: view.color,
       title: view.title,
       message: view.body,

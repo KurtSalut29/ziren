@@ -32,6 +32,9 @@ _PROFILE_SELECT = (
     "is_verified, created_at, phone_number, barangay, barangay_id, "
     "municipality_address, purok_sitio, street_address, "
     "preferred_language, push_notifications_enabled, "
+    # Warnings on record and any suspension, so the app can say so before the
+    # resident fills in a report that would be refused.
+    "sos_warning_count, sos_suspended_until, "
     "emergency_contact_name, emergency_contact_number, "
     # 012 -- residency + accessibility
     "verification_level, verification_method, verified_at, "

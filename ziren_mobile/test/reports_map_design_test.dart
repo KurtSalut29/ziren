@@ -71,6 +71,12 @@ class _TestSos extends SosProvider {
 final _today = DateTime.now();
 final _morning = DateTime(_today.year, _today.month, _today.day, 8, 10);
 
+// The report details screen prints the DATE itself, not "today". Its golden was
+// taken with a report from the morning of whatever day the suite ran, so it
+// failed on every other day (found 2026-10-01: three date labels, 502 pixels).
+// One fixed morning keeps the picture the same whenever it runs.
+final _detailMorning = DateTime(2026, 9, 30, 8, 10);
+
 List<IncidentModel> _history() => [
   IncidentModel(
     id: 'a1',
@@ -240,8 +246,8 @@ void main() {
       reportText: 'Fire — Nasusunog ang bahay sa tabi ng kapilya',
       status: 'dispatched',
       submittedVia: 'internet',
-      createdAt: _morning,
-      dispatchedAt: _morning.add(const Duration(minutes: 4)),
+      createdAt: _detailMorning,
+      dispatchedAt: _detailMorning.add(const Duration(minutes: 4)),
       locationAddress: 'Larrazabal, Naval, Biliran',
       latitude: 11.5850,
       longitude: 124.4070,

@@ -33,7 +33,7 @@ import Supercluster from 'supercluster';
 import type { Marker, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { mapPrefs } from '@/lib/prefs/definitions';
-import { ChevronRight, X } from 'lucide-react';
+import { ArrowRight, Building2, Clock, Hash, Layers, Siren, X } from 'lucide-react';
 import type { MapData, MapIncident } from '@/lib/api/map';
 import { useTokenColors } from '@/lib/theme/use-token-colors';
 import {
@@ -67,6 +67,7 @@ import {
 } from './map-markers';
 import { MapSearch } from './map-search';
 import { useMapLibre } from './use-maplibre';
+import { SeverityChip, SosChip, StatusPill } from '@/components/incidents/incident-table-parts';
 
 interface Props {
   data: MapData | null;
@@ -124,7 +125,9 @@ export default function ZirenMap({
   fitTo,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { map, maplibre } = useMapLibre(containerRef, { controls: 'top-left', rotate: true });
+  // Credits go bottom-LEFT here: the help mascot sits in the page's
+  // bottom-right corner and was covering the (i) button.
+  const { map, maplibre } = useMapLibre(containerRef, { controls: 'top-left', rotate: true, credits: 'bottom-left' });
 
   const [selected, setSelected] = useState<MapIncident | null>(null);
   const [clusterList, setClusterList] = useState<MapIncident[] | null>(null);
@@ -345,7 +348,6 @@ export default function ZirenMap({
 
       {clusterList && !selected && (
         <ClusterList
-          color={color}
           incidents={clusterList}
           onClose={() => setClusterList(null)}
           onPick={inc => { setClusterList(null); setSelected(inc); }}
@@ -367,40 +369,56 @@ export default function ZirenMap({
 
 /** Reports stacked on one spot, as a list — no zoom level separates them. */
 function ClusterList({
-  incidents, color, onPick, onClose,
+  incidents, onPick, onClose,
 }: {
   incidents: MapIncident[];
-  color: Record<string, string>;
   onPick: (inc: MapIncident) => void;
   onClose: () => void;
 }) {
   const sorted = [...incidents].sort((a, b) =>
     (SEVERITY_STACK[severityKey(b.severity)] ?? 0) - (SEVERITY_STACK[severityKey(a.severity)] ?? 0));
   return (
-    <div className="absolute right-3 top-3 z-[1000] w-80 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-lg)]">
-      <div className="flex items-center justify-between border-b border-[var(--color-surface-border)] px-4 py-3">
-        <p className="text-[13px] font-bold text-[var(--color-text-primary)]">{incidents.length} reports at this spot</p>
-        <button aria-label="Close list" className="rounded-md p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" onClick={onClose} type="button">
-          <X aria-hidden="true" className="h-4 w-4" />
+    <div
+      className="absolute top-3 right-3 z-[1000] w-[min(22rem,calc(100%-1.5rem))] overflow-hidden rounded-[16px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-lg)]"
+      data-testid="map-cluster-list"
+    >
+      <div className="flex items-center gap-2.5 border-b border-[var(--color-surface-border)] bg-[color-mix(in_srgb,var(--color-surface-raised)_45%,var(--color-surface-card))] px-4 py-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)]">
+          <Layers aria-hidden="true" size={16} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] leading-tight font-semibold text-foreground">{incidents.length} reports at this spot</p>
+          <p className="text-[11.5px] text-muted-foreground">Worst first. Pick one to see it.</p>
+        </div>
+        <button aria-label="Close list" className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--color-surface-hover)] hover:text-foreground" onClick={onClose} type="button">
+          <X aria-hidden="true" className="size-4" />
         </button>
       </div>
-      <ul className="max-h-80 divide-y divide-[var(--color-surface-border)] overflow-y-auto">
-        {sorted.map(inc => {
-          const key = severityKey(inc.severity);
-          return (
-            <li key={inc.id}>
-              <button className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-[var(--color-surface-raised)]" onClick={() => onPick(inc)} type="button">
-                <span className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: color[key] }}>
-                  {SEVERITY_LABEL[key].toUpperCase()}
-                </span>
-                <span className="line-clamp-2 text-[12.5px] text-[var(--color-text-primary)]">{inc.report_text}</span>
-              </button>
-            </li>
-          );
-        })}
+      <ul className="scroll-slim max-h-80 divide-y divide-[var(--color-surface-border)] overflow-y-auto">
+        {sorted.map(inc => (
+          <li key={inc.id}>
+            <button className="flex w-full flex-col items-start gap-1.5 px-4 py-2.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]" onClick={() => onPick(inc)} type="button">
+              <span className="flex flex-wrap items-center gap-1.5">
+                <SeverityChip severity={inc.severity} />
+                {inc.sos_flagged && <SosChip />}
+                <span className="text-[11.5px] text-muted-foreground">{timeAgo(inc.created_at)}</span>
+              </span>
+              <span className="line-clamp-2 text-[12.5px] leading-snug font-medium text-foreground">{inc.report_text}</span>
+            </button>
+          </li>
+        ))}
       </ul>
     </div>
   );
+}
+
+/** "12m ago". An open incident's age is the fact; a clock time is not. */
+function timeAgo(iso: string): string {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -418,110 +436,82 @@ function IncidentPanel({
   severityColor: string;
   agencyColor: string;
 }) {
-  const sev = incident.severity ?? 'unscored';
   const shortId = incident.id.replace(/-/g, '').toUpperCase().slice(-6);
-
-  const timeAgo = useMemo(() => {
-    const m = Math.floor((Date.now() - new Date(incident.created_at).getTime()) / 60000);
-    if (m < 1) return 'Just now';
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-  }, [incident.created_at]);
 
   return (
     /* top-3, not top-14. The 14 was clearing a page header this route no
        longer has — the breadcrumb names the page now — and left the panel
        floating in a gap. */
-    <div className="absolute top-3 right-3 z-[1000] w-80 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-lg)]">
+    <div
+      className="absolute top-3 right-3 z-[1000] w-[min(22rem,calc(100%-1.5rem))] overflow-hidden rounded-[16px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-lg)]"
+      data-testid="map-incident-panel"
+    >
       {/* Severity strip */}
-      <div className="h-1.5 w-full" style={{ backgroundColor: severityColor }} />
+      <div className="h-1 w-full" style={{ backgroundColor: severityColor }} />
 
-      <div className="p-4">
-        {/* Header row */}
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span
-              className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-              style={{
-                backgroundColor: `color-mix(in srgb, ${severityColor} 14%, transparent)`,
-                color: severityColor,
-              }}
-            >
-              {sev.toUpperCase()}
-            </span>
-            {incident.agency_type && (
-              <span
-                className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-                style={{
-                  backgroundColor: `color-mix(in srgb, ${agencyColor} 14%, transparent)`,
-                  color: agencyColor,
-                }}
-              >
-                {incident.agency_type}
-              </span>
-            )}
-            {incident.sos_flagged && (
-              <span className="rounded-full bg-[var(--color-severity-critical-bg)] px-2 py-0.5 text-[11px] font-bold text-[var(--color-severity-critical)]">
-                SOS
-              </span>
-            )}
-          </div>
-          <button
-            aria-label="Close incident preview"
-            className="shrink-0 rounded-md p-1 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]"
-            onClick={onClose}
-          >
-            <X aria-hidden="true" className="h-4 w-4" />
-          </button>
+      <div
+        className="flex items-start justify-between gap-2 px-4 pt-3.5 pb-3"
+        style={{ backgroundImage: `linear-gradient(to bottom, color-mix(in srgb, ${severityColor} 9%, transparent), transparent)` }}
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <SeverityChip severity={incident.severity} />
+          {incident.sos_flagged && <SosChip />}
+          <StatusPill status={incident.status} />
         </div>
+        <button
+          aria-label="Close incident preview"
+          className="-mt-1 -mr-1.5 flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--color-surface-hover)] hover:text-foreground"
+          onClick={onClose}
+          type="button"
+        >
+          <X aria-hidden="true" className="size-4" />
+        </button>
+      </div>
 
-        {/* Report text */}
-        <p className="mb-3 line-clamp-3 text-[14px] leading-snug font-semibold text-[var(--color-text-primary)]">
+      <div className="px-4 pb-4">
+        {/* What was reported */}
+        <p className="line-clamp-4 text-[14px] leading-snug font-semibold text-foreground">
           {incident.report_text}
         </p>
 
-        {/* Meta */}
-        <div className="mb-4 flex items-center justify-between text-[12px] text-[var(--color-text-muted)]">
-          <span className="font-mono font-semibold text-[var(--color-text-secondary)]">
-            INC-{shortId}
-          </span>
-          <span>{timeAgo}</span>
-        </div>
+        {/* The three facts the map can vouch for: how old, whose, which one. */}
+        <dl className="mt-3 grid grid-cols-3 gap-2">
+          <_Fact icon={Clock} label="Reported">{timeAgo(incident.created_at)}</_Fact>
+          <_Fact icon={Building2} label="Routed to">
+            {incident.agency_type
+              ? <span style={{ color: agencyColor }}>{incident.agency_type}</span>
+              : <span className="text-muted-foreground">Not yet</span>}
+          </_Fact>
+          <_Fact icon={Hash} label="Incident">
+            <span className="font-mono text-[12px]">{shortId}</span>
+          </_Fact>
+        </dl>
 
-        {/* Status pill */}
-        <div className="flex items-center justify-between">
-          <StatusPill status={incident.status} />
-          {/* Opens the same detail modal the queue uses, not a Link to the
-              full page — see this component's onOpenIncident doc comment. */}
-          <button
-            className="flex items-center gap-1 text-[12px] font-semibold text-[var(--color-brand)] hover:underline"
-            onClick={() => onOpenDetail(incident.id)}
-            type="button"
-          >
-            View full detail <ChevronRight className="h-3 w-3" />
-          </button>
-        </div>
+        {/* Opens the same detail modal the queue uses, not a Link to the full
+            page — see this component's onOpenIncident doc comment. It was a
+            small text link; it is the one thing this card is for. */}
+        <button
+          className="mt-3.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--color-brand)] text-[13px] font-semibold text-[var(--color-text-inverse)] shadow-[0_1px_2px_rgba(16,24,40,0.10)] transition-[filter] hover:brightness-105"
+          onClick={() => onOpenDetail(incident.id)}
+          type="button"
+        >
+          <Siren aria-hidden="true" className="size-4" />
+          Open the report
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </button>
       </div>
     </div>
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { bg: string; text: string }> = {
-    received:   { bg: 'var(--color-status-received-bg)',   text: 'var(--color-status-received)'   },
-    processing: { bg: 'var(--color-status-processing-bg)', text: 'var(--color-status-processing)' },
-    dispatched: { bg: 'var(--color-status-dispatched-bg)', text: 'var(--color-status-dispatched)' },
-    en_route:   { bg: 'var(--color-status-dispatched-bg)', text: 'var(--color-status-dispatched)' },
-    arrived:    { bg: 'var(--color-system-success-bg)',    text: 'var(--color-system-success)'    },
-  };
-  const c = map[status] ?? map.received;
+function _Fact({ icon: Icon, label, children }: { icon: typeof Clock; label: string; children: React.ReactNode }) {
   return (
-    <span
-      className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-      style={{ backgroundColor: c.bg, color: c.text }}
-    >
-      {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-    </span>
+    <div className="min-w-0 rounded-[10px] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/60 px-2.5 py-2">
+      <dt className="flex items-center gap-1 text-[10px] leading-none font-bold tracking-wide text-[var(--color-text-tertiary)] uppercase">
+        <Icon aria-hidden="true" className="size-3 shrink-0" />
+        <span className="truncate">{label}</span>
+      </dt>
+      <dd className="mt-1.5 truncate text-[12.5px] leading-none font-semibold text-foreground">{children}</dd>
+    </div>
   );
 }

@@ -25,6 +25,8 @@ class ProfileModel {
     this.validIdType,
     this.residencyProofType,
     this.avatarUrl,
+    this.warningCount = 0,
+    this.suspendedUntil,
   });
 
   final String id;
@@ -72,6 +74,24 @@ class ProfileModel {
   /// UI falls back to initials.
   final String? avatarUrl;
 
+  /// Warnings an admin has put on this account for breaking the reporting
+  /// rules. The third one suspends it.
+  final int warningCount;
+
+  /// When a suspension from reporting ends. A date in the past is not a
+  /// suspension - the server never clears the column when one runs out - so
+  /// read [isSuspended], not this.
+  final DateTime? suspendedUntil;
+
+  /// Suspended from sending reports right now. Unlike [verificationLevel],
+  /// this IS a permission: the server refuses a suspended account's report.
+  bool get isSuspended =>
+      suspendedUntil != null && suspendedUntil!.isAfter(DateTime.now());
+
+  /// "Until further notice": stored as a date that never arrives.
+  bool get suspensionIndefinite =>
+      isSuspended && suspendedUntil!.year >= 9000;
+
   /// Has this account submitted anything for an admin to check?
   ///
   /// Distinguishes "skipped verification entirely" from "submitted and
@@ -108,6 +128,10 @@ class ProfileModel {
       validIdType: json['valid_id_type'] as String?,
       residencyProofType: json['residency_proof_type'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      warningCount: (json['sos_warning_count'] as num?)?.toInt() ?? 0,
+      suspendedUntil: DateTime.tryParse(
+        json['sos_suspended_until'] as String? ?? '',
+      ),
     );
   }
 
@@ -148,6 +172,8 @@ class ProfileModel {
       validIdType: validIdType,
       residencyProofType: residencyProofType,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      warningCount: warningCount,
+      suspendedUntil: suspendedUntil,
     );
   }
 }

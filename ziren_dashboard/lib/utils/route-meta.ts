@@ -55,7 +55,7 @@ const ROUTE_META: Record<string, RouteMeta> = {
   '/audit-logs':        { title: 'Audit Logs',            subtitle: 'Administrative action trail', section: 'Governance' },
   '/system-status':     { title: 'System Status',         subtitle: 'Service health',            section: 'Governance' },
 
-  '/announcements': { title: 'Announcements',     subtitle: 'System-wide broadcasts',          section: 'Communication' },
+  '/announcements': { title: 'Announcements',     subtitle: 'Safety alerts and notices',        section: 'Communication' },
   '/reports':       { title: 'Reports & Export',  subtitle: 'Print incident records and narrative reports', section: 'Communication' },
 
   '/settings':   { title: 'Settings',             subtitle: 'Profile & preferences' },

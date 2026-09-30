@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/backend_health.dart';
+import '../../../features/announcements/presentation/active_alerts_card.dart';
 import '../../../features/auth/domain/auth_provider.dart';
 import '../../../features/hotlines/data/hotlines_store.dart';
 import '../../../features/help/presentation/help_sheet.dart';
@@ -16,6 +17,7 @@ import '../../../features/notifications/domain/notification_provider.dart';
 import '../../../features/settings/domain/profile_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
+import '../../../shared/widgets/suspension_banner.dart';
 import '../../../shared/widgets/verification_banner.dart';
 import '../../../shared/widgets/home_kit.dart';
 import '../../../shared/widgets/home_surface.dart';
@@ -48,6 +50,8 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   /// now", not "never ask again" — the banner is the only route back into
   /// verification for someone who skipped it at signup.
   bool _verificationDismissed = false;
+
+  final _alertsKey = GlobalKey<ActiveAlertsCardState>();
 
   static const _pingInterval = Duration(seconds: 30);
 
@@ -119,7 +123,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   /// report's confirm screen. Deliberately not the full wizard — the
   /// category was the question the wizard opens with, and it has already
   /// been answered.
-  void _report(IncidentCategory category) {
+  Future<void> _report(IncidentCategory category) async {
     // No connection to Ziren: a report cannot go anywhere, so the category
     // opens the numbers of the stations that handle it instead — BFP for a
     // fire, PNP for a crime, MDRRMO for the rest. A call needs only signal.
@@ -127,6 +131,10 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
       showHotlinesSheet(context, category: category, offline: true);
       return;
     }
+    // A suspended account's report is refused by the server. Say so here,
+    // before the wizard, not after they have described an emergency.
+    if (await refuseIfSuspended(context)) return;
+    if (!mounted) return;
     context.read<IncidentProvider>()
       ..clearWizard()
       ..setCategory(category);
@@ -190,6 +198,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                   () => Future.wait([
                     incidents.loadMyIncidents(),
                     _checkConnectivity(),
+                    if (_alertsKey.currentState != null) _alertsKey.currentState!.reload(),
                   ]),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -243,19 +252,44 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                   ),
                   const SizedBox(height: ZirenTokens.space20),
 
+                  // ── A safety alert for where they live ──────────
+                  //
+                  // Above the report button: an evacuation order for your
+                  // barangay is the most important thing on this screen that day,
+                  // and "are you safe?" is answered right here. Draws nothing on
+                  // an ordinary day. Read again whenever a new alert notice lands.
+                  ActiveAlertsCard(
+                    key: _alertsKey,
+                    refreshKey: notifications.unread.where((n) => n.isAnnouncement).length,
+                  ),
+
                   // ── Report an Emergency (uncategorised) ──────────
                   EmergencyCtaCard(
                     title: t.homeReportCtaTitle,
                     subtitle: t.homeReportCtaSubtitle,
                     badge: t.homeReportCtaBadge,
-                    onTap: () {
+                    onTap: () async {
                       if (_connectivity == _ConnectivityMode.offline) {
                         showHotlinesSheet(context, offline: true);
                         return;
                       }
+                      if (await refuseIfSuspended(context)) return;
+                      if (!context.mounted) return;
                       context.push('/sos-confirm');
                     },
                   ),
+
+                  // ── Suspended from reporting ───────────────────
+                  //
+                  // Directly under the button it disables, so the two are read
+                  // together. Draws nothing for an account in good standing.
+                  if (context.watch<ProfileProvider>().profile?.isSuspended ?? false) ...[
+                    const SizedBox(height: ZirenTokens.space12),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: kHomeGutter),
+                      child: SuspensionBanner(),
+                    ),
+                  ],
 
                   if (_connectivity == _ConnectivityMode.offline) ...[
                     const SizedBox(height: ZirenTokens.space12),

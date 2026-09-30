@@ -91,6 +91,8 @@ def submit_incident(
     """
     db: Client = get_supabase()
 
+    ensure_reporting_allowed(db, reporter_id)
+
     if request.station_id is not None:
         # Reporter explicitly chose a station — honour it, but validate it exists.
         station_result = (
@@ -169,19 +171,9 @@ def submit_sos(
     profile = profile_result.data
 
     # ── 2. Suspension check ───────────────────────────────────────────────────
-    suspended_until = profile.get("sos_suspended_until")
-    if suspended_until:
-        suspended_dt = _parse_dt(suspended_until)
-        if suspended_dt > datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Your SOS access is suspended until "
-                    f"{suspended_dt.strftime('%B %d, %Y')} due to "
-                    f"confirmed false emergency reports. "
-                    f"Contact your municipal MDRRMO office to appeal."
-                ),
-            )
+    # One rule and one message for every kind of report - see
+    # ensure_reporting_allowed.
+    _refuse_if_suspended(profile.get("sos_suspended_until"))
 
     # ── 3. Cooldown check (server-side — client cooldown is advisory only) ────
     last_submitted = profile.get("sos_last_submitted_at")
@@ -261,6 +253,54 @@ def submit_sos(
         latitude=request.latitude,
         longitude=request.longitude,
     )
+
+
+def _refuse_if_suspended(suspended_until) -> None:
+    """Raise 403 when this date is a suspension still in force.
+
+    Only a real timestamp string counts. Anything else - None, or whatever a
+    test double hands back - is not a suspension, because the cost of getting
+    this wrong in the other direction is refusing somebody's emergency report.
+    """
+    if not isinstance(suspended_until, str) or not suspended_until:
+        return
+    try:
+        until = _parse_dt(suspended_until)
+    except (ValueError, TypeError):
+        return
+    if until > datetime.now(timezone.utc):
+        from app.services.resident_account_service import suspension_message
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=suspension_message(until),
+        )
+
+
+def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
+    """Refuse a report from a resident whose account is suspended.
+
+    Suspension used to stop only the SOS button, so an account suspended for
+    false reports could go on sending ordinary ones. It now stops every report.
+
+    FAILS OPEN. If the lookup itself fails - the database is slow, the row is
+    missing - the report goes through. A suspension check that can block a real
+    emergency because of an outage is worse than one a suspended account slips
+    past once.
+    """
+    try:
+        result = (
+            db.table("users")
+            .select("sos_suspended_until")
+            .eq("id", reporter_id)
+            .maybe_single()
+            .execute()
+        )
+        row = None if result is None else result.data
+    except Exception:
+        log.warning("incident.suspension_check_failed", reporter_id=reporter_id, exc_info=True)
+        return
+    if isinstance(row, dict):
+        _refuse_if_suspended(row.get("sos_suspended_until"))
 
 
 def record_false_sos(reporter_id: str, acting_dispatcher_id: str) -> dict:

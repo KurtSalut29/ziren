@@ -4164,4 +4164,319 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get respNavRoadNote => 'Sinusundan ng ruta ang mga daan sa mapa. Mag-ingat sa sarado o bahang daan.';
+
+  @override
+  String get accountNoticeEyebrow => 'Abiso sa account';
+
+  @override
+  String get accountWarnedTitle => 'Nakatanggap ka ng babala';
+
+  @override
+  String accountWarnedBody(String reason) {
+    return 'Dahilan: $reason.';
+  }
+
+  @override
+  String accountWarnedLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pang babala at masususpinde ang iyong account sa pag-uulat.',
+      one: 'Isa pang babala at masususpinde ang iyong account sa pag-uulat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountSuspendedTitle => 'Suspendido ang pag-uulat';
+
+  @override
+  String accountSuspendedUntil(String date) {
+    return 'Hindi ka makakapagpadala ng ulat hanggang $date.';
+  }
+
+  @override
+  String get accountSuspendedIndefinite => 'Hindi ka makakapagpadala ng ulat hangga\'t walang bagong abiso.';
+
+  @override
+  String get accountSuspendedHelp => 'Sa totoong emergency, tumawag sa 911 o sa hotline. Para umapela, makipag-ugnayan sa MDRRMO ng inyong munisipyo.';
+
+  @override
+  String get accountOpenHotlines => 'Mga emergency hotline';
+
+  @override
+  String get accountReinstatedTitle => 'Maaari ka nang mag-ulat muli';
+
+  @override
+  String get accountReinstatedBody => 'Inalis na ang iyong suspensyon.';
+
+  @override
+  String get accountWarningsClearedBody => 'Binura na ang iyong mga babala.';
+
+  @override
+  String get violationFalseReport => 'Pagpapadala ng mali o birong ulat';
+
+  @override
+  String get violationFalseSos => 'Maling paggamit ng SOS button';
+
+  @override
+  String get violationSpam => 'Paulit-ulit o dobleng ulat';
+
+  @override
+  String get violationAbusive => 'Mapang-abuso o nagbabantang mensahe';
+
+  @override
+  String get violationFakeIdentity => 'Paggamit ng peke o hiram na pagkakakilanlan';
+
+  @override
+  String get violationOther => 'Paglabag sa mga patakaran sa pag-uulat';
+
+  @override
+  String get annWholeProvince => 'Buong probinsya';
+
+  @override
+  String get annKindEvacuation => 'Utos na paglikas';
+
+  @override
+  String get annKindWeather => 'Abiso sa panahon';
+
+  @override
+  String get annKindHazard => 'Babala sa panganib';
+
+  @override
+  String get annKindRoadClosure => 'Saradong daan';
+
+  @override
+  String get annKindMissingPerson => 'Nawawalang tao';
+
+  @override
+  String get annKindAllClear => 'Ligtas na';
+
+  @override
+  String get annKindRelief => 'Pamamahagi ng tulong';
+
+  @override
+  String get annKindHealth => 'Abiso sa kalusugan';
+
+  @override
+  String get annKindDrill => 'Drill';
+
+  @override
+  String get annKindUtility => 'Pagkawala ng kuryente / tubig';
+
+  @override
+  String get annHazardFlood => 'Baha';
+
+  @override
+  String get annHazardLandslide => 'Pagguho ng lupa';
+
+  @override
+  String get annHazardStormSurge => 'Daluyong (storm surge)';
+
+  @override
+  String get annHazardEarthquake => 'Lindol';
+
+  @override
+  String get annHazardTsunami => 'Tsunami';
+
+  @override
+  String get annHazardVolcanic => 'Aktibidad ng bulkan';
+
+  @override
+  String get annHazardFire => 'Sunog';
+
+  @override
+  String get annHazardOther => 'Ibang panganib';
+
+  @override
+  String get annRainfallYellow => 'Yellow na babala sa ulan';
+
+  @override
+  String get annRainfallOrange => 'Orange na babala sa ulan';
+
+  @override
+  String get annRainfallRed => 'Red na babala sa ulan';
+
+  @override
+  String annSignal(int n) {
+    return 'Signal No. $n';
+  }
+
+  @override
+  String get annEvacForced => 'Sapilitan';
+
+  @override
+  String get annEvacPreemptive => 'Pre-emptive';
+
+  @override
+  String annReopens(String when) {
+    return 'Bubuksan: $when';
+  }
+
+  @override
+  String annAge(int age) {
+    return 'Edad $age';
+  }
+
+  @override
+  String get annGoTo => 'Pumunta sa';
+
+  @override
+  String get annBring => 'Dalhin';
+
+  @override
+  String get annArea => 'Lugar';
+
+  @override
+  String get annClosed => 'Sarado';
+
+  @override
+  String get annUseInstead => 'Gamitin sa halip';
+
+  @override
+  String get annName => 'Pangalan';
+
+  @override
+  String get annLastSeen => 'Huling nakita';
+
+  @override
+  String get annLooksLike => 'Itsura';
+
+  @override
+  String get annCall => 'Tawagan';
+
+  @override
+  String get annWhere => 'Saan';
+
+  @override
+  String get annFrom => 'Mula sa';
+
+  @override
+  String get annNeedHelpTitle => 'Humingi ng tulong';
+
+  @override
+  String get annNeedHelpBody => 'Agad na maaabisuhan ang mga istasyon ng inyong bayan, kasama kung nasaan ang cellphone mo. Magdagdag ng isang linya kung kaya - ilan kayo, ano ang nangyayari.';
+
+  @override
+  String get annNeedHelpHint => 'hal. Tatlo kami sa bubong, tumataas ang tubig';
+
+  @override
+  String get annNeedHelpSend => 'Ipadala: Kailangan ko ng tulong';
+
+  @override
+  String get annCancel => 'Kanselahin';
+
+  @override
+  String get annSentSafe => 'Naipadala: ligtas ka. Salamat.';
+
+  @override
+  String get annSentHelp => 'Naipadala. Naabisuhan na ang mga istasyon ng inyong bayan.';
+
+  @override
+  String get annEndedTitle => 'Tapos na ang alertong ito';
+
+  @override
+  String get annEndedBody => 'May ipinadalang “ligtas na” o nag-expire na ito, kaya hindi na ito tumatanggap ng sagot. Kung kailangan mo pa ng tulong, tumawag sa hotline.';
+
+  @override
+  String get annNotSentTitle => 'Hindi naipadala ang sagot mo';
+
+  @override
+  String get annNotSentHelpBody => 'Hindi maabot ng Ziren ang server. Kung kailangan mo ng tulong ngayon, tumawag sa hotline - signal lang ang kailangan ng tawag.';
+
+  @override
+  String get annNotSentBody => 'Hindi maabot ng Ziren ang server. Subukan ulit kapag may koneksyon ka na.';
+
+  @override
+  String get annAreYouSafe => 'Ligtas ka ba?';
+
+  @override
+  String get annImSafe => 'Ligtas ako';
+
+  @override
+  String get annINeedHelp => 'Kailangan ko ng tulong';
+
+  @override
+  String get annYouSaidSafe => 'Sinabi mong ligtas ka.';
+
+  @override
+  String get annYouAskedHelp => 'Humingi ka ng tulong. Naabisuhan na ang mga istasyon.';
+
+  @override
+  String get annHelpReached => 'Natanggap ng istasyon ang tawag mo at tumutugon na sila.';
+
+  @override
+  String get annHelpWhileWaiting => 'Manatili sa pinakaligtas na lugar. Kung lumala, tumawag sa hotline.';
+
+  @override
+  String get annChange => 'Palitan';
+
+  @override
+  String get annSafetyAlerts => 'Mga babala';
+
+  @override
+  String get annUpdates => 'Iba pang abiso';
+
+  @override
+  String annIssuedBy(String office) {
+    return 'Mula sa $office';
+  }
+
+  @override
+  String annUntil(String date) {
+    return 'Hanggang $date';
+  }
+
+  @override
+  String get annEnded => 'Tapos na';
+
+  @override
+  String annEndsTitle(String title) {
+    return 'Tinatapos: $title';
+  }
+
+  @override
+  String annEndedBy(String title) {
+    return 'Tinapos ng: $title';
+  }
+
+  @override
+  String get annNotFoundTitle => 'Hindi available';
+
+  @override
+  String get annNotFoundBody => 'Inalis na ang abisong ito, o hindi ito para sa inyong lugar.';
+
+  @override
+  String annHomeMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pang alerto',
+      one: '1 pang alerto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get annSeeDetails => 'Tingnan ang detalye';
+
+  @override
+  String get annNoticeEyebrow => 'Babala';
+
+  @override
+  String get annNoticeEyebrowInfo => 'Abiso';
+
+  @override
+  String get annRespondNow => 'Sagutin: ligtas ka ba?';
+
+  @override
+  String get annOpen => 'Buksan';
+
+  @override
+  String get annHelpAckTitle => 'Natanggap ang tawag mo para sa tulong';
+
+  @override
+  String annHelpAckBody(String station) {
+    return 'Natanggap ng $station ang hiling mo at tumutugon na sila. Manatili sa pinakaligtas na lugar.';
+  }
 }
