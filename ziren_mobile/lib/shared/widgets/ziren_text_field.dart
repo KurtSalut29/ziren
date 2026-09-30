@@ -70,6 +70,11 @@ class ZirenTextField extends StatelessWidget {
         labelText: label.isEmpty ? null : label,
         hintText: hint,
         helperText: helperText,
+        // The validators here say what to DO ("Put the number of someone
+        // else - a relative, a friend"), which rarely fits one line; the
+        // default of one line cut the instruction off mid-sentence.
+        errorMaxLines: 3,
+        helperMaxLines: 3,
         prefixIcon:
             prefixIcon != null
                 ? IconTheme(

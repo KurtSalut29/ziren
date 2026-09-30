@@ -1,3 +1,4 @@
+import '../../../core/config/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'responder_ack.dart';
 import 'responder_vocabulary.dart';
@@ -187,25 +188,26 @@ class ResponderIncidentModel {
     );
   }
 
-  /// Human-readable category label in Filipino/English — see
+  /// Human-readable category label, in the chosen language — see
   /// ResponderVocabulary.categoryLabel, the one copy every responder screen
   /// (including a nearby-incident alert) reads.
   String get categoryLabel =>
       ResponderVocabulary.categoryLabel(incidentCategory);
 
-  /// Human-readable status label.
+  /// Human-readable status label, in the chosen language.
   String get statusLabel {
+    final t = LocaleProvider.strings;
     switch (status) {
       case 'dispatched':
-        return 'Dispatched — Respond Now';
+        return t.respStatusDispatchedRespond;
       case 'en_route':
-        return 'En Route';
+        return t.respStatusEnRoute;
       case 'arrived':
-        return 'On Scene';
+        return t.respStatusOnScene;
       case 'resolved':
-        return 'Resolved';
+        return t.respStatusResolved;
       case 'cancelled':
-        return 'Cancelled';
+        return t.respStatusCancelled;
       default:
         return status;
     }
@@ -245,15 +247,17 @@ class ResponderIncidentModel {
     }
   }
 
-  /// Human-readable label for the next action button.
+  /// Human-readable label for the next action button, in the chosen language.
+  /// It used to be Filipino whatever the responder had chosen.
   String? get nextActionLabel {
+    final t = LocaleProvider.strings;
     switch (status) {
       case 'dispatched':
-        return 'Papunta Na (En Route)';
+        return t.respNextEnRoute;
       case 'en_route':
-        return 'Nakarating Na (On Scene)';
+        return t.respNextOnScene;
       case 'arrived':
-        return 'Natapos Na (Resolved)';
+        return t.respNextResolved;
       default:
         return null;
     }

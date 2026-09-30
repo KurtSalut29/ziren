@@ -10,6 +10,9 @@ class FakeSosRepository extends SosRepository {
   final Future<SosResult> Function() _outcome;
   int calls = 0;
 
+  /// The landmark note the last submit carried.
+  String? lastLandmarkNote;
+
   @override
   Future<SosResult> submitSos({
     double? latitude,
@@ -20,6 +23,7 @@ class FakeSosRepository extends SosRepository {
     String? landmarkNote,
   }) {
     calls++;
+    lastLandmarkNote = landmarkNote;
     return _outcome();
   }
 }

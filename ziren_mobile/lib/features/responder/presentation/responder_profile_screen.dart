@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
@@ -11,6 +12,7 @@ import '../../settings/domain/profile_provider.dart';
 import '../domain/responder_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
+import '../../hotlines/domain/station_hotlines.dart';
 
 /// The responder's profile.
 ///
@@ -42,6 +44,10 @@ import '../../../shared/widgets/ziren_dialogs.dart';
 /// Contact is read-only here — name and phone changes go through Settings,
 /// same as the resident side, rather than an in-place edit mode on this
 /// screen.
+///
+/// 2026-09-30: restyled with the resident profile onto ProfileHeroCard /
+/// ProfileGroup / ProfileTile. Badge and approval moved into the header's fact
+/// strip; the station's number can be called from its row.
 class ResponderProfileScreen extends StatefulWidget {
   const ResponderProfileScreen({super.key});
 
@@ -79,18 +85,20 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
       appBar: AppBar(
         backgroundColor: ZirenTokens.surfaceBase,
         elevation: 0,
+        title: Text(
+          AppLocalizations.of(context).respProfileTitle,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: ZirenTokens.textPrimary,
+          ),
+        ),
+        // Hotlines and Help used to be two unlabelled icons up here; they are
+        // now named rows in "Safety & help" below. Settings stays as well as
+        // having its own row, as on the resident profile.
         actions: [
           IconButton(
-            tooltip: AppLocalizations.of(context).hotlinesTitle,
-            icon: const Icon(LucideIcons.phone_call),
-            onPressed: () => context.push('/hotlines'),
-          ),
-          IconButton(
-            tooltip: AppLocalizations.of(context).helpTitle,
-            icon: const Icon(LucideIcons.life_buoy),
-            onPressed: () => context.push('/help?role=responder'),
-          ),
-          IconButton(
+            tooltip: AppLocalizations.of(context).profileSettings,
             icon: const Icon(LucideIcons.settings),
             onPressed: () => context.push('/settings'),
           ),
@@ -140,206 +148,217 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         p.fullName.isNotEmpty ? p.fullName : email.split('@').first;
     final agencyLabel = p.agencyName ?? p.agencyType;
     final approved = p.approvalStatus == 'approved';
+    final stationNumbers = StationHotlines.parse(p.agencyContactNumber);
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.fromLTRB(
+        ZirenTokens.space16,
+        ZirenTokens.space4,
+        ZirenTokens.space16,
+        ZirenTokens.space32,
+      ),
       children: [
-        const SizedBox(height: ZirenTokens.space8),
-        Center(
-          child: EditableAvatar(
+        // Agency and duty state belong to the identity, so they are chips on
+        // the header card. Duty is read-only here on purpose - the toggle
+        // lives on Home, and two controls for one state is how they end up
+        // disagreeing. Badge and approval are the two facts a responder is
+        // asked for at a scene, so they get the strip.
+        ProfileHeroCard(
+          avatar: EditableAvatar(
             displayName: displayName,
             avatarUrl: p.avatarUrl,
             busy: _uploadingAvatar,
             onTap: _changeAvatar,
+            size: 92,
           ),
+          displayName: displayName,
+          subtitle: email,
+          chips: [
+            if (agencyLabel != null)
+              ProfileChip(
+                label: agencyLabel,
+                color: _agencyColor(p.agencyType),
+                icon: _agencyIcon(p.agencyType),
+              ),
+            if (approved)
+              ProfileChip(
+                label: responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
+                color:
+                    responder.isOnDuty
+                        ? ZirenTokens.systemSuccess
+                        : ZirenTokens.textMuted,
+                icon:
+                    responder.isOnDuty
+                        ? LucideIcons.wifi
+                        : LucideIcons.circle_slash,
+                filled: responder.isOnDuty,
+              ),
+          ],
+          facts: [
+            ProfileFact(label: t.respProfileBadge, value: p.badgeId ?? '—'),
+            ProfileFact(
+              label: t.respProfileStatus,
+              value: _approvalLabel(p.approvalStatus),
+              color: _approvalColor(p.approvalStatus),
+            ),
+          ],
         ),
-        const SizedBox(height: ZirenTokens.space12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                displayName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: ZirenTokens.textPrimary,
-                ),
-              ),
-              const SizedBox(height: ZirenTokens.space4),
-              Text(
-                email,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: ZirenTokens.textMuted),
-              ),
-              const SizedBox(height: ZirenTokens.space12),
-              // Agency and duty state belong to the identity, not to a
-              // section. Duty is read-only here on purpose — the toggle
-              // lives on Home, and two controls for one state is how they
-              // end up disagreeing.
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: ZirenTokens.space8,
-                runSpacing: ZirenTokens.space8,
-                children: [
-                  if (agencyLabel != null)
-                    ProfileChip(
-                      label: agencyLabel,
-                      color: _agencyColor(p.agencyType),
-                      icon: _agencyIcon(p.agencyType),
-                    ),
-                  if (approved)
-                    ProfileChip(
-                      label: responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
-                      color:
-                          responder.isOnDuty
-                              ? ZirenTokens.systemSuccess
-                              : ZirenTokens.textMuted,
-                      icon:
-                          responder.isOnDuty
-                              ? LucideIcons.wifi
-                              : LucideIcons.circle_slash,
-                      filled: responder.isOnDuty,
-                    ),
-                ],
-              ),
-            ],
+
+        // ── Approval ─────────────────────────────────────────
+        //
+        // A banner as well as the fact while it is unresolved. A responder
+        // whose account is still pending cannot be dispatched to anything, and
+        // a word in a strip would let somebody sit through a shift believing
+        // they were on the roster.
+        if (!approved) ...[
+          const SizedBox(height: ZirenTokens.space16),
+          _ApprovalBanner(status: p.approvalStatus),
+        ],
+
+        if (provider.errorMessage != null) ...[
+          const SizedBox(height: ZirenTokens.space16),
+          ProfileLoadError(
+            message: provider.errorMessage!,
+            onRetry: () {
+              provider.clearError();
+              provider.loadProfile(force: true);
+            },
           ),
+        ],
+        const SizedBox(height: ZirenTokens.space24),
+
+        // ── Contact ──────────────────────────────────────────
+        //
+        // Read-only. Name and phone changes go through Settings (the same
+        // editor the resident side uses) rather than an in-place edit mode.
+        ProfileGroup(
+          title: t.respProfileContact,
+          children: [
+            ProfileTile(
+              icon: LucideIcons.user,
+              label: t.respFieldName,
+              value: p.fullName.isNotEmpty ? p.fullName : '—',
+            ),
+            ProfileTile(
+              icon: LucideIcons.mail,
+              label: t.labelEmailProfile,
+              value: email.isNotEmpty ? email : '—',
+            ),
+            ProfileTile(
+              icon: LucideIcons.phone,
+              label: t.respFieldPhone,
+              value: p.phoneNumber?.isNotEmpty == true ? p.phoneNumber! : '—',
+            ),
+          ],
         ),
-        const SizedBox(height: ZirenTokens.space20),
+        const SizedBox(height: ZirenTokens.space24),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Approval ─────────────────────────────────────
-              //
-              // A banner rather than a row while it is unresolved. A responder
-              // whose account is still pending cannot be dispatched to anything,
-              // and burying that in the fifth line of a card would let somebody
-              // sit through a shift believing they were on the roster.
-              if (!approved) ...[
-                _ApprovalBanner(status: p.approvalStatus),
-                const SizedBox(height: ZirenTokens.space16),
-              ],
-
-              if (provider.errorMessage != null) ...[
-                ProfileLoadError(
-                  message: provider.errorMessage!,
-                  onRetry: () {
-                    provider.clearError();
-                    provider.loadProfile(force: true);
-                  },
-                ),
-                const SizedBox(height: ZirenTokens.space16),
-              ],
-
-              // ── Contact ──────────────────────────────────────
-              //
-              // Read-only. Name and phone changes go through Settings
-              // (the same editor the resident side uses) rather than an
-              // in-place edit mode on this screen.
-              ProfileSection(
-                title: t.respProfileContact,
-                items: [
-                  ProfileRow(
-                    icon: LucideIcons.user,
-                    label: t.respFieldName,
-                    value: p.fullName.isNotEmpty ? p.fullName : '—',
-                  ),
-                  ProfileRow(
-                    icon: LucideIcons.mail,
-                    label: 'Email',
-                    value: email.isNotEmpty ? email : '—',
-                  ),
-                  ProfileRow(
-                    icon: LucideIcons.phone,
-                    label: t.respFieldPhone,
-                    value:
-                        p.phoneNumber?.isNotEmpty == true
-                            ? p.phoneNumber!
-                            : '—',
-                    last: true,
-                  ),
-                ],
+        // ── Station ──────────────────────────────────────────
+        //
+        // The unit, not the UUID: this card once rendered agencyId, and a crew
+        // member cannot tell whether "a0000001-..." is theirs. The station's
+        // own number is here so nobody hunts for it during a shift (Section
+        // 21), and pressing it calls.
+        ProfileGroup(
+          title: t.profileStationSection,
+          children: [
+            ProfileTile(
+              icon: _agencyIcon(p.agencyType),
+              tone: _agencyColor(p.agencyType),
+              label: t.respProfileAgency,
+              value: agencyLabel ?? '—',
+            ),
+            ProfileTile(
+              icon: LucideIcons.map_pin,
+              label: t.respProfileMunicipality,
+              value: p.agencyMunicipality ?? '—',
+            ),
+            if (stationNumbers.isNotEmpty)
+              ProfileTile(
+                icon: LucideIcons.phone_call,
+                tone: ZirenTokens.systemSuccess,
+                label: t.profileStationContact,
+                value: stationNumbers
+                    .map((n) => n.label == null ? n.display : '${n.label} ${n.display}')
+                    .join('\n'),
+                onTap: () => _callStation(context, stationNumbers),
               ),
-              const SizedBox(height: ZirenTokens.space16),
+          ],
+        ),
+        const SizedBox(height: ZirenTokens.space24),
 
-              // ── Assignment ───────────────────────────────────
-              //
-              // The unit, not the UUID. This card used to render agencyId, and a
-              // crew member cannot tell whether
-              // "a0000001-0000-0000-0000-000000000001" is theirs — which made the
-              // field worse than showing nothing at all.
-              ProfileSection(
-                title: t.respProfileAssignment,
-                items: [
-                  ProfileRow(
-                    icon: LucideIcons.badge,
-                    label: t.respProfileBadge,
-                    value: p.badgeId ?? '—',
-                  ),
-                  ProfileRow(
-                    icon: _agencyIcon(p.agencyType),
-                    label: t.respProfileAgency,
-                    value: agencyLabel ?? '—',
-                    valueColor: _agencyColor(p.agencyType),
-                  ),
-                  ProfileRow(
-                    icon: LucideIcons.map_pin,
-                    label: t.respProfileMunicipality,
-                    value: p.agencyMunicipality ?? '—',
-                  ),
-                  // Read-only "who do I call" info — Section 21. The responder
-                  // cannot change their agency/station from here; this exists
-                  // only so they never have to hunt for the station's own
-                  // number during a shift.
-                  if (p.agencyContactNumber?.isNotEmpty == true)
-                    ProfileRow(
-                      icon: LucideIcons.phone,
-                      label: 'Station Contact',
-                      value: p.agencyContactNumber!,
-                    ),
-                  ProfileRow(
-                    icon: _approvalIcon(p.approvalStatus),
-                    label: t.respProfileStatus,
-                    value: _approvalLabel(p.approvalStatus),
-                    valueColor: _approvalColor(p.approvalStatus),
-                    last: true,
-                  ),
-                ],
-              ),
-              const SizedBox(height: ZirenTokens.space24),
+        // ── Safety & help ────────────────────────────────────
+        ProfileGroup(
+          title: t.profileSafetyHelp,
+          children: [
+            ProfileTile(
+              icon: LucideIcons.phone_call,
+              tone: ZirenTokens.systemSuccess,
+              label: t.hotlinesTitle,
+              onTap: () => context.push('/hotlines'),
+            ),
+            ProfileTile(
+              icon: LucideIcons.life_buoy,
+              tone: ZirenTokens.systemInfo,
+              label: t.helpTitle,
+              onTap: () => context.push('/help?role=responder'),
+            ),
+          ],
+        ),
+        const SizedBox(height: ZirenTokens.space24),
 
-              // ── Sign out ─────────────────────────────────────
-              //
-              // Outlined and error-coloured. Disabled mid-save: signing out while
-              // a PATCH is in flight would tear the session down under the request
-              // and lose the edit with no error worth showing.
-              OutlinedButton.icon(
-                onPressed:
-                    provider.isSaving ? null : () => _confirmLogout(context),
-                icon: const Icon(LucideIcons.log_out, size: 18),
-                label: Text(t.respLogout),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ZirenTokens.systemError,
-                  side: BorderSide(
-                    color: ZirenTokens.systemError.withValues(alpha: 0.5),
-                  ),
-                  minimumSize: const Size.fromHeight(52),
-                ),
-              ),
-
-              const SizedBox(height: ZirenTokens.space32),
-            ],
-          ),
+        // ── Account ──────────────────────────────────────────
+        //
+        // Log out is disabled mid-save: signing out while a PATCH is in flight
+        // would tear the session down under the request and lose the edit
+        // with no error worth showing.
+        ProfileGroup(
+          title: t.profileAccount,
+          children: [
+            ProfileTile(
+              icon: LucideIcons.settings,
+              label: t.profileSettings,
+              onTap: () => context.push('/settings'),
+            ),
+            ProfileTile(
+              icon: LucideIcons.log_out,
+              label: t.respLogout,
+              danger: true,
+              onTap: provider.isSaving ? null : () => _confirmLogout(context),
+            ),
+          ],
         ),
       ],
     );
+  }
+
+  /// One number dials straight away; several (Globe, Smart, landline) ask
+  /// which, since the right one depends on the caller's own network.
+  Future<void> _callStation(
+    BuildContext context,
+    List<HotlineNumber> numbers,
+  ) async {
+    var pick = numbers.first;
+    if (numbers.length > 1) {
+      final chosen = await showZirenOptionSheet<HotlineNumber>(
+        context,
+        title: AppLocalizations.of(context).profileCallStation,
+        options: [
+          for (final n in numbers)
+            ZirenSheetOption(
+              icon: LucideIcons.phone,
+              label: n.display,
+              subtitle: n.label,
+              value: n,
+              tone: ZirenTone.success,
+            ),
+        ],
+      );
+      if (chosen == null) return;
+      pick = chosen;
+    }
+    await launchUrl(pick.telUri);
   }
 
   /// Confirm, then sign out and return to the login screen.
@@ -354,45 +373,18 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
   /// assignment gets a sharper warning than an idle one, because signing out
   /// mid-call is a different mistake than signing out at the end of a shift
   /// — one strands a live emergency, the other loses nothing.
+  ///
+  /// The dialog itself is the resident's, on purpose (tester's request,
+  /// 2026-09-30): same icon, title and Cancel | Log out row. The open
+  /// assignment used to turn it into a different dialog altogether, amber,
+  /// retitled, with a stacked "Stay Signed In" button, which read as a
+  /// second design rather than a warning. The warning is now a note inside
+  /// the same dialog; Cancel is the "stay signed in".
   Future<void> _confirmLogout(BuildContext context) async {
     final auth = context.read<AuthProvider>();
-    final hasActiveAssignment =
-        context.read<ResponderProvider>().queue.isNotEmpty;
-
-    final l = AppLocalizations.of(context);
-    final confirmed = await showZirenDialog<bool>(
+    final confirmed = await showResponderLogoutDialog(
       context,
-      icon:
-          hasActiveAssignment
-              ? LucideIcons.triangle_alert
-              : LucideIcons.log_out,
-      tone: hasActiveAssignment ? ZirenTone.warning : ZirenTone.danger,
-      title:
-          hasActiveAssignment
-              ? l.respActiveAssignmentTitle
-              : l.respLogoutConfirm,
-      message:
-          hasActiveAssignment ? l.respActiveAssignmentBody : l.respLogoutBody,
-      // With a call in hand, staying signed in is the one to press.
-      actions: [
-        if (hasActiveAssignment)
-          ZirenDialogAction(
-            label: l.respStaySignedIn,
-            value: false,
-            kind: ZirenActionKind.primary,
-          ),
-        ZirenDialogAction(
-          label: l.respLogout,
-          value: true,
-          kind:
-              hasActiveAssignment
-                  ? ZirenActionKind.secondary
-                  : ZirenActionKind.danger,
-          icon: LucideIcons.log_out,
-        ),
-        if (!hasActiveAssignment)
-          ZirenDialogAction(label: l.respCancel, value: false),
-      ],
+      hasActiveAssignment: context.read<ResponderProvider>().queue.isNotEmpty,
     );
     if (confirmed != true || !context.mounted) return;
 
@@ -423,12 +415,6 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
     'PNP' => ZirenTokens.agencyPNP,
     'MDRRMO' => ZirenTokens.agencyMDRRMO,
     _ => ZirenTokens.textSecondary,
-  };
-
-  IconData _approvalIcon(String status) => switch (status) {
-    'approved' => LucideIcons.badge_check,
-    'rejected' => LucideIcons.circle_x,
-    _ => LucideIcons.hourglass,
   };
 
   String _approvalLabel(String status) {
@@ -507,6 +493,83 @@ class _ApprovalBanner extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The responder's log-out confirmation. Public so a test can open it
+/// without building the whole profile screen. See `_confirmLogout`.
+@visibleForTesting
+Future<bool?> showResponderLogoutDialog(
+  BuildContext context, {
+  required bool hasActiveAssignment,
+}) {
+  final l = AppLocalizations.of(context);
+  return showZirenDialog<bool>(
+    context,
+    icon: LucideIcons.log_out,
+    tone: ZirenTone.danger,
+    title: l.respLogoutConfirm,
+    message: l.respLogoutBody,
+    body:
+        hasActiveAssignment
+            ? _ActiveAssignmentNote(text: l.respActiveAssignmentBody)
+            : null,
+    horizontalActions: true,
+    actions: [
+      ZirenDialogAction(label: l.settingsCancel, value: false),
+      ZirenDialogAction(
+        label: l.respLogout,
+        value: true,
+        kind: ZirenActionKind.danger,
+        icon: LucideIcons.log_out,
+      ),
+    ],
+  );
+}
+
+/// The open-assignment warning, inside the ordinary log-out dialog.
+///
+/// Amber, not red: red is reserved for critical severity (app_tokens.dart),
+/// and this is a caution about the responder's own action.
+class _ActiveAssignmentNote extends StatelessWidget {
+  const _ActiveAssignmentNote({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('logout-active-assignment'),
+      padding: const EdgeInsets.all(ZirenTokens.space10),
+      decoration: BoxDecoration(
+        color: ZirenTokens.systemWarningBg,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+        border: Border.all(
+          color: ZirenTokens.systemWarning.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            LucideIcons.triangle_alert,
+            size: 16,
+            color: ZirenTokens.systemWarning,
+          ),
+          const SizedBox(width: ZirenTokens.space8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.35,
+                color: ZirenTokens.textPrimary,
+              ),
             ),
           ),
         ],

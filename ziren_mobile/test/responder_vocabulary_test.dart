@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ziren/core/config/locale_provider.dart';
 import 'package:ziren/features/responder/domain/responder_vocabulary.dart';
 
 /// The shared reading of an incident.
@@ -9,6 +11,10 @@ import 'package:ziren/features/responder/domain/responder_vocabulary.dart';
 /// one question.
 
 void main() {
+  // The labels follow the app's language; these assertions are the English.
+  setUp(() => LocaleProvider.current = const Locale('en'));
+  tearDown(() => LocaleProvider.current = const Locale('fil'));
+
   group('waiting', () {
     test('truncates days rather than rounding them', () {
       // 2 days 22 hours. Rounding would call this three days, which claims a

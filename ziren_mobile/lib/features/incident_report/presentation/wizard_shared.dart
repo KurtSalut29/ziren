@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../domain/incident_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -130,13 +131,17 @@ class WizardNavBar extends StatelessWidget {
   const WizardNavBar({
     super.key,
     required this.onNext,
-    this.label = 'Susunod →',
+    this.label,
   });
   final VoidCallback onNext;
-  final String label;
+
+  /// Defaults to the localised "Next →". It used to default to a hard-coded
+  /// "Susunod →", which English readers saw too.
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
+    final text = label ?? AppLocalizations.of(context).wizardNext;
     return Container(
       padding: EdgeInsets.fromLTRB(
         ZirenTokens.space16,
@@ -159,7 +164,7 @@ class WizardNavBar extends StatelessWidget {
         ),
         onPressed: onNext,
         child: Text(
-          label,
+          text,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),

@@ -8,6 +8,7 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../announcements/data/announcement_repository.dart';
 import '../../announcements/domain/announcement_model.dart';
 import '../../auth/domain/auth_provider.dart';
+import '../../incident_report/presentation/incident_labels.dart';
 import '../../responder/domain/responder_notification_provider.dart';
 import '../domain/notification_provider.dart';
 import 'notice_view.dart';
@@ -152,7 +153,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body: body,
         meta: n.reportText.trim().isEmpty
             ? _timeAgo(t, n.receivedAt)
-            : '${n.reportText.trim()} · ${_timeAgo(t, n.receivedAt)}',
+            : '${IncidentLabels.reportText(t, n.reportText.trim())} · ${_timeAgo(t, n.receivedAt)}',
         onDismiss: () => provider.dismiss(index),
         // Anything that has a report to go to opens it - a message opens the
         // chat, where it is answered.

@@ -28,98 +28,217 @@ import 'ziren_dialogs.dart';
 /// are now shared, so the two cannot disagree again without someone editing
 /// this file on purpose.
 ///
-/// Nothing here is new design work. It is the resident profile's existing
-/// treatment, lifted verbatim so both screens are literally the same widgets.
+/// 2026-09-30 redesign: the header became a card ([ProfileHeroCard]) and the
+/// sections became titled groups of icon tiles ([ProfileGroup], [ProfileTile]),
+/// the same card language as the Home screens. Both profiles still use exactly
+/// these widgets.
 
 // =============================================================================
 // Header
 // =============================================================================
 
-/// Avatar, name, and a supporting line — the top of any profile.
+/// One short fact in the strip along the bottom of a [ProfileHeroCard]:
+/// a badge number, an approval state.
+class ProfileFact {
+  const ProfileFact({required this.label, required this.value, this.color});
+
+  final String label;
+  final String value;
+
+  /// For a value whose colour carries meaning (approved green, pending amber).
+  final Color? color;
+}
+
+/// The top of a profile: a card with a softly tinted band that the avatar sits
+/// across, then the name, the email, a row of identity chips, and optionally a
+/// strip of [facts].
 ///
-/// The circle carries the brand gradient when there is no uploaded picture
-/// yet (see [EditableAvatar] below for the version that can hold one) — an
-/// empty grey circle on every account would be a permanent hole in the
-/// design, and initials on brand always render and always look deliberate.
-class ProfileAvatarHeader extends StatelessWidget {
-  const ProfileAvatarHeader({
+/// The old header was a bare avatar and two lines of text floating on the page
+/// background, above cards that looked like a settings list - so the one part
+/// of the screen that is about the PERSON had the least structure. Putting it
+/// in its own card, with the chips (verified, agency, on duty) where the eye
+/// lands first, makes the identity the screen's anchor.
+class ProfileHeroCard extends StatelessWidget {
+  const ProfileHeroCard({
     super.key,
+    required this.avatar,
     required this.displayName,
     required this.subtitle,
-    this.badge,
-    this.trailing,
+    this.chips = const [],
+    this.facts = const [],
   });
 
+  /// Usually an [EditableAvatar]; the card draws a ring of its own colour
+  /// around it so it reads as lifted off the band.
+  final Widget avatar;
   final String displayName;
 
-  /// Usually the email. The one line that identifies the account rather than
-  /// the person.
+  /// Usually the email: the line that identifies the account, not the person.
   final String subtitle;
+  final List<Widget> chips;
+  final List<ProfileFact> facts;
 
-  /// An optional chip under the name — agency and badge for a responder,
-  /// nothing for a resident.
-  final Widget? badge;
-
-  /// An optional status line below everything, for a state that belongs to
-  /// the identity rather than to a section: on duty, off duty, pending.
-  final Widget? trailing;
+  static const double _band = 68;
+  static const double _ring = 4;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: profileCardDecoration(radius: ZirenTokens.radius20),
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: ZirenTokens.brandGradient,
-              border: Border.all(
-                color: ZirenTokens.brandOrange.withValues(alpha: 0.4),
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                initialsOf(displayName),
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                height: _band,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      ZirenTokens.brandOrange.withValues(
+                        alpha: ZirenTokens.isDark ? 0.30 : 0.22,
+                      ),
+                      ZirenTokens.brandOrange.withValues(
+                        alpha: ZirenTokens.isDark ? 0.10 : 0.06,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.only(top: _band - 48),
+                child: Container(
+                  padding: const EdgeInsets.all(_ring),
+                  decoration: BoxDecoration(
+                    color: ZirenTokens.surfaceCard,
+                    shape: BoxShape.circle,
+                  ),
+                  child: avatar,
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ZirenTokens.space20,
+              ZirenTokens.space10,
+              ZirenTokens.space20,
+              0,
+            ),
+            child: Column(
+              children: [
+                Text(
+                  displayName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 21,
+                    height: 1.2,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: ZirenTokens.space4),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: ZirenTokens.textMuted),
+                ),
+                if (chips.isNotEmpty) ...[
+                  const SizedBox(height: ZirenTokens.space12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: ZirenTokens.space8,
+                    runSpacing: ZirenTokens.space8,
+                    children: chips,
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: ZirenTokens.space12),
-          Text(
-            displayName,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: ZirenTokens.textPrimary,
+          if (facts.isEmpty)
+            const SizedBox(height: ZirenTokens.space20)
+          else ...[
+            const SizedBox(height: ZirenTokens.space16),
+            Divider(height: 1, color: ZirenTokens.surfaceBorder),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  for (var i = 0; i < facts.length; i++) ...[
+                    if (i > 0)
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: ZirenTokens.surfaceBorder,
+                      ),
+                    Expanded(child: _FactCell(fact: facts[i])),
+                  ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: ZirenTokens.space4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: ZirenTokens.textMuted),
-          ),
-          if (badge != null) ...[
-            const SizedBox(height: ZirenTokens.space12),
-            badge!,
-          ],
-          if (trailing != null) ...[
-            const SizedBox(height: ZirenTokens.space8),
-            trailing!,
           ],
         ],
       ),
     );
   }
 }
+
+class _FactCell extends StatelessWidget {
+  const _FactCell({required this.fact});
+
+  final ProfileFact fact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZirenTokens.space8,
+        vertical: ZirenTokens.space12,
+      ),
+      child: Column(
+        children: [
+          Text(
+            fact.value,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              color: fact.color ?? ZirenTokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: ZirenTokens.space2),
+          Text(
+            fact.label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11.5, color: ZirenTokens.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The card surface every profile block shares: white, rounded, a hairline
+/// border and a shadow faint enough to vanish in dark mode.
+BoxDecoration profileCardDecoration({double radius = 18}) => BoxDecoration(
+  color: ZirenTokens.surfaceCard,
+  borderRadius: BorderRadius.circular(radius),
+  border: Border.all(color: ZirenTokens.surfaceBorder.withValues(alpha: 0.8)),
+  boxShadow: [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: ZirenTokens.isDark ? 0 : 0.03),
+      blurRadius: 10,
+      offset: const Offset(0, 3),
+    ),
+  ],
+);
 
 /// Two initials from a name, one if that is all there is.
 String initialsOf(String name) {
@@ -355,227 +474,242 @@ void _showAvatarError(BuildContext context, String? message) {
 enum _AvatarSheetChoice { camera, gallery, remove }
 
 // =============================================================================
-// Sections
+// Groups and tiles
 // =============================================================================
 
-/// A titled card. The unit a profile is built out of.
-class ProfileSection extends StatelessWidget {
-  const ProfileSection({
+/// A small upper-case title, an optional sentence under it, and a card of
+/// [ProfileTile]s separated by hairlines that start after the icon.
+///
+/// The title sits OUTSIDE the card, as on the Home screen's groups, so the
+/// card holds only things you can read or press.
+class ProfileGroup extends StatelessWidget {
+  const ProfileGroup({
     super.key,
     required this.title,
-    required this.items,
-    this.action,
+    required this.children,
+    this.caption,
   });
 
   final String title;
-  final List<Widget> items;
-
-  /// An optional control on the title row — "Edit", usually.
-  ///
-  /// Lives in the section header rather than floating above the card, so the
-  /// affordance is attached to the thing it edits. A page-level Edit button
-  /// cannot say WHICH card it is about once there is more than one.
-  final Widget? action;
+  final String? caption;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-        border: Border.all(color: ZirenTokens.surfaceBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              ZirenTokens.space16,
-              action == null ? ZirenTokens.space12 : ZirenTokens.space4,
-              action == null ? ZirenTokens.space16 : ZirenTokens.space8,
-              action == null ? ZirenTokens.space8 : ZirenTokens.space4,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: ZirenTokens.textPrimary,
-                  ),
-                )),
-                if (action != null) action!,
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            left: ZirenTokens.space4,
+            bottom: ZirenTokens.space8,
           ),
-          Divider(height: 1, color: ZirenTokens.surfaceBorder),
-          ...items,
-        ],
-      ),
-    );
-  }
-}
-
-/// One `icon · label · value` line inside a [ProfileSection].
-class ProfileRow extends StatelessWidget {
-  const ProfileRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.last = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  /// Drops the hairline under the final row, so the card does not end on a
-  /// rule floating above its own rounded corner.
-  final bool last;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ZirenTokens.space16,
-        vertical: ZirenTokens.space12,
-      ),
-      decoration: BoxDecoration(
-        border:
-            last
-                ? null
-                : Border(
-                  bottom: BorderSide(
-                    color: ZirenTokens.surfaceBorder,
-                    width: 0.5,
-                  ),
-                ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: ZirenTokens.textMuted),
-          const SizedBox(width: ZirenTokens.space12),
-          // The LABEL sizes to its content and the VALUE takes what is left.
-          //
-          // Both used to be flexible — Expanded on the label, Flexible on the
-          // value — which splits the row 50/50 regardless of what is in it. A
-          // 13px email needs about 170 of the 346 available points and was
-          // given 173, so it wrapped onto three lines while the word "Email"
-          // sat alone in half the row. Labels here are one or two short words
-          // and values are the part worth reading, so the space goes to the
-          // value.
-          Text(
-            label,
+          child: Text(
+            title.toUpperCase(),
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
               color: ZirenTokens.textSecondary,
             ),
           ),
-          const SizedBox(width: ZirenTokens.space16),
-          Expanded(
+        ),
+        if (caption != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ZirenTokens.space4,
+              0,
+              ZirenTokens.space4,
+              ZirenTokens.space10,
+            ),
             child: Text(
-              value,
-              textAlign: TextAlign.right,
+              caption!,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: valueColor ?? ZirenTokens.textPrimary,
+                fontSize: 12.5,
+                height: 1.45,
+                color: ZirenTokens.textSecondary,
               ),
             ),
           ),
-        ],
-      ),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: profileCardDecoration(),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 62,
+                      color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
+                    ),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// An editable line that keeps a row's geometry.
+/// One line of a [ProfileGroup]: an icon in a tinted square, then either a
+/// small label over a bold value (information) or a single label (a place to
+/// go, an action), and a chevron when it can be pressed.
 ///
-/// The responder profile used to put bare TextFormFields straight into the
-/// scroll view, which is why it read as a form rather than a profile. This
-/// keeps the field inside the card, on the same 16/12 padding and the same
-/// hairline, so switching to edit mode changes what a row DOES without
-/// changing what the screen IS.
-class ProfileEditRow extends StatelessWidget {
-  const ProfileEditRow({
+/// Label over value, not label-left / value-right: a long email or a station
+/// with three numbers gets the whole width instead of wrapping into half a
+/// row, and every value starts at the same x so the eye can run down them.
+class ProfileTile extends StatelessWidget {
+  const ProfileTile({
     super.key,
     required this.icon,
     required this.label,
-    required this.controller,
-    this.hintText,
-    this.keyboardType,
-    this.validator,
-    this.last = false,
+    this.value,
+    this.valueColor,
+    this.tone,
+    this.onTap,
+    this.danger = false,
+    this.subtitle,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
-  final TextEditingController controller;
-  final String? hintText;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final bool last;
+
+  /// A short line under a single-label row saying what it does
+  /// ("Updates on your reports"). Ignored when there is a [value].
+  final String? subtitle;
+
+  /// Replaces the chevron: a Switch, a status word.
+  final Widget? trailing;
+
+  /// Null for a navigation or action row: then [label] is the main text.
+  final String? value;
+  final Color? valueColor;
+
+  /// Tints the icon square. Null keeps it neutral; colour is for rows whose
+  /// colour means something (call = green, agency hue, sign out = red).
+  final Color? tone;
+  final VoidCallback? onTap;
+
+  /// A destructive action (Log out): red icon and red label, no chevron.
+  final bool danger;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        ZirenTokens.space16,
-        ZirenTokens.space8,
-        ZirenTokens.space16,
-        ZirenTokens.space8,
-      ),
-      decoration: BoxDecoration(
-        border:
-            last
-                ? null
-                : Border(
-                  bottom: BorderSide(
-                    color: ZirenTokens.surfaceBorder,
-                    width: 0.5,
+    final tint = danger ? ZirenTokens.systemError : tone;
+    final iconColor = tint ?? ZirenTokens.textSecondary;
+    final iconBg =
+        tint == null
+            ? ZirenTokens.surfaceRaised
+            : tint.withValues(alpha: ZirenTokens.isDark ? 0.18 : 0.10);
+    // An action row with nothing to do (Log out mid-save) is shown dimmed.
+    final disabled = onTap == null && value == null && trailing == null;
+
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            ZirenTokens.space12,
+            ZirenTokens.space10,
+            ZirenTokens.space12,
+            ZirenTokens.space10,
+          ),
+          child: Opacity(
+            opacity: disabled ? 0.5 : 1,
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: iconBg,
+                    borderRadius: BorderRadius.circular(11),
                   ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 18, color: iconColor),
                 ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: ZirenTokens.textMuted),
-          const SizedBox(width: ZirenTokens.space12),
-          Expanded(
-            child: TextFormField(
-              controller: controller,
-              keyboardType: keyboardType,
-              validator: validator,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: ZirenTokens.textPrimary,
-              ),
-              decoration: InputDecoration(
-                labelText: label,
-                hintText: hintText,
-                labelStyle: TextStyle(
-                  fontSize: 13,
-                  color: ZirenTokens.textSecondary,
+                const SizedBox(width: ZirenTokens.space12),
+                Expanded(
+                  child:
+                      value == null
+                          ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      danger
+                                          ? ZirenTokens.systemError
+                                          : ZirenTokens.textPrimary,
+                                ),
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: ZirenTokens.space2),
+                                Text(
+                                  subtitle!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    height: 1.3,
+                                    color: ZirenTokens.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          )
+                          : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: ZirenTokens.textMuted,
+                                ),
+                              ),
+                              const SizedBox(height: ZirenTokens.space2),
+                              Text(
+                                value!,
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w700,
+                                  color: valueColor ?? ZirenTokens.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
                 ),
-                isDense: true,
-                // No box. The card already provides the container; an outlined
-                // field inside a bordered card is two frames around one value.
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-              ),
+                if (trailing != null) ...[
+                  const SizedBox(width: ZirenTokens.space8),
+                  trailing!,
+                ] else if (onTap != null && !danger) ...[
+                  const SizedBox(width: ZirenTokens.space8),
+                  Icon(
+                    LucideIcons.chevron_right,
+                    size: 18,
+                    color: ZirenTokens.textMuted,
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -638,7 +772,17 @@ class ProfileLoadError extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(LucideIcons.refresh_cw, size: 15),
-                    label: const Text('Retry'),
+                    // Size and weight on the Text, not as the ButtonStyle's
+                    // textStyle: that REPLACES the theme's label style, font
+                    // family included, so the button fell back to the
+                    // platform font instead of the app's.
+                    label: Text(
+                      AppLocalizations.of(context).actionRetry,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ZirenTokens.systemError,
                       side: BorderSide(
@@ -646,10 +790,6 @@ class ProfileLoadError extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: ZirenTokens.space12,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

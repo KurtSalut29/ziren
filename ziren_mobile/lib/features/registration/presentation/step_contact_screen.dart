@@ -238,7 +238,7 @@ class _StepContactScreenState extends State<StepContactScreen> {
                 final invalid = Validators.phoneNumber(number);
                 if (invalid != null) return invalid;
                 // The commonest mix-up: typing their OWN number here.
-                if (_sameMobile(number, _phone.text)) {
+                if (Validators.sameMobile(number, _phone.text)) {
                   return t.regEmergencySameAsYours;
                 }
                 return null;
@@ -271,17 +271,6 @@ class _StepContactScreenState extends State<StepContactScreen> {
 ///
 /// Compared on the last ten digits, which is the subscriber number once the
 /// leading 0 or the 63 country code is set aside.
-bool _sameMobile(String a, String b) {
-  String tail(String s) {
-    final digits = s.replaceAll(RegExp(r'\D'), '');
-    return digits.length > 10 ? digits.substring(digits.length - 10) : digits;
-  }
-
-  final x = tail(a);
-  final y = tail(b);
-  return x.length >= 10 && x == y;
-}
-
 class _EyeButton extends StatelessWidget {
   const _EyeButton({required this.obscured, required this.onTap});
   final bool obscured;

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
+import '../../../shared/widgets/profile_kit.dart';
 import '../domain/help_content.dart';
 
 /// "How to use Ziren": short, step-by-step topics, one open at a time.
@@ -19,7 +20,10 @@ class HelpScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
-      appBar: AppBar(title: Text(AppLocalizations.of(context).helpTitle)),
+      appBar: AppBar(
+        backgroundColor: ZirenTokens.surfaceBase,
+        title: Text(AppLocalizations.of(context).helpTitle),
+      ),
       body: HelpGuide(forResponder: forResponder),
     );
   }
@@ -71,48 +75,20 @@ class _HelpGuideState extends State<HelpGuide> {
       controller: widget.controller,
       padding: const EdgeInsets.fromLTRB(
         ZirenTokens.space16,
-        ZirenTokens.space12,
+        ZirenTokens.space8,
         ZirenTokens.space16,
-        ZirenTokens.space24,
+        ZirenTokens.space32,
       ),
       children: [
         if (widget.showIntro) ...[
-          Container(
-            padding: const EdgeInsets.all(ZirenTokens.space16),
-            decoration: BoxDecoration(
-              color: ZirenTokens.brandOrange.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-              border: Border.all(
-                color: ZirenTokens.brandOrange.withValues(alpha: 0.25),
-              ),
-            ),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/images/mascot_help.png',
-                  width: 44,
-                  height: 44,
-                ),
-                const SizedBox(width: ZirenTokens.space12),
-                Expanded(
-                  child: Text(
-                    widget.forResponder
-                        ? t.helpIntroResponder
-                        : t.helpIntroResident,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.4,
-                      color: ZirenTokens.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          _IntroCard(
+            text: widget.forResponder ? t.helpIntroResponder : t.helpIntroResident,
           ),
-          const SizedBox(height: ZirenTokens.space16),
+          const SizedBox(height: ZirenTokens.space20),
         ],
         for (var i = 0; i < topics.length; i++) ...[
           _TopicCard(
+            index: i + 1,
             topic: topics[i],
             open: _open == i,
             onToggle: () => setState(() => _open = _open == i ? null : i),
@@ -120,33 +96,96 @@ class _HelpGuideState extends State<HelpGuide> {
           ),
           const SizedBox(height: ZirenTokens.space10),
         ],
-        const SizedBox(height: ZirenTokens.space8),
-        OutlinedButton.icon(
-          icon: Icon(
-            LucideIcons.phone,
-            size: 18,
-            color: ZirenTokens.systemSuccess,
-          ),
-          label: Text(t.helpStillStuck),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            foregroundColor: ZirenTokens.textPrimary,
-          ),
-          onPressed: () => _go('/hotlines'),
-        ),
+        const SizedBox(height: ZirenTokens.space10),
+        _StillStuckCard(label: t.helpStillStuck, onTap: () => _go('/hotlines')),
       ],
+    );
+  }
+}
+
+/// The mascot and one sentence about what this guide is for.
+class _IntroCard extends StatelessWidget {
+  const _IntroCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        ZirenTokens.space12,
+        ZirenTokens.space12,
+        ZirenTokens.space16,
+        ZirenTokens.space12,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ZirenTokens.brandOrange.withValues(alpha: ZirenTokens.isDark ? 0.22 : 0.14),
+            ZirenTokens.brandOrange.withValues(alpha: ZirenTokens.isDark ? 0.08 : 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(ZirenTokens.radius20),
+        border: Border.all(color: ZirenTokens.brandOrange.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Image.asset('assets/images/mascot_help.png', width: 64, height: 64),
+          const SizedBox(width: ZirenTokens.space12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+                color: ZirenTokens.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Still stuck? Call a station" - the way out when the guide is not enough.
+class _StillStuckCard extends StatelessWidget {
+  const _StillStuckCard({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: profileCardDecoration(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ProfileTile(
+          icon: LucideIcons.phone_call,
+          tone: ZirenTokens.systemSuccess,
+          label: label,
+          onTap: onTap,
+        ),
+      ),
     );
   }
 }
 
 class _TopicCard extends StatelessWidget {
   const _TopicCard({
+    required this.index,
     required this.topic,
     required this.open,
     required this.onToggle,
     required this.onRoute,
   });
 
+  final int index;
   final HelpTopic topic;
   final bool open;
   final VoidCallback onToggle;
@@ -154,175 +193,242 @@ class _TopicCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: ZirenTokens.surfaceCard,
+    return AnimatedContainer(
+      duration: ZirenTokens.motionBase,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        side: BorderSide(
-          color:
-              open
-                  ? ZirenTokens.brandOrange.withValues(alpha: 0.5)
-                  : ZirenTokens.surfaceBorder,
+      decoration: profileCardDecoration().copyWith(
+        border: Border.all(
+          color: open
+              ? ZirenTokens.brandOrange.withValues(alpha: 0.45)
+              : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
           width: open ? 1.4 : 1,
         ),
       ),
-      child: Column(
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              button: true,
+              expanded: open,
+              child: InkWell(
+                onTap: onToggle,
+                child: Padding(
+                  padding: const EdgeInsets.all(ZirenTokens.space12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: open
+                              ? ZirenTokens.brandOrange.withValues(alpha: 0.12)
+                              : ZirenTokens.surfaceRaised,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          topic.icon,
+                          size: 20,
+                          color: open ? ZirenTokens.brandOrange : ZirenTokens.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: ZirenTokens.space12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              topic.title,
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                                color: ZirenTokens.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              topic.summary,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.35,
+                                color: ZirenTokens.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: ZirenTokens.space8),
+                      AnimatedRotation(
+                        turns: open ? 0.5 : 0,
+                        duration: ZirenTokens.motionBase,
+                        child: Icon(
+                          LucideIcons.chevron_down,
+                          size: 18,
+                          color: ZirenTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (open)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ZirenTokens.space12,
+                  0,
+                  ZirenTokens.space12,
+                  ZirenTokens.space16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Divider(height: 1, color: ZirenTokens.surfaceBorder),
+                    const SizedBox(height: ZirenTokens.space16),
+                    for (var i = 0; i < topic.steps.length; i++)
+                      _Step(
+                        number: i + 1,
+                        text: topic.steps[i],
+                        last: i == topic.steps.length - 1,
+                      ),
+                    if (topic.tip != null) ...[
+                      const SizedBox(height: ZirenTokens.space4),
+                      Container(
+                        padding: const EdgeInsets.all(ZirenTokens.space12),
+                        decoration: BoxDecoration(
+                          color: ZirenTokens.systemInfoBg,
+                          borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              LucideIcons.lightbulb,
+                              size: 16,
+                              color: ZirenTokens.systemInfo,
+                            ),
+                            const SizedBox(width: ZirenTokens.space8),
+                            Expanded(
+                              child: Text(
+                                topic.tip!,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  height: 1.45,
+                                  color: ZirenTokens.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (topic.route != null) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => onRoute(topic.route!),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ZirenTokens.brandOrange,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  topic.routeLabel ?? '',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: ZirenTokens.space8),
+                              const Icon(LucideIcons.arrow_right, size: 17),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A numbered step, joined to the next by a thin line so the steps read as
+/// one sequence rather than a list of separate facts.
+class _Step extends StatelessWidget {
+  const _Step({required this.number, required this.text, required this.last});
+
+  final int number;
+  final String text;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            button: true,
-            expanded: open,
-            child: InkWell(
-              onTap: onToggle,
-              child: Padding(
-                padding: const EdgeInsets.all(ZirenTokens.space12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: ZirenTokens.brandOrange.withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        topic.icon,
-                        size: 19,
-                        color: ZirenTokens.brandOrange,
-                      ),
+          SizedBox(
+            width: 26,
+            child: Column(
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: const BoxDecoration(
+                    color: ZirenTokens.brandOrange,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$number',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
                     ),
-                    const SizedBox(width: ZirenTokens.space12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            topic.title,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              color: ZirenTokens.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            topic.summary,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              height: 1.35,
-                              color: ZirenTokens.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 3),
+                      color: ZirenTokens.brandOrange.withValues(alpha: 0.25),
                     ),
-                    Icon(
-                      open ? LucideIcons.chevron_up : LucideIcons.chevron_down,
-                      size: 18,
-                      color: ZirenTokens.textMuted,
-                    ),
-                  ],
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: ZirenTokens.space12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 3, bottom: last ? ZirenTokens.space12 : ZirenTokens.space16),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: ZirenTokens.textPrimary,
                 ),
               ),
             ),
           ),
-          if (open)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                ZirenTokens.space12,
-                0,
-                ZirenTokens.space12,
-                ZirenTokens.space12,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Divider(height: 1, color: ZirenTokens.surfaceBorder),
-                  const SizedBox(height: ZirenTokens.space12),
-                  for (var i = 0; i < topic.steps.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: ZirenTokens.space10,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: ZirenTokens.brandOrange,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${i + 1}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: ZirenTokens.space10),
-                          Expanded(
-                            child: Text(
-                              topic.steps[i],
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                height: 1.45,
-                                color: ZirenTokens.textPrimary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (topic.tip != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.all(ZirenTokens.space10),
-                      decoration: BoxDecoration(
-                        color: ZirenTokens.systemInfo.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(
-                          ZirenTokens.radius12,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            LucideIcons.lightbulb,
-                            size: 16,
-                            color: ZirenTokens.systemInfo,
-                          ),
-                          const SizedBox(width: ZirenTokens.space8),
-                          Expanded(
-                            child: Text(
-                              topic.tip!,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                height: 1.4,
-                                color: ZirenTokens.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (topic.route != null) ...[
-                    const SizedBox(height: ZirenTokens.space12),
-                    ElevatedButton.icon(
-                      icon: const Icon(LucideIcons.arrow_right, size: 16),
-                      label: Text(topic.routeLabel ?? ''),
-                      onPressed: () => onRoute(topic.route!),
-                    ),
-                  ],
-                ],
-              ),
-            ),
         ],
       ),
     );

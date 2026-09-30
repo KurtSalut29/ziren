@@ -2543,25 +2543,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFaqReportQ => 'How do I report an emergency?';
 
   @override
-  String get settingsFaqReportA => 'Tap the SOS button on Home, or fill out a report from the Report tab. Both reach the nearest responding agency.';
+  String get settingsFaqReportA => 'On Home, tap the kind of emergency (Fire, Medical, Accident, Crime, Calamity or Other). Check the landmark, say or type what happened, review it, then send. Ziren sends it to the nearest station that handles it.';
 
   @override
   String get settingsFaqOfflineQ => 'What happens with no internet?';
 
   @override
-  String get settingsFaqOfflineA => 'Ziren needs an internet connection to send a report. If you have no signal or data, call 911 or your local emergency number directly instead.';
+  String get settingsFaqOfflineA => 'A report needs internet to send. With no data, tap the kind of emergency on Home anyway: Ziren shows the official station hotlines for it, and a normal call only needs a phone signal. You can also call 911.';
 
   @override
   String get settingsFaqAgencyQ => 'Which agency responds to my report?';
 
   @override
-  String get settingsFaqAgencyA => 'Ziren routes your report to BFP, PNP, or MDRRMO based on what you reported and how severe it is.';
+  String get settingsFaqAgencyA => 'It depends on the emergency: BFP for fire, PNP for crime, MDRRMO for medical cases, accidents and calamities. The station in the town where the incident is receives it.';
 
   @override
   String get settingsFaqAccountQ => 'How do I update my emergency contact?';
 
   @override
-  String get settingsFaqAccountA => 'Go to Settings & Profile → Edit personal information to update your emergency contact anytime.';
+  String get settingsFaqAccountA => 'In Settings, open \"Edit personal information\", change the contact name or number, and tap \"Save changes\".';
 
   @override
   String get settingsAboutZiren => 'About Ziren';
@@ -3806,4 +3806,374 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get respEmergencyContactShort => 'Emergency contact';
+
+  @override
+  String get profileChipVerified => 'Verified';
+
+  @override
+  String get profileChipInReview => 'In review';
+
+  @override
+  String get profileChipNotVerified => 'Not verified';
+
+  @override
+  String get profileSafetyHelp => 'Safety & help';
+
+  @override
+  String get profileStationContact => 'Station contact';
+
+  @override
+  String get profileStationSection => 'Station';
+
+  @override
+  String get profileSettings => 'Settings';
+
+  @override
+  String get profileCallStation => 'Call the station';
+
+  @override
+  String get settingsAccountCardHint => 'View and edit your details';
+
+  @override
+  String get settingsNotifDesc => 'Updates on your reports and alerts';
+
+  @override
+  String get settingsLocationDesc => 'Sends your location with a report';
+
+  @override
+  String get settingsReduceMotionDesc => 'Fewer moving animations';
+
+  @override
+  String get settingsHighContrastDesc => 'Stronger text and borders';
+
+  @override
+  String get settingsSaveChanges => 'Save changes';
+
+  @override
+  String get settingsDiscardTitle => 'Discard your changes?';
+
+  @override
+  String get settingsDiscardBody => 'You have edits that are not saved yet.';
+
+  @override
+  String get settingsDiscard => 'Discard';
+
+  @override
+  String get settingsKeepEditing => 'Keep editing';
+
+  @override
+  String get settingsEditorIntro => 'Stations see these details when you send a report.';
+
+  @override
+  String get cpIntro => 'Enter your current password, then choose a new one.';
+
+  @override
+  String get cpCurrent => 'Current password';
+
+  @override
+  String get cpNew => 'New password';
+
+  @override
+  String get cpConfirm => 'Confirm new password';
+
+  @override
+  String get cpEnterCurrent => 'Enter your current password.';
+
+  @override
+  String get cpMismatch => 'The two new passwords do not match.';
+
+  @override
+  String get cpSameAsOld => 'Your new password must be different from your current one.';
+
+  @override
+  String get cpWrongCurrent => 'Your current password is not correct.';
+
+  @override
+  String get cpFailed => 'Could not change your password. Check your connection and try again.';
+
+  @override
+  String get cpDone => 'Your password was changed.';
+
+  @override
+  String get cpForgot => 'Forgot your current password?';
+
+  @override
+  String get faqIntro => 'Quick answers to common questions.';
+
+  @override
+  String get faqStillNeedHelp => 'Still need help?';
+
+  @override
+  String get settingsFaqLandmarkQ => 'Why is a landmark required?';
+
+  @override
+  String get settingsFaqLandmarkA => 'GPS can be off by tens of metres. A landmark (a store, a chapel, a court) lets the responder find the place fast. Ziren fills in the nearest one for you; correct it if it is wrong.';
+
+  @override
+  String get settingsFaqElsewhereQ => 'The emergency is not where I am. What do I do?';
+
+  @override
+  String get settingsFaqElsewhereA => 'In the report, choose \"Somewhere else\" and move the map pin to where the incident is. Responders go to the pin, not to you, and the station is told you are reporting from elsewhere.';
+
+  @override
+  String get settingsFaqTrackQ => 'How do I know help is coming?';
+
+  @override
+  String get settingsFaqTrackA => 'Open My Reports. Each report shows how far it has gone — received, dispatched, on the way, on scene, resolved — and you get a notification each time it changes.';
+
+  @override
+  String get settingsFaqVerifyQ => 'Do I have to verify my account?';
+
+  @override
+  String get settingsFaqVerifyA => 'No, it is optional. A verified account (a photo of a valid ID) helps stations trust your reports faster.';
+
+  @override
+  String get safetyGuideIntro => 'What to do before help arrives. Works without internet.';
+
+  @override
+  String safetyGuideSteps(String count) {
+    return '$count steps';
+  }
+
+  @override
+  String get safetyGuideCallHotline => 'Call a hotline';
+
+  @override
+  String get aboutAgencies => 'Connects residents with the BFP, PNP and MDRRMO stations of Biliran.';
+
+  @override
+  String get sosWhereSection => 'Where you are (auto-detected)';
+
+  @override
+  String get sosLandmarkFinding => 'Finding the nearest landmark…';
+
+  @override
+  String sosLandmarkNear(String landmark) {
+    return 'Near $landmark';
+  }
+
+  @override
+  String get sosLandmarkAuto => 'Nearest landmark on the map · tap to change';
+
+  @override
+  String get sosLandmarkTyped => 'Landmark you added · tap to change';
+
+  @override
+  String get sosLandmarkNone => 'No landmark found nearby';
+
+  @override
+  String get sosLandmarkNoneHint => 'Tap to add one — optional';
+
+  @override
+  String get sosLandmarkEditTitle => 'Landmark near you';
+
+  @override
+  String get sosLandmarkEditBody => 'What can the responders look for? Leave it empty to use the one found on the map.';
+
+  @override
+  String get sosLandmarkEditHint => 'e.g. beside the barangay hall';
+
+  @override
+  String get sosLandmarkEditSave => 'Use this';
+
+  @override
+  String get sosLandmarkEditCancel => 'Cancel';
+
+  @override
+  String mapStationsOnMap(String count) {
+    return 'Stations on the map: $count';
+  }
+
+  @override
+  String get mapRecenter => 'Go to my location';
+
+  @override
+  String get mapNearestStation => 'Nearest station';
+
+  @override
+  String get mapSelectedStation => 'Selected station';
+
+  @override
+  String mapOtherStations(String count) {
+    return 'Other stations ($count)';
+  }
+
+  @override
+  String get stageShortReceived => 'Received';
+
+  @override
+  String get stageShortChecking => 'Checking';
+
+  @override
+  String get stageShortOnTheWay => 'On the way';
+
+  @override
+  String get stageShortResolved => 'Resolved';
+
+  @override
+  String reportSentAt(String when) {
+    return 'Sent $when';
+  }
+
+  @override
+  String get reportSectionYourReport => 'What you reported';
+
+  @override
+  String get reportSectionProgress => 'Progress';
+
+  @override
+  String get reportSectionLocation => 'Location';
+
+  @override
+  String get reportSectionDetails => 'Details';
+
+  @override
+  String get reportFactId => 'Report number';
+
+  @override
+  String get reportFactVia => 'Sent through';
+
+  @override
+  String get reportFactAddress => 'Address';
+
+  @override
+  String get reportFactDistance => 'From where you are now';
+
+  @override
+  String reportDistanceKm(String km) {
+    return '$km km away';
+  }
+
+  @override
+  String get reportViaApp => 'Ziren app';
+
+  @override
+  String get reportViaSos => 'Emergency SOS';
+
+  @override
+  String get reportViaSms => 'Text message (SMS)';
+
+  @override
+  String reportNextStep(String step) {
+    return 'Next: $step';
+  }
+
+  @override
+  String get mapYourReportLabel => 'Your report';
+
+  @override
+  String onbStep(String step, String total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get onbLangGreeting => 'Hi, I\'m Ziren! Which language would you like me to use?';
+
+  @override
+  String get onbLangTitle => 'Choose your language';
+
+  @override
+  String get onbLangSubtitle => 'The whole app will use it. You can change it any time in Settings.';
+
+  @override
+  String get onbLangMoreSoon => 'Waray and Bisaya are coming once a native speaker has reviewed them.';
+
+  @override
+  String get onbLangContinue => 'Continue';
+
+  @override
+  String get onbLangSelected => 'Selected';
+
+  @override
+  String consentAgreedCount(String done) {
+    return '$done of 2 agreed';
+  }
+
+  @override
+  String get consentNeedsReading => 'Open to read';
+
+  @override
+  String get consentAgreed => 'Agreed';
+
+  @override
+  String get welcomeHeadline => 'Help, one tap away.';
+
+  @override
+  String get welcomeFeatureReport => 'Report a fire, accident or medical emergency in seconds';
+
+  @override
+  String get welcomeFeatureStation => 'Your report goes straight to the nearest BFP, PNP or MDRRMO station';
+
+  @override
+  String get welcomeFeatureTrack => 'See when a responder is on the way';
+
+  @override
+  String get welcomeNewHere => 'New to Ziren?';
+
+  @override
+  String legalMeta(String sections, String minutes) {
+    return '$sections sections · about $minutes min read';
+  }
+
+  @override
+  String legalProgress(String percent) {
+    return '$percent% read';
+  }
+
+  @override
+  String get legalReachedEnd => 'You\'ve reached the end';
+
+  @override
+  String get legalBackToTop => 'Back to top';
+
+  @override
+  String get welcomeMascotLine => 'You\'re all set! Create an account, or sign in if you already have one.';
+
+  @override
+  String get categoryMissingPerson => 'Missing person';
+
+  @override
+  String get categoryEmergency => 'Emergency';
+
+  @override
+  String get respStatusDispatchedRespond => 'Dispatched — Respond Now';
+
+  @override
+  String get respNextEnRoute => 'On my way (En Route)';
+
+  @override
+  String get respNextOnScene => 'Arrived (On Scene)';
+
+  @override
+  String get respNextResolved => 'Done (Resolved)';
+
+  @override
+  String get respNoAddress => 'No address recorded';
+
+  @override
+  String get respAlertOverdueNote => 'The dispatcher now sees this as unanswered. You can still accept it.';
+
+  @override
+  String get respAlertTimeoutNote => 'If nobody answers, it goes back to the dispatcher so they can send someone else.';
+
+  @override
+  String get respNoMapApp => 'No map app could be opened on this phone.';
+
+  @override
+  String get respJustNow => 'just now';
+
+  @override
+  String get wizardSpeakDetails => 'Speak the details';
+
+  @override
+  String get wizardListening => 'Listening… (tap to stop)';
+
+  @override
+  String get wizardNext => 'Next →';
+
+  @override
+  String get respNavByRoad => 'by road';
+
+  @override
+  String get respNavRoadNote => 'The route follows the roads on the map. Watch for closed or flooded roads.';
 }

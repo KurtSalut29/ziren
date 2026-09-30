@@ -387,8 +387,8 @@ class _CatchAllField extends StatelessWidget {
             ),
             label: Text(
               provider.isListening
-                  ? 'Nakikinig… (pindutin para itigil)'
-                  : 'Sabihin ang detalye',
+                  ? AppLocalizations.of(context).wizardListening
+                  : AppLocalizations.of(context).wizardSpeakDetails,
               style: TextStyle(
                 color:
                     provider.isListening
@@ -454,8 +454,8 @@ class _NextBar extends StatelessWidget {
           ),
         ),
         onPressed: enabled ? onNext : null,
-        child: const Text(
-          'I-review ang Ulat →',
+        child: Text(
+          '${AppLocalizations.of(context).quickReviewReportAction} →',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),

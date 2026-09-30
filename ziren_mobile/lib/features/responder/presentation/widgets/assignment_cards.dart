@@ -41,7 +41,7 @@ class NextUpAssignmentCard extends StatelessWidget {
     final title =
         incident.reportText.isEmpty
             ? incident.categoryLabel
-            : incident.reportText;
+            : ResponderVocabulary.reportText(incident.reportText);
     final since = incident.dispatchedAt ?? incident.createdAt;
 
     return ResponderCard(
@@ -224,7 +224,7 @@ class ResponderQueueCard extends StatelessWidget {
     final title =
         incident.reportText.isEmpty
             ? incident.categoryLabel
-            : incident.reportText;
+            : ResponderVocabulary.reportText(incident.reportText);
     final since = incident.dispatchedAt ?? incident.createdAt;
 
     return ResponderCard(

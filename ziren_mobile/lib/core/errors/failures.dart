@@ -22,6 +22,16 @@ final class AuthFailure extends Failure {
   const AuthFailure([super.message = 'Authentication failed.']);
 }
 
+/// Changing the password: the current password given was not correct.
+final class WrongPasswordFailure extends Failure {
+  const WrongPasswordFailure() : super('Current password is not correct.');
+}
+
+/// Changing the password: the new one is the same as the current one.
+final class SamePasswordFailure extends Failure {
+  const SamePasswordFailure() : super('New password matches the current one.');
+}
+
 /// Permission denied / unauthorized access.
 final class PermissionFailure extends Failure {
   const PermissionFailure([super.message = 'You do not have permission.']);

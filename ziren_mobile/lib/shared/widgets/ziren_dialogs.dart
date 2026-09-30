@@ -64,6 +64,10 @@ class ZirenDialogAction<T> {
 /// Show a dialog: an optional icon (or [leading] widget) in a tinted circle, a
 /// centred title and message, an optional [body], and stacked full-width
 /// actions. Resolves to the pressed action's value, or null if dismissed.
+///
+/// [horizontalActions] lays two short actions side by side instead, in the
+/// order given (put Cancel first so the confirming action sits on the right).
+/// Only for short labels: each button gets half the width.
 Future<T?> showZirenDialog<T>(
   BuildContext context, {
   IconData? icon,
@@ -74,6 +78,7 @@ Future<T?> showZirenDialog<T>(
   String? message,
   Widget? body,
   required List<ZirenDialogAction<T>> actions,
+  bool horizontalActions = false,
   bool barrierDismissible = true,
 }) {
   // showGeneralDialog rather than showDialog: a plain dialog route has no
@@ -95,6 +100,7 @@ Future<T?> showZirenDialog<T>(
           message: message,
           body: body,
           actions: actions,
+          horizontalActions: horizontalActions,
         ),
     transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(parent: animation, curve: ZirenTokens.curveStandard);
@@ -132,6 +138,7 @@ class ZirenDialog<T> extends StatelessWidget {
     this.message,
     this.body,
     required this.actions,
+    this.horizontalActions = false,
   });
 
   final IconData? icon;
@@ -145,6 +152,7 @@ class ZirenDialog<T> extends StatelessWidget {
   final String? message;
   final Widget? body;
   final List<ZirenDialogAction<T>> actions;
+  final bool horizontalActions;
 
   @override
   Widget build(BuildContext context) {
@@ -227,10 +235,22 @@ class ZirenDialog<T> extends StatelessWidget {
                   body!,
                 ],
                 const SizedBox(height: ZirenTokens.space20),
-                for (var i = 0; i < actions.length; i++) ...[
-                  if (i > 0) const SizedBox(height: ZirenTokens.space10),
-                  _ActionButton<T>(action: actions[i], accent: color),
-                ],
+                if (horizontalActions)
+                  Row(
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: ZirenTokens.space10),
+                        Expanded(
+                          child: _ActionButton<T>(action: actions[i], accent: color),
+                        ),
+                      ],
+                    ],
+                  )
+                else
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) const SizedBox(height: ZirenTokens.space10),
+                    _ActionButton<T>(action: actions[i], accent: color),
+                  ],
               ],
             ),
           ),

@@ -401,8 +401,8 @@ class _CatchAllField extends StatelessWidget {
             ),
             label: Text(
               provider.isListening
-                  ? 'Nakikinig… (pindutin para itigil)'
-                  : 'Sabihin ang detalye',
+                  ? AppLocalizations.of(context).wizardListening
+                  : AppLocalizations.of(context).wizardSpeakDetails,
               style: TextStyle(
                 color:
                     provider.isListening

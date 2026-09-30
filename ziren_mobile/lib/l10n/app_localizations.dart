@@ -4942,7 +4942,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsFaqReportA.
   ///
   /// In en, this message translates to:
-  /// **'Tap the SOS button on Home, or fill out a report from the Report tab. Both reach the nearest responding agency.'**
+  /// **'On Home, tap the kind of emergency (Fire, Medical, Accident, Crime, Calamity or Other). Check the landmark, say or type what happened, review it, then send. Ziren sends it to the nearest station that handles it.'**
   String get settingsFaqReportA;
 
   /// No description provided for @settingsFaqOfflineQ.
@@ -4954,7 +4954,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsFaqOfflineA.
   ///
   /// In en, this message translates to:
-  /// **'Ziren needs an internet connection to send a report. If you have no signal or data, call 911 or your local emergency number directly instead.'**
+  /// **'A report needs internet to send. With no data, tap the kind of emergency on Home anyway: Ziren shows the official station hotlines for it, and a normal call only needs a phone signal. You can also call 911.'**
   String get settingsFaqOfflineA;
 
   /// No description provided for @settingsFaqAgencyQ.
@@ -4966,7 +4966,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsFaqAgencyA.
   ///
   /// In en, this message translates to:
-  /// **'Ziren routes your report to BFP, PNP, or MDRRMO based on what you reported and how severe it is.'**
+  /// **'It depends on the emergency: BFP for fire, PNP for crime, MDRRMO for medical cases, accidents and calamities. The station in the town where the incident is receives it.'**
   String get settingsFaqAgencyA;
 
   /// No description provided for @settingsFaqAccountQ.
@@ -4978,7 +4978,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsFaqAccountA.
   ///
   /// In en, this message translates to:
-  /// **'Go to Settings & Profile → Edit personal information to update your emergency contact anytime.'**
+  /// **'In Settings, open \"Edit personal information\", change the contact name or number, and tap \"Save changes\".'**
   String get settingsFaqAccountA;
 
   /// No description provided for @settingsAboutZiren.
@@ -7296,6 +7296,702 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Emergency contact'**
   String get respEmergencyContactShort;
+
+  /// Profile header chip: the resident's identity is verified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get profileChipVerified;
+
+  /// Profile header chip: verification submitted, being reviewed.
+  ///
+  /// In en, this message translates to:
+  /// **'In review'**
+  String get profileChipInReview;
+
+  /// Profile header chip: verification not started.
+  ///
+  /// In en, this message translates to:
+  /// **'Not verified'**
+  String get profileChipNotVerified;
+
+  /// Profile section: hotlines, help guide, safety guide, announcements.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety & help'**
+  String get profileSafetyHelp;
+
+  /// Responder profile row: the station's own phone number.
+  ///
+  /// In en, this message translates to:
+  /// **'Station contact'**
+  String get profileStationContact;
+
+  /// Responder profile section: agency, municipality, station contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Station'**
+  String get profileStationSection;
+
+  /// Profile row that opens Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get profileSettings;
+
+  /// Sheet title: pick which of the station's numbers to call.
+  ///
+  /// In en, this message translates to:
+  /// **'Call the station'**
+  String get profileCallStation;
+
+  /// Settings: line under the name on the account card.
+  ///
+  /// In en, this message translates to:
+  /// **'View and edit your details'**
+  String get settingsAccountCardHint;
+
+  /// No description provided for @settingsNotifDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates on your reports and alerts'**
+  String get settingsNotifDesc;
+
+  /// No description provided for @settingsLocationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends your location with a report'**
+  String get settingsLocationDesc;
+
+  /// No description provided for @settingsReduceMotionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer moving animations'**
+  String get settingsReduceMotionDesc;
+
+  /// No description provided for @settingsHighContrastDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Stronger text and borders'**
+  String get settingsHighContrastDesc;
+
+  /// No description provided for @settingsSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get settingsSaveChanges;
+
+  /// No description provided for @settingsDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard your changes?'**
+  String get settingsDiscardTitle;
+
+  /// No description provided for @settingsDiscardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You have edits that are not saved yet.'**
+  String get settingsDiscardBody;
+
+  /// No description provided for @settingsDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get settingsDiscard;
+
+  /// No description provided for @settingsKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get settingsKeepEditing;
+
+  /// No description provided for @settingsEditorIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Stations see these details when you send a report.'**
+  String get settingsEditorIntro;
+
+  /// No description provided for @cpIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password, then choose a new one.'**
+  String get cpIntro;
+
+  /// No description provided for @cpCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current password'**
+  String get cpCurrent;
+
+  /// No description provided for @cpNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get cpNew;
+
+  /// No description provided for @cpConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get cpConfirm;
+
+  /// No description provided for @cpEnterCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password.'**
+  String get cpEnterCurrent;
+
+  /// No description provided for @cpMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The two new passwords do not match.'**
+  String get cpMismatch;
+
+  /// No description provided for @cpSameAsOld.
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password must be different from your current one.'**
+  String get cpSameAsOld;
+
+  /// No description provided for @cpWrongCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Your current password is not correct.'**
+  String get cpWrongCurrent;
+
+  /// No description provided for @cpFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change your password. Check your connection and try again.'**
+  String get cpFailed;
+
+  /// No description provided for @cpDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password was changed.'**
+  String get cpDone;
+
+  /// No description provided for @cpForgot.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot your current password?'**
+  String get cpForgot;
+
+  /// No description provided for @faqIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick answers to common questions.'**
+  String get faqIntro;
+
+  /// No description provided for @faqStillNeedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Still need help?'**
+  String get faqStillNeedHelp;
+
+  /// No description provided for @settingsFaqLandmarkQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Why is a landmark required?'**
+  String get settingsFaqLandmarkQ;
+
+  /// No description provided for @settingsFaqLandmarkA.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS can be off by tens of metres. A landmark (a store, a chapel, a court) lets the responder find the place fast. Ziren fills in the nearest one for you; correct it if it is wrong.'**
+  String get settingsFaqLandmarkA;
+
+  /// No description provided for @settingsFaqElsewhereQ.
+  ///
+  /// In en, this message translates to:
+  /// **'The emergency is not where I am. What do I do?'**
+  String get settingsFaqElsewhereQ;
+
+  /// No description provided for @settingsFaqElsewhereA.
+  ///
+  /// In en, this message translates to:
+  /// **'In the report, choose \"Somewhere else\" and move the map pin to where the incident is. Responders go to the pin, not to you, and the station is told you are reporting from elsewhere.'**
+  String get settingsFaqElsewhereA;
+
+  /// No description provided for @settingsFaqTrackQ.
+  ///
+  /// In en, this message translates to:
+  /// **'How do I know help is coming?'**
+  String get settingsFaqTrackQ;
+
+  /// No description provided for @settingsFaqTrackA.
+  ///
+  /// In en, this message translates to:
+  /// **'Open My Reports. Each report shows how far it has gone — received, dispatched, on the way, on scene, resolved — and you get a notification each time it changes.'**
+  String get settingsFaqTrackA;
+
+  /// No description provided for @settingsFaqVerifyQ.
+  ///
+  /// In en, this message translates to:
+  /// **'Do I have to verify my account?'**
+  String get settingsFaqVerifyQ;
+
+  /// No description provided for @settingsFaqVerifyA.
+  ///
+  /// In en, this message translates to:
+  /// **'No, it is optional. A verified account (a photo of a valid ID) helps stations trust your reports faster.'**
+  String get settingsFaqVerifyA;
+
+  /// No description provided for @safetyGuideIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'What to do before help arrives. Works without internet.'**
+  String get safetyGuideIntro;
+
+  /// No description provided for @safetyGuideSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} steps'**
+  String safetyGuideSteps(String count);
+
+  /// No description provided for @safetyGuideCallHotline.
+  ///
+  /// In en, this message translates to:
+  /// **'Call a hotline'**
+  String get safetyGuideCallHotline;
+
+  /// No description provided for @aboutAgencies.
+  ///
+  /// In en, this message translates to:
+  /// **'Connects residents with the BFP, PNP and MDRRMO stations of Biliran.'**
+  String get aboutAgencies;
+
+  /// No description provided for @sosWhereSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Where you are (auto-detected)'**
+  String get sosWhereSection;
+
+  /// No description provided for @sosLandmarkFinding.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the nearest landmark…'**
+  String get sosLandmarkFinding;
+
+  /// No description provided for @sosLandmarkNear.
+  ///
+  /// In en, this message translates to:
+  /// **'Near {landmark}'**
+  String sosLandmarkNear(String landmark);
+
+  /// No description provided for @sosLandmarkAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest landmark on the map · tap to change'**
+  String get sosLandmarkAuto;
+
+  /// No description provided for @sosLandmarkTyped.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark you added · tap to change'**
+  String get sosLandmarkTyped;
+
+  /// No description provided for @sosLandmarkNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No landmark found nearby'**
+  String get sosLandmarkNone;
+
+  /// No description provided for @sosLandmarkNoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add one — optional'**
+  String get sosLandmarkNoneHint;
+
+  /// No description provided for @sosLandmarkEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Landmark near you'**
+  String get sosLandmarkEditTitle;
+
+  /// No description provided for @sosLandmarkEditBody.
+  ///
+  /// In en, this message translates to:
+  /// **'What can the responders look for? Leave it empty to use the one found on the map.'**
+  String get sosLandmarkEditBody;
+
+  /// No description provided for @sosLandmarkEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. beside the barangay hall'**
+  String get sosLandmarkEditHint;
+
+  /// No description provided for @sosLandmarkEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this'**
+  String get sosLandmarkEditSave;
+
+  /// No description provided for @sosLandmarkEditCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get sosLandmarkEditCancel;
+
+  /// No description provided for @mapStationsOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Stations on the map: {count}'**
+  String mapStationsOnMap(String count);
+
+  /// No description provided for @mapRecenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to my location'**
+  String get mapRecenter;
+
+  /// No description provided for @mapNearestStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Nearest station'**
+  String get mapNearestStation;
+
+  /// No description provided for @mapSelectedStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected station'**
+  String get mapSelectedStation;
+
+  /// No description provided for @mapOtherStations.
+  ///
+  /// In en, this message translates to:
+  /// **'Other stations ({count})'**
+  String mapOtherStations(String count);
+
+  /// No description provided for @stageShortReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get stageShortReceived;
+
+  /// No description provided for @stageShortChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get stageShortChecking;
+
+  /// No description provided for @stageShortOnTheWay.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way'**
+  String get stageShortOnTheWay;
+
+  /// No description provided for @stageShortResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get stageShortResolved;
+
+  /// No description provided for @reportSentAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent {when}'**
+  String reportSentAt(String when);
+
+  /// No description provided for @reportSectionYourReport.
+  ///
+  /// In en, this message translates to:
+  /// **'What you reported'**
+  String get reportSectionYourReport;
+
+  /// No description provided for @reportSectionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get reportSectionProgress;
+
+  /// No description provided for @reportSectionLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get reportSectionLocation;
+
+  /// No description provided for @reportSectionDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportSectionDetails;
+
+  /// No description provided for @reportFactId.
+  ///
+  /// In en, this message translates to:
+  /// **'Report number'**
+  String get reportFactId;
+
+  /// No description provided for @reportFactVia.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent through'**
+  String get reportFactVia;
+
+  /// No description provided for @reportFactAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get reportFactAddress;
+
+  /// No description provided for @reportFactDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'From where you are now'**
+  String get reportFactDistance;
+
+  /// No description provided for @reportDistanceKm.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km away'**
+  String reportDistanceKm(String km);
+
+  /// No description provided for @reportViaApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Ziren app'**
+  String get reportViaApp;
+
+  /// No description provided for @reportViaSos.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency SOS'**
+  String get reportViaSos;
+
+  /// No description provided for @reportViaSms.
+  ///
+  /// In en, this message translates to:
+  /// **'Text message (SMS)'**
+  String get reportViaSms;
+
+  /// No description provided for @reportNextStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {step}'**
+  String reportNextStep(String step);
+
+  /// No description provided for @mapYourReportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report'**
+  String get mapYourReportLabel;
+
+  /// No description provided for @onbStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String onbStep(String step, String total);
+
+  /// No description provided for @onbLangGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, I\'m Ziren! Which language would you like me to use?'**
+  String get onbLangGreeting;
+
+  /// No description provided for @onbLangTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your language'**
+  String get onbLangTitle;
+
+  /// No description provided for @onbLangSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole app will use it. You can change it any time in Settings.'**
+  String get onbLangSubtitle;
+
+  /// No description provided for @onbLangMoreSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Waray and Bisaya are coming once a native speaker has reviewed them.'**
+  String get onbLangMoreSoon;
+
+  /// No description provided for @onbLangContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get onbLangContinue;
+
+  /// No description provided for @onbLangSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get onbLangSelected;
+
+  /// No description provided for @consentAgreedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of 2 agreed'**
+  String consentAgreedCount(String done);
+
+  /// No description provided for @consentNeedsReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Open to read'**
+  String get consentNeedsReading;
+
+  /// No description provided for @consentAgreed.
+  ///
+  /// In en, this message translates to:
+  /// **'Agreed'**
+  String get consentAgreed;
+
+  /// No description provided for @welcomeHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Help, one tap away.'**
+  String get welcomeHeadline;
+
+  /// No description provided for @welcomeFeatureReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a fire, accident or medical emergency in seconds'**
+  String get welcomeFeatureReport;
+
+  /// No description provided for @welcomeFeatureStation.
+  ///
+  /// In en, this message translates to:
+  /// **'Your report goes straight to the nearest BFP, PNP or MDRRMO station'**
+  String get welcomeFeatureStation;
+
+  /// No description provided for @welcomeFeatureTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'See when a responder is on the way'**
+  String get welcomeFeatureTrack;
+
+  /// No description provided for @welcomeNewHere.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Ziren?'**
+  String get welcomeNewHere;
+
+  /// No description provided for @legalMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{sections} sections · about {minutes} min read'**
+  String legalMeta(String sections, String minutes);
+
+  /// No description provided for @legalProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% read'**
+  String legalProgress(String percent);
+
+  /// No description provided for @legalReachedEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve reached the end'**
+  String get legalReachedEnd;
+
+  /// No description provided for @legalBackToTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to top'**
+  String get legalBackToTop;
+
+  /// No description provided for @welcomeMascotLine.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set! Create an account, or sign in if you already have one.'**
+  String get welcomeMascotLine;
+
+  /// No description provided for @categoryMissingPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing person'**
+  String get categoryMissingPerson;
+
+  /// No description provided for @categoryEmergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get categoryEmergency;
+
+  /// No description provided for @respStatusDispatchedRespond.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatched — Respond Now'**
+  String get respStatusDispatchedRespond;
+
+  /// No description provided for @respNextEnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'On my way (En Route)'**
+  String get respNextEnRoute;
+
+  /// No description provided for @respNextOnScene.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived (On Scene)'**
+  String get respNextOnScene;
+
+  /// No description provided for @respNextResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Done (Resolved)'**
+  String get respNextResolved;
+
+  /// No description provided for @respNoAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'No address recorded'**
+  String get respNoAddress;
+
+  /// No description provided for @respAlertOverdueNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The dispatcher now sees this as unanswered. You can still accept it.'**
+  String get respAlertOverdueNote;
+
+  /// No description provided for @respAlertTimeoutNote.
+  ///
+  /// In en, this message translates to:
+  /// **'If nobody answers, it goes back to the dispatcher so they can send someone else.'**
+  String get respAlertTimeoutNote;
+
+  /// No description provided for @respNoMapApp.
+  ///
+  /// In en, this message translates to:
+  /// **'No map app could be opened on this phone.'**
+  String get respNoMapApp;
+
+  /// No description provided for @respJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get respJustNow;
+
+  /// No description provided for @wizardSpeakDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak the details'**
+  String get wizardSpeakDetails;
+
+  /// No description provided for @wizardListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening… (tap to stop)'**
+  String get wizardListening;
+
+  /// No description provided for @wizardNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next →'**
+  String get wizardNext;
+
+  /// No description provided for @respNavByRoad.
+  ///
+  /// In en, this message translates to:
+  /// **'by road'**
+  String get respNavByRoad;
+
+  /// No description provided for @respNavRoadNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The route follows the roads on the map. Watch for closed or flooded roads.'**
+  String get respNavRoadNote;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

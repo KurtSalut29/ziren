@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:ziren/l10n/app_localizations.dart';
 import 'package:ziren/shared/theme/app_tokens.dart';
 import 'package:ziren/shared/widgets/profile_kit.dart';
 
@@ -14,8 +16,10 @@ import 'package:ziren/shared/widgets/profile_kit.dart';
 /// them was to build and install the app — which is how the responder profile
 /// drifted so far from the resident one without anybody noticing.
 ///
-/// The two goldens are deliberately produced from the same widgets, so a
-/// change that makes one of them look wrong makes it visible in the other.
+/// Each golden is laid out the way its screen composes the kit (hero card,
+/// then titled groups of tiles), so a change to a shared widget shows up in
+/// both. The resident one is also drawn in dark mode, because the preview
+/// tests used to render light only and that is how a dark-mode defect hid.
 ///
 /// Run with:
 ///   flutter test --update-goldens test/profile_design_preview_test.dart
@@ -23,230 +27,194 @@ import 'package:ziren/shared/widgets/profile_kit.dart';
 void main() {
   setUpAll(_loadRealFonts);
 
-  testWidgets('resident profile layout', (tester) async {
-    tester.view.physicalSize = const Size(1100, 1700);
-    tester.view.devicePixelRatio = 2.5;
-    addTearDown(tester.view.reset);
+  for (final dark in [false, true]) {
+    testWidgets('resident profile layout${dark ? ' (dark)' : ''}', (tester) async {
+      ZirenTokens.setMode(
+        brightness: dark ? Brightness.dark : Brightness.light,
+        highContrast: false,
+      );
+      addTearDown(
+        () => ZirenTokens.setMode(brightness: Brightness.light, highContrast: false),
+      );
+      tester.view.physicalSize = const Size(1100, 3900);
+      tester.view.devicePixelRatio = 2.75;
+      addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(
-      _frame(
-        title: 'Profile',
-        children: [
-          const ProfileAvatarHeader(
-            displayName: 'Kurt Michael Salut',
-            subtitle: 'kurtsalut18@gmail.com',
-          ),
-          const SizedBox(height: ZirenTokens.space24),
-          ProfileSection(
-            title: 'Personal Information',
-            items: const [
-              ProfileRow(
-                icon: Icons.person_rounded,
-                label: 'Name',
-                value: 'Kurt Michael Salut',
+      await tester.pumpWidget(
+        _frame(
+          title: 'Profile',
+          children: [
+            ProfileHeroCard(
+              avatar: EditableAvatar(
+                displayName: 'Kurt Michael Salut',
+                avatarUrl: null,
+                onTap: () {},
+                size: 92,
               ),
-              ProfileRow(
-                icon: Icons.email_rounded,
-                label: 'Email',
-                value: 'kurtsalut18@gmail.com',
-              ),
-              ProfileRow(
-                icon: Icons.phone_rounded,
-                label: 'Phone',
-                value: '0917 555 0142',
-                last: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: ZirenTokens.space16),
-          ProfileSection(
-            title: 'Address',
-            items: const [
-              ProfileRow(
-                icon: Icons.home_rounded,
-                label: 'Barangay',
-                value: 'Larrazabal',
-              ),
-              ProfileRow(
-                icon: Icons.location_city_rounded,
-                label: 'Municipality',
-                value: 'Naval',
-                last: true,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
+              displayName: 'Kurt Michael Salut',
+              subtitle: 'kurtsalut18@gmail.com',
+              chips: [
+                ProfileChip(
+                  label: 'Not verified',
+                  color: ZirenTokens.textMuted,
+                  icon: LucideIcons.shield,
+                ),
+                ProfileChip(
+                  label: 'Larrazabal, Naval',
+                  color: ZirenTokens.textSecondary,
+                  icon: LucideIcons.map_pin,
+                ),
+              ],
+            ),
+            const SizedBox(height: ZirenTokens.space24),
+            ProfileGroup(
+              title: 'Personal Info',
+              children: [
+                ProfileTile(icon: LucideIcons.user, label: 'Name', value: 'Kurt Michael Salut', onTap: () {}),
+                ProfileTile(icon: LucideIcons.mail, label: 'Email', value: 'kurtsalut18@gmail.com', onTap: () {}),
+                ProfileTile(icon: LucideIcons.phone, label: 'Phone', value: '0917 555 0142', onTap: () {}),
+                ProfileTile(icon: LucideIcons.map_pin, label: 'Address', value: 'Larrazabal, Naval', onTap: () {}),
+              ],
+            ),
+            const SizedBox(height: ZirenTokens.space24),
+            ProfileGroup(
+              title: 'Emergency Contact',
+              caption: 'Someone we can call if you cannot answer. Not you.',
+              children: [
+                ProfileTile(icon: LucideIcons.contact, label: 'Contact name', value: 'Ana Salut', onTap: () {}),
+                ProfileTile(icon: LucideIcons.phone, label: 'Contact number', value: '0918 555 0101', onTap: () {}),
+              ],
+            ),
+            const SizedBox(height: ZirenTokens.space24),
+            ProfileGroup(
+              title: 'Safety & help',
+              children: [
+                ProfileTile(
+                  icon: LucideIcons.phone_call,
+                  label: 'Emergency hotlines',
+                  tone: ZirenTokens.systemSuccess,
+                  onTap: () {},
+                ),
+                ProfileTile(
+                  icon: LucideIcons.life_buoy,
+                  label: 'How to use Ziren',
+                  tone: ZirenTokens.systemInfo,
+                  onTap: () {},
+                ),
+                ProfileTile(icon: LucideIcons.shield_plus, label: 'Safety guide', onTap: () {}),
+                ProfileTile(icon: LucideIcons.megaphone, label: 'Announcements', onTap: () {}),
+              ],
+            ),
+            const SizedBox(height: ZirenTokens.space24),
+            ProfileGroup(
+              title: 'Account',
+              children: [
+                ProfileTile(icon: LucideIcons.settings, label: 'Settings', onTap: () {}),
+                ProfileTile(icon: LucideIcons.log_out, label: 'Log out', danger: true, onTap: () {}),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
 
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/resident_profile.png'),
-    );
-  });
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(dark ? 'goldens/resident_profile_dark.png' : 'goldens/resident_profile.png'),
+      );
+    });
+  }
 
   testWidgets('responder profile layout', (tester) async {
-    tester.view.physicalSize = const Size(1100, 2100);
-    tester.view.devicePixelRatio = 2.5;
+    tester.view.physicalSize = const Size(1100, 4700);
+    tester.view.devicePixelRatio = 2.75;
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
       _frame(
         title: 'Profile',
         children: [
-          const ProfileAvatarHeader(
+          ProfileHeroCard(
+            avatar: EditableAvatar(
+              displayName: 'Mark Anthony Reyes',
+              avatarUrl: null,
+              onTap: () {},
+              size: 92,
+            ),
             displayName: 'Mark Anthony Reyes',
-            subtitle: 'markanthonyreyes@gmail.com',
-            badge: ProfileChip(
-              label: 'BFP Naval Station',
-              color: ZirenTokens.agencyBFP,
-              icon: Icons.local_fire_department_rounded,
-            ),
-            trailing: ProfileChip(
-              label: 'NAKA-DUTY',
-              color: ZirenTokens.systemSuccess,
-              icon: Icons.wifi_tethering_rounded,
-              filled: true,
-            ),
-          ),
-          const SizedBox(height: ZirenTokens.space24),
-          ProfileSection(
-            title: 'Contact',
-            items: const [
-              ProfileRow(
-                icon: Icons.person_rounded,
-                label: 'Pangalan',
-                value: 'Mark Anthony Reyes',
+            subtitle: 'responder@ziren.test',
+            chips: const [
+              ProfileChip(
+                label: 'BFP Naval Station',
+                color: ZirenTokens.agencyBFP,
+                icon: LucideIcons.flame,
               ),
-              ProfileRow(
-                icon: Icons.email_rounded,
-                label: 'Email',
-                value: 'markanthonyreyes@gmail.com',
-              ),
-              ProfileRow(
-                icon: Icons.phone_rounded,
-                label: 'Numero',
-                value: '0917 555 0199',
-                last: true,
+              ProfileChip(
+                label: 'NAKA-DUTY',
+                color: ZirenTokens.systemSuccess,
+                icon: LucideIcons.wifi,
+                filled: true,
               ),
             ],
+            facts: const [
+              ProfileFact(label: 'Badge ID', value: 'BFP-2026-0042'),
+              ProfileFact(label: 'Katayuan', value: 'Aprubado', color: ZirenTokens.systemSuccess),
+            ],
           ),
-          const SizedBox(height: ZirenTokens.space16),
-          ProfileSection(
-            title: 'Assignment',
-            items: const [
-              ProfileRow(
-                icon: Icons.badge_rounded,
-                label: 'Badge ID',
-                value: 'BFP-2026-0042',
-              ),
-              ProfileRow(
-                icon: Icons.local_fire_department_rounded,
+          const SizedBox(height: ZirenTokens.space24),
+          const ProfileGroup(
+            title: 'Contact',
+            children: [
+              ProfileTile(icon: LucideIcons.user, label: 'Pangalan', value: 'Mark Anthony Reyes'),
+              ProfileTile(icon: LucideIcons.mail, label: 'Email', value: 'responder@ziren.test'),
+              ProfileTile(icon: LucideIcons.phone, label: 'Numero', value: '0917 555 0199'),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space24),
+          ProfileGroup(
+            title: 'Istasyon',
+            children: [
+              const ProfileTile(
+                icon: LucideIcons.flame,
+                tone: ZirenTokens.agencyBFP,
                 label: 'Ahensya',
                 value: 'BFP Naval Station',
-                valueColor: ZirenTokens.agencyBFP,
               ),
-              ProfileRow(
-                icon: Icons.place_rounded,
-                label: 'Munisipyo',
-                value: 'Naval',
-              ),
-              ProfileRow(
-                icon: Icons.verified_rounded,
-                label: 'Katayuan',
-                value: 'Aprubado',
-                valueColor: ZirenTokens.systemSuccess,
-                last: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: ZirenTokens.space16),
-          ProfileSection(
-            title: 'Ngayong shift',
-            items: const [
-              ProfileRow(
-                icon: Icons.assignment_rounded,
-                label: 'Nakatalaga ngayon',
-                value: '1',
-              ),
-              ProfileRow(
-                icon: Icons.cloud_off_rounded,
-                label: 'Naka-antabay na ipadala',
-                value: '2',
-                valueColor: ZirenTokens.systemWarning,
-                last: true,
+              const ProfileTile(icon: LucideIcons.map_pin, label: 'Munisipyo', value: 'Naval'),
+              ProfileTile(
+                icon: LucideIcons.phone_call,
+                tone: ZirenTokens.systemSuccess,
+                label: 'Numero ng istasyon',
+                value: 'Globe 0955-723-6300\nSmart 0948-024-3466\nLandline (053) 500-9546',
+                onTap: () {},
               ),
             ],
           ),
           const SizedBox(height: ZirenTokens.space24),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.logout_rounded, size: 18),
-            label: const Text('Mag-log out'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: ZirenTokens.systemError,
-              side: BorderSide(
-                color: ZirenTokens.systemError.withValues(alpha: 0.5),
+          ProfileGroup(
+            title: 'Kaligtasan at tulong',
+            children: [
+              ProfileTile(
+                icon: LucideIcons.phone_call,
+                tone: ZirenTokens.systemSuccess,
+                label: 'Mga hotline pang-emergency',
+                onTap: () {},
               ),
-              minimumSize: const Size.fromHeight(52),
-            ),
+              ProfileTile(
+                icon: LucideIcons.life_buoy,
+                tone: ZirenTokens.systemInfo,
+                label: 'Paano gamitin ang Ziren',
+                onTap: () {},
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 300));
-
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/responder_profile.png'),
-    );
-  });
-
-  testWidgets('responder profile, edit mode', (tester) async {
-    tester.view.physicalSize = const Size(1100, 1000);
-    tester.view.devicePixelRatio = 2.5;
-    addTearDown(tester.view.reset);
-
-    final name = TextEditingController(text: 'Mark Anthony Reyes');
-    final phone = TextEditingController(text: '0917 555 0199');
-    addTearDown(name.dispose);
-    addTearDown(phone.dispose);
-
-    await tester.pumpWidget(
-      _frame(
-        title: 'Profile',
-        children: [
-          // The point of this golden: an editable row keeps the card's
-          // geometry. The old screen dropped outlined TextFormFields into the
-          // scroll view, which is what made it read as a settings form.
-          ProfileSection(
-            title: 'Contact',
-            action: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                foregroundColor: ZirenTokens.brandOrange,
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              child: const Text('Save'),
-            ),
-            items: [
-              ProfileEditRow(
-                icon: Icons.person_rounded,
-                label: 'Pangalan',
-                controller: name,
-              ),
-              ProfileEditRow(
-                icon: Icons.phone_rounded,
-                label: 'Numero',
-                controller: phone,
-                hintText: '09xxxxxxxxx',
-                keyboardType: TextInputType.phone,
-                last: true,
-              ),
+          const SizedBox(height: ZirenTokens.space24),
+          ProfileGroup(
+            title: 'Account',
+            children: [
+              ProfileTile(icon: LucideIcons.settings, label: 'Mga setting', onTap: () {}),
+              // Mid-save: no onTap, so the row is dimmed.
+              const ProfileTile(icon: LucideIcons.log_out, label: 'Mag-log out', danger: true),
             ],
           ),
           const SizedBox(height: ZirenTokens.space16),
@@ -258,7 +226,7 @@ void main() {
 
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('goldens/responder_profile_edit.png'),
+      matchesGoldenFile('goldens/responder_profile.png'),
     );
   });
 }
@@ -266,31 +234,35 @@ void main() {
 Widget _frame({required String title, required List<Widget> children}) {
   return MaterialApp(
     debugShowCheckedModeBanner: false,
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
       appBar: AppBar(
-        title: Text(title),
+        backgroundColor: ZirenTokens.surfaceBase,
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: ZirenTokens.textPrimary,
+          ),
+        ),
         actions: [
-          TextButton.icon(
+          IconButton(
             onPressed: () {},
-            icon: const Icon(
-              Icons.edit_outlined,
-              size: 16,
-              color: ZirenTokens.brandOrange,
-            ),
-            label: const Text(
-              'Edit',
-              style: TextStyle(
-                color: ZirenTokens.brandOrange,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            icon: Icon(LucideIcons.settings, color: ZirenTokens.textPrimary),
           ),
         ],
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(ZirenTokens.space16),
+          padding: const EdgeInsets.fromLTRB(
+            ZirenTokens.space16,
+            ZirenTokens.space4,
+            ZirenTokens.space16,
+            ZirenTokens.space32,
+          ),
           children: children,
         ),
       ),
@@ -298,7 +270,8 @@ Widget _frame({required String title, required List<Widget> children}) {
   );
 }
 
-/// Load Roboto so the goldens show TEXT instead of boxes.
+/// Load Roboto and the Lucide icon font so the goldens show TEXT and ICONS
+/// instead of boxes.
 ///
 /// Flutter's test environment ships a placeholder font that draws every glyph
 /// as a full-em square. That is fine for catching structural regressions and
@@ -307,14 +280,13 @@ Widget _frame({required String title, required List<Widget> children}) {
 /// would fit them on one line. A preview whose whole purpose is to be looked
 /// at has to render what the phone renders.
 ///
-/// Roboto ships inside the Flutter SDK, so nothing is added to pubspec. If the
-/// cache is missing the fonts, the goldens still generate — with boxes — and
-/// the test does not fail over a design preview.
+/// Roboto ships inside the Flutter SDK and Lucide in the pub cache, so nothing
+/// is added to pubspec. If either is missing, the goldens still generate —
+/// with boxes — and the test does not fail over a design preview.
 Future<void> _loadRealFonts() async {
   final flutterRoot = Platform.environment['FLUTTER_ROOT'];
   final candidates = <String>[
-    if (flutterRoot != null)
-      '$flutterRoot/bin/cache/artifacts/material_fonts',
+    if (flutterRoot != null) '$flutterRoot/bin/cache/artifacts/material_fonts',
     'C:/src/flutter/bin/cache/artifacts/material_fonts',
   ];
 
@@ -324,24 +296,29 @@ Future<void> _loadRealFonts() async {
     if (!regular.existsSync()) continue;
 
     final loader = FontLoader('Roboto');
-    loader.addFont(
-      regular.readAsBytes().then((b) => ByteData.view(b.buffer)),
-    );
+    loader.addFont(regular.readAsBytes().then((b) => ByteData.view(b.buffer)));
     if (bold.existsSync()) {
       loader.addFont(bold.readAsBytes().then((b) => ByteData.view(b.buffer)));
     }
     await loader.load();
-
-    // The icon font too, or every Icon renders as an empty square and the
-    // preview cannot show whether the row icons read correctly.
-    final icons = File('$dir/MaterialIcons-Regular.otf');
-    if (icons.existsSync()) {
-      final iconLoader = FontLoader('MaterialIcons');
-      iconLoader.addFont(
-        icons.readAsBytes().then((b) => ByteData.view(b.buffer)),
-      );
-      await iconLoader.load();
-    }
-    return;
+    break;
   }
+
+  final pubCache =
+      Platform.environment['PUB_CACHE'] ??
+      '${Platform.environment['LOCALAPPDATA']}/Pub/Cache';
+  final hosted = Directory('$pubCache/hosted/pub.dev');
+  if (!hosted.existsSync()) return;
+  final lucide =
+      hosted
+          .listSync()
+          .whereType<Directory>()
+          .where((d) => d.path.split(RegExp(r'[\\/]')).last.startsWith('flutter_lucide-'))
+          .map((d) => File('${d.path}/lib/fonts/lucide.ttf'))
+          .where((f) => f.existsSync())
+          .toList();
+  if (lucide.isEmpty) return;
+  final iconLoader = FontLoader('packages/flutter_lucide/lucide');
+  iconLoader.addFont(lucide.last.readAsBytes().then((b) => ByteData.view(b.buffer)));
+  await iconLoader.load();
 }

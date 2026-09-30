@@ -561,7 +561,7 @@ class ReportRow extends StatelessWidget {
     final title =
         incident.reportText.isEmpty
             ? incident.categoryLabel
-            : incident.reportText;
+            : ResponderVocabulary.reportText(incident.reportText);
     final when =
         closed
             ? t.respClosedAgo(

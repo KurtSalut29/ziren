@@ -46,7 +46,7 @@ class NearbyIncidentCard extends StatelessWidget {
     final i = incident;
     final color = ResponderVocabulary.color(i.severity);
     final where = (i.locationAddress ?? '').trim();
-    final title = i.reportText.trim().isEmpty ? i.categoryLabel : i.reportText;
+    final title = i.reportText.trim().isEmpty ? i.categoryLabel : ResponderVocabulary.reportText(i.reportText);
 
     return Container(
       padding: const EdgeInsets.all(ZirenTokens.space12),

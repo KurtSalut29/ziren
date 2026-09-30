@@ -77,6 +77,21 @@ class Validators {
     return null;
   }
 
+  /// Whether two mobile numbers are the same line, however each is written
+  /// (0917 123 4567, +63 917 123 4567, 09171234567): compares the last ten
+  /// digits. The commonest emergency-contact mistake is typing one's OWN
+  /// number, so registration and the profile editor both refuse it.
+  static bool sameMobile(String a, String b) {
+    String tail(String s) {
+      final digits = s.replaceAll(RegExp(r'\D'), '');
+      return digits.length > 10 ? digits.substring(digits.length - 10) : digits;
+    }
+
+    final x = tail(a);
+    final y = tail(b);
+    return x.length >= 10 && x == y;
+  }
+
   /// "a", "a and b", "a, b and c" — reads as a sentence rather than a list of
   /// error codes.
   static String _readableList(List<String> items) {

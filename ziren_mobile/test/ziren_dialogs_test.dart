@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ziren/features/notifications/domain/notification_provider.dart';
 import 'package:ziren/features/notifications/presentation/notice_view.dart';
 import 'package:ziren/features/notifications/presentation/widgets/status_update_sheet.dart';
+import 'package:ziren/features/responder/presentation/responder_profile_screen.dart';
 import 'package:ziren/features/settings/presentation/about_ziren_dialog.dart';
 import 'package:ziren/l10n/app_localizations.dart';
 import 'package:ziren/shared/widgets/ziren_dialogs.dart';
@@ -396,6 +397,121 @@ void main() {
       await tester.tapAt(const Offset(4, 4));
       await _settle(tester);
       expect(await result, NoticeAction.dismiss);
+    });
+  });
+  group('Log out confirm (side-by-side actions)', () {
+    Future<bool?> open(BuildContext context) {
+      final t = AppLocalizations.of(context);
+      return showZirenDialog<bool>(
+        context,
+        icon: Icons.logout,
+        tone: ZirenTone.danger,
+        title: t.settingsLogOutConfirmTitle,
+        message: t.settingsLogOutConfirmBody,
+        horizontalActions: true,
+        actions: [
+          ZirenDialogAction(label: t.settingsCancel, value: false),
+          ZirenDialogAction(
+            label: t.settingsLogOut,
+            value: true,
+            kind: ZirenActionKind.danger,
+            icon: Icons.logout,
+          ),
+        ],
+      );
+    }
+
+    for (final size in _sizes) {
+      for (final scale in _scales) {
+        for (final locale in _locales) {
+          testWidgets(
+            'Cancel | Log out on one row, no overflow @ ${size.width.toInt()}dp x$scale ${locale.languageCode}',
+            (tester) async {
+              final context = await _pump(tester, size: size, scale: scale, locale: locale);
+              final t = AppLocalizations.of(context);
+              open(context);
+              await _settle(tester);
+
+              expect(tester.takeException(), isNull);
+              final cancel = tester.getRect(find.text(t.settingsCancel));
+              final logOut = tester.getRect(find.text(t.settingsLogOut));
+              expect(cancel.center.dy, closeTo(logOut.center.dy, 1), reason: 'same row');
+              expect(cancel.right, lessThan(logOut.left), reason: 'Cancel on the left');
+            },
+          );
+        }
+      }
+    }
+
+    testWidgets('resolves to the pressed action', (tester) async {
+      final context = await _pump(tester);
+      final t = AppLocalizations.of(context);
+      final result = open(context);
+      await _settle(tester);
+      await tester.tap(find.text(t.settingsLogOut));
+      await _settle(tester);
+      expect(await result, isTrue);
+
+      final again = open(context);
+      await _settle(tester);
+      await tester.tap(find.text(t.settingsCancel));
+      await _settle(tester);
+      expect(await again, isFalse);
+    });
+  });
+
+  // "Yung log out modal sa responder gusto ko kagaya ng log out modal ng
+  // resident" (2026-09-30). With an open assignment the responder's used to
+  // be a different dialog: amber, retitled, a stacked "Stay Signed In".
+  group("Responder log out matches the resident's", () {
+    for (final active in [false, true]) {
+      for (final size in _sizes) {
+        for (final scale in _scales) {
+          for (final locale in _locales) {
+            testWidgets(
+              '${active ? 'with' : 'without'} an assignment: Cancel | Log out on one row @ ${size.width.toInt()}dp x$scale ${locale.languageCode}',
+              (tester) async {
+                final context = await _pump(tester, size: size, scale: scale, locale: locale);
+                final t = AppLocalizations.of(context);
+                showResponderLogoutDialog(context, hasActiveAssignment: active);
+                await _settle(tester);
+
+                expect(tester.takeException(), isNull);
+                // The resident's title and buttons, word for word.
+                expect(find.text(t.settingsLogOutConfirmTitle), findsOneWidget);
+                expect(find.text(t.respStaySignedIn), findsNothing);
+                expect(find.text(t.respActiveAssignmentTitle), findsNothing);
+                final cancel = tester.getRect(find.text(t.settingsCancel));
+                final logOut = tester.getRect(find.text(t.settingsLogOut));
+                expect(cancel.center.dy, closeTo(logOut.center.dy, 1), reason: 'same row');
+                expect(cancel.right, lessThan(logOut.left), reason: 'Cancel on the left');
+
+                // The open assignment is still said, as a note inside it.
+                expect(
+                  find.byKey(const Key('logout-active-assignment')),
+                  active ? findsOneWidget : findsNothing,
+                );
+              },
+            );
+          }
+        }
+      }
+    }
+
+    testWidgets('resolves to the pressed action', (tester) async {
+      final context = await _pump(tester);
+      final t = AppLocalizations.of(context);
+      final result = showResponderLogoutDialog(context, hasActiveAssignment: true);
+      await _settle(tester);
+      await tester.tap(find.text(t.settingsLogOut));
+      await _settle(tester);
+      expect(await result, isTrue);
+
+      final again = showResponderLogoutDialog(context, hasActiveAssignment: true);
+      await _settle(tester);
+      await tester.tap(find.text(t.settingsCancel));
+      await _settle(tester);
+      expect(await again, isFalse);
     });
   });
 }

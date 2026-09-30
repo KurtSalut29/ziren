@@ -9,12 +9,12 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/profile_kit.dart';
-import '../../../shared/widgets/ziren_card.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
-/// Profile screen — centered avatar + name/email, an in-page verification
-/// card, and grouped info rows.
+/// Profile screen - a header card (avatar, name, email, verification and
+/// address chips), the verification card while it still matters, and titled
+/// groups of icon tiles.
 ///
 /// The photo hero banner this screen used to open with is gone — a plain
 /// AppBar with a settings gear replaced it, and the avatar (now editable,
@@ -25,12 +25,12 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 /// on purpose.
 ///
 /// Sections:
-///   1. Avatar + name/email, centered
-///   2. Verification card (verified / in review / not started)
+///   1. Header card: avatar, name/email, verification + address chips
+///   2. Verification card (in review / not started; hidden once verified)
 ///   3. Personal Information (name, email, phone, address)
 ///   4. Emergency Contact (contact name, contact number)
-///   5. Safety (hotline directory, safety guide, announcements)
-///   6. Log out
+///   5. Safety & help (hotlines, help, safety guide, announcements)
+///   6. Account (settings, log out)
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -68,6 +68,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: ZirenTokens.surfaceBase,
         elevation: 0,
+        title: Text(
+          AppLocalizations.of(context).navProfile,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: ZirenTokens.textPrimary,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.settings),
@@ -110,178 +118,199 @@ class _ProfileScreenState extends State<ProfileScreen> {
         profile?.fullName.isNotEmpty == true
             ? profile!.fullName
             : email.split('@').first;
+    final verified = profile?.isVerifiedResident ?? false;
+    final submitted = profile?.hasSubmittedEvidence ?? false;
+    final address = _addressValue(profile);
+    void edit() => context.push('/profile/settings');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: ZirenTokens.space8),
-        Center(
-          child: EditableAvatar(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        ZirenTokens.space16,
+        ZirenTokens.space4,
+        ZirenTokens.space16,
+        ZirenTokens.space32,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ProfileHeroCard(
+            avatar: EditableAvatar(
+              displayName: displayName,
+              avatarUrl: profile?.avatarUrl,
+              busy: _uploadingAvatar,
+              onTap: _changeAvatar,
+              size: 92,
+            ),
             displayName: displayName,
-            avatarUrl: profile?.avatarUrl,
-            busy: _uploadingAvatar,
-            onTap: _changeAvatar,
-          ),
-        ),
-        const SizedBox(height: ZirenTokens.space12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                displayName,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: ZirenTokens.textPrimary,
-                ),
+            subtitle: email,
+            chips: [
+              // Info-blue, never green: verification is an identity nudge,
+              // not a severity or a completed action (see _VerificationCard).
+              ProfileChip(
+                label:
+                    verified
+                        ? t.profileChipVerified
+                        : submitted
+                        ? t.profileChipInReview
+                        : t.profileChipNotVerified,
+                color:
+                    verified || submitted
+                        ? ZirenTokens.systemInfo
+                        : ZirenTokens.textMuted,
+                icon:
+                    verified
+                        ? LucideIcons.badge_check
+                        : submitted
+                        ? LucideIcons.hourglass
+                        : LucideIcons.shield,
               ),
-              const SizedBox(height: ZirenTokens.space4),
-              Text(
-                email,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: ZirenTokens.textMuted,
+              if (address != null)
+                ProfileChip(
+                  label: address,
+                  color: ZirenTokens.textSecondary,
+                  icon: LucideIcons.map_pin,
                 ),
+            ],
+          ),
+
+          // ── Verification ──────────────────────────────────────
+          // Only while there is still something to know or do. Once verified,
+          // the chip in the header says so; a card repeating it pushed the
+          // resident's own details below the fold.
+          if (!verified) ...[
+            const SizedBox(height: ZirenTokens.space16),
+            _VerificationCard(profile: profile),
+          ],
+
+          if (provider.status == ProfileStatus.error) ...[
+            const SizedBox(height: ZirenTokens.space16),
+            ProfileLoadError(
+              message: provider.errorMessage ?? 'Could not load your profile.',
+              onRetry: () => provider.loadProfile(force: true),
+            ),
+          ],
+          const SizedBox(height: ZirenTokens.space24),
+
+          // ── Personal information ──────────────────────────────
+          ProfileGroup(
+            title: t.profilePersonalInfo,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.user,
+                label: t.labelNameProfile,
+                value:
+                    profile?.fullName.isNotEmpty == true
+                        ? profile!.fullName
+                        : t.profileNotSet,
+                onTap: edit,
+              ),
+              ProfileTile(
+                icon: LucideIcons.mail,
+                label: t.labelEmailProfile,
+                value: email.isNotEmpty ? email : t.profileNotSet,
+                onTap: edit,
+              ),
+              ProfileTile(
+                icon: LucideIcons.phone,
+                label: t.labelPhone,
+                value:
+                    profile?.phoneNumber?.isNotEmpty == true
+                        ? profile!.phoneNumber!
+                        : t.profileNotSet,
+                onTap: edit,
+              ),
+              ProfileTile(
+                icon: LucideIcons.map_pin,
+                label: t.profileAddress,
+                value: address ?? t.profileNotSet,
+                onTap: edit,
               ),
             ],
           ),
-        ),
-        const SizedBox(height: ZirenTokens.space20),
+          const SizedBox(height: ZirenTokens.space24),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          // ── Emergency contact ─────────────────────────────────
+          ProfileGroup(
+            title: t.profileEmergencyContact,
+            caption: t.emergencyWhoShort,
             children: [
-              // ── Verification card ─────────────────────────────
-              // Profile has no dismiss and no "not now" — this is where you
-              // come to act on it, unlike the Home banner.
-              _VerificationCard(profile: profile),
-              const SizedBox(height: ZirenTokens.space20),
-
-              if (provider.status == ProfileStatus.error) ...[
-                ProfileLoadError(
-                  message:
-                      provider.errorMessage ?? 'Could not load your profile.',
-                  onRetry: () => provider.loadProfile(force: true),
-                ),
-                const SizedBox(height: ZirenTokens.space16),
-              ],
-
-              // ── Personal information ───────────────────────────
-              ZirenSectionLabel(t.profilePersonalInfo),
-              ZirenGroupedRows(
-                children: [
-                  _InfoRow(
-                    icon: LucideIcons.user,
-                    label: t.labelNameProfile,
-                    value:
-                        profile?.fullName.isNotEmpty == true
-                            ? profile!.fullName
-                            : t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                  _InfoRow(
-                    icon: LucideIcons.mail,
-                    label: t.labelEmailProfile,
-                    value: email.isNotEmpty ? email : t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                  _InfoRow(
-                    icon: LucideIcons.phone,
-                    label: t.labelPhone,
-                    value:
-                        profile?.phoneNumber?.isNotEmpty == true
-                            ? profile!.phoneNumber!
-                            : t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                  _InfoRow(
-                    icon: LucideIcons.map_pin,
-                    label: t.profileAddress,
-                    value: _addressValue(profile) ?? t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                ],
+              ProfileTile(
+                icon: LucideIcons.contact,
+                label: t.labelEmergencyContactName,
+                value:
+                    profile?.emergencyContactName?.isNotEmpty == true
+                        ? profile!.emergencyContactName!
+                        : t.profileNotSet,
+                onTap: edit,
               ),
-              const SizedBox(height: ZirenTokens.space24),
-
-              // ── Emergency contact ──────────────────────────────
-              ZirenSectionLabel(t.profileEmergencyContact),
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: ZirenTokens.space4,
-                  right: ZirenTokens.space4,
-                  bottom: ZirenTokens.space8,
-                ),
-                child: Text(
-                  t.emergencyWhoShort,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.45,
-                    color: ZirenTokens.textSecondary,
-                  ),
-                ),
+              ProfileTile(
+                icon: LucideIcons.phone,
+                label: t.labelEmergencyContactNumber,
+                value:
+                    profile?.emergencyContactNumber?.isNotEmpty == true
+                        ? profile!.emergencyContactNumber!
+                        : t.profileNotSet,
+                onTap: edit,
               ),
-              ZirenGroupedRows(
-                children: [
-                  _InfoRow(
-                    icon: LucideIcons.map_pin,
-                    label: t.labelEmergencyContactName,
-                    value:
-                        profile?.emergencyContactName?.isNotEmpty == true
-                            ? profile!.emergencyContactName!
-                            : t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                  _InfoRow(
-                    icon: LucideIcons.phone,
-                    label: t.labelEmergencyContactNumber,
-                    value:
-                        profile?.emergencyContactNumber?.isNotEmpty == true
-                            ? profile!.emergencyContactNumber!
-                            : t.profileNotSet,
-                    onTap: () => context.push('/profile/settings'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: ZirenTokens.space24),
-
-              // ── Safety ──────────────────────────────────────────
-              //
-              // Spec Sections 21, 22, 24 — reachable whether or not there is
-              // an active incident, which is exactly the point of all three:
-              // a resident should be able to find a hotline number, a
-              // first-aid step, or an official notice without needing
-              // anything from Ziren to be working first. Not in the mockup's
-              // visible panel, but real navigation that shouldn't disappear
-              // in a restyle.
-              _SafetySection(),
-              const SizedBox(height: ZirenTokens.space24),
-
-              // ── Log out ──────────────────────────────────────────
-              OutlinedButton.icon(
-                onPressed: () => _confirmLogout(context, auth),
-                icon: const Icon(LucideIcons.log_out, size: 18),
-                label: const Text('Log Out'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ZirenTokens.systemError,
-                  side: BorderSide(
-                    color: ZirenTokens.systemError.withValues(alpha: 0.5),
-                  ),
-                  minimumSize: const Size.fromHeight(52),
-                ),
-              ),
-
-              const SizedBox(height: ZirenTokens.space32),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: ZirenTokens.space24),
+
+          // ── Safety & help ─────────────────────────────────────
+          //
+          // Spec Sections 21, 22, 24 - reachable whether or not there is an
+          // active incident, which is exactly the point of all of them: a
+          // resident should be able to find a hotline number, a first-aid
+          // step, or an official notice without needing anything from Ziren
+          // to be working first.
+          ProfileGroup(
+            title: t.profileSafetyHelp,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.phone_call,
+                label: t.hotlinesTitle,
+                tone: ZirenTokens.systemSuccess,
+                onTap: () => context.push('/hotlines'),
+              ),
+              ProfileTile(
+                icon: LucideIcons.life_buoy,
+                label: t.helpTitle,
+                tone: ZirenTokens.systemInfo,
+                onTap: () => context.push('/help'),
+              ),
+              ProfileTile(
+                icon: LucideIcons.shield_plus,
+                label: t.safetyGuideTitle,
+                onTap: () => context.push('/safety-guide'),
+              ),
+              ProfileTile(
+                icon: LucideIcons.megaphone,
+                label: t.announcementsTitle,
+                onTap: () => context.push('/announcements'),
+              ),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space24),
+
+          // ── Account ───────────────────────────────────────────
+          ProfileGroup(
+            title: t.profileAccount,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.settings,
+                label: t.profileSettings,
+                onTap: edit,
+              ),
+              ProfileTile(
+                icon: LucideIcons.log_out,
+                label: t.settingsLogOut,
+                danger: true,
+                onTap: () => _confirmLogout(context, auth),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -306,14 +335,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       tone: ZirenTone.danger,
       title: t.settingsLogOutConfirmTitle,
       message: t.settingsLogOutConfirmBody,
+      horizontalActions: true,
       actions: [
+        ZirenDialogAction(label: t.settingsCancel, value: false),
         ZirenDialogAction(
           label: t.settingsLogOut,
           value: true,
           kind: ZirenActionKind.danger,
           icon: LucideIcons.log_out,
         ),
-        ZirenDialogAction(label: t.settingsCancel, value: false),
       ],
     );
     if (confirmed == true && context.mounted) {
@@ -381,7 +411,7 @@ class _VerificationCard extends StatelessWidget {
       padding: const EdgeInsets.all(ZirenTokens.space16),
       decoration: BoxDecoration(
         color: ZirenTokens.systemInfoBg,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: ZirenTokens.systemInfo.withValues(alpha: 0.25),
         ),
@@ -472,196 +502,6 @@ class _OptionalPill extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
           color: ZirenTokens.textMuted,
-        ),
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// Grouped info row
-// =============================================================================
-
-/// One `icon · label/value · chevron` row inside a [ZirenGroupedRows]
-/// container — the mockup's Personal Information / Emergency Contact rows.
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: ZirenTokens.space16,
-          vertical: ZirenTokens.space12,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: ZirenTokens.textMuted),
-            const SizedBox(width: ZirenTokens.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: ZirenTokens.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: ZirenTokens.space2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: ZirenTokens.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              LucideIcons.chevron_right,
-              size: 18,
-              color: ZirenTokens.textMuted,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// =============================================================================
-// Safety
-// =============================================================================
-
-/// Emergency Contacts, Safety Guide, and Announcements — three destinations
-/// that exist independently of any active report (spec Sections 21, 22, 24).
-class _SafetySection extends StatelessWidget {
-  const _SafetySection();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-        border: Border.all(color: ZirenTokens.surfaceBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              ZirenTokens.space16,
-              ZirenTokens.space12,
-              ZirenTokens.space16,
-              ZirenTokens.space8,
-            ),
-            child: Text(
-              t.profileSafetySection,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: ZirenTokens.textPrimary,
-              ),
-            ),
-          ),
-          Divider(height: 1, color: ZirenTokens.surfaceBorder),
-          _SafetyRow(
-            icon: LucideIcons.phone_call,
-            label: t.hotlinesTitle,
-            onTap: () => context.push('/hotlines'),
-          ),
-          _SafetyRow(
-            icon: LucideIcons.life_buoy,
-            label: t.helpTitle,
-            onTap: () => context.push('/help'),
-          ),
-          _SafetyRow(
-            icon: LucideIcons.shield_plus,
-            label: t.safetyGuideTitle,
-            onTap: () => context.push('/safety-guide'),
-          ),
-          _SafetyRow(
-            icon: LucideIcons.megaphone,
-            label: t.announcementsTitle,
-            onTap: () => context.push('/announcements'),
-            last: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SafetyRow extends StatelessWidget {
-  const _SafetyRow({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.last = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool last;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: ZirenTokens.space16,
-          vertical: ZirenTokens.space12,
-        ),
-        decoration: BoxDecoration(
-          border:
-              last
-                  ? null
-                  : Border(
-                    bottom: BorderSide(
-                      color: ZirenTokens.surfaceBorder,
-                      width: 0.5,
-                    ),
-                  ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: ZirenTokens.textMuted),
-            const SizedBox(width: ZirenTokens.space12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: ZirenTokens.textPrimary,
-                ),
-              ),
-            ),
-            Icon(
-              LucideIcons.chevron_right,
-              size: 18,
-              color: ZirenTokens.textMuted,
-            ),
-          ],
         ),
       ),
     );

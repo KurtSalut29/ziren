@@ -176,6 +176,16 @@ class AuthProvider extends ChangeNotifier {
     await _repo.sendPasswordReset(email);
   }
 
+  /// See [AuthRepository.changePassword]. Throws [WrongPasswordFailure],
+  /// [SamePasswordFailure] or [AuthFailure]; the screen words each one.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _repo.changePassword(
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+  );
+
   void clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;

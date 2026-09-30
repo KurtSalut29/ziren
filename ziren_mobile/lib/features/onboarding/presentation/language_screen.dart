@@ -1,12 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/locale_provider.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_button.dart';
-import '../../../shared/widgets/ziren_logo.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'widgets/onboarding_kit.dart';
 
 /// First screen a new user ever sees. Pick the language the app speaks.
 ///
@@ -17,13 +20,19 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 /// as no consent at all. The language choice is what makes the next screen
 /// meaningful, so it has to lead.
 ///
-/// Why nothing on this screen is localised
-/// ---------------------------------------
-/// It is the one screen in the app that must be readable by someone who has
-/// not yet told us what they read. Each option is written in its own language,
-/// with a sample line underneath, so the choice can be made by recognition
-/// rather than by translation. Localising it would mean guessing — and a
-/// wrong guess here makes every screen after it unreadable.
+/// The choice applies the moment it is tapped
+/// ------------------------------------------
+/// This screen used to be written in both languages at once and to stay that
+/// way whatever was picked; the choice only took effect on Continue. Testers
+/// tapped English, saw nothing change, and read it as broken. Now a tap
+/// switches the app's locale on the spot, so this screen turns into the chosen
+/// language as the proof that it worked. Each option still names itself in
+/// its own language, with a sample line, so it can be recognised before
+/// anything has been chosen, and the title keeps a small line in the other
+/// language for someone who landed on the wrong one.
+///
+/// Ziren's help mascot asks the question — the one friendly face in a setup
+/// that is otherwise forms and legal text.
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
 
@@ -32,10 +41,21 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-  /// Filipino leads, and is preselected. It is what most of Biliran reads
-  /// most comfortably, and a preselected sensible default means the hurried
-  /// user can simply press Continue.
-  String _selected = LocaleProvider.languageFilipino;
+  late String _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    // Whatever the app is already speaking — Filipino by default, which is
+    // what most of Biliran reads most comfortably, so the hurried user can
+    // simply press Continue.
+    _selected = context.read<LocaleProvider>().languageName;
+  }
+
+  Future<void> _choose(String name) async {
+    setState(() => _selected = name);
+    await context.read<LocaleProvider>().setLanguageName(name);
+  }
 
   Future<void> _continue() async {
     await context.read<LocaleProvider>().setLanguageName(_selected);
@@ -45,99 +65,156 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final english = _selected == LocaleProvider.languageEnglish;
+
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            ZirenTokens.space24,
-            ZirenTokens.space32,
-            ZirenTokens.space24,
-            ZirenTokens.space24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ZirenLogo.mark(size: 56, onDark: ZirenTokens.isDark),
-              const SizedBox(height: ZirenTokens.space24),
-
-              // Bilingual heading — the one place both languages sit together,
-              // because the reader has not chosen yet.
-              Text(
-                'Choose your language',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
-                  letterSpacing: -0.5,
-                  color: ZirenTokens.textPrimary,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                ZirenTokens.space24,
+                ZirenTokens.space16,
+                ZirenTokens.space24,
+                0,
               ),
-              const SizedBox(height: ZirenTokens.space4),
-              Text(
-                'Piliin ang inyong wika',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  height: 1.15,
-                  letterSpacing: -0.5,
-                  color: ZirenTokens.textMuted,
-                ),
-              ),
-              const SizedBox(height: ZirenTokens.space8),
-              Text(
-                'You can change this later in Settings.\n'
-                'Maaari ninyo itong palitan sa Settings.',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: ZirenTokens.textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: ZirenTokens.space32),
-
-              _LanguageCard(
-                title: 'Tagalog',
-                sample: 'Mag-ulat ng emerhensiya',
-                selected: _selected == LocaleProvider.languageFilipino,
-                onTap:
-                    () => setState(
-                      () => _selected = LocaleProvider.languageFilipino,
+              child: OnboardingSteps(step: 1),
+            ),
+            // The screen is FILLED, not centred and not top-packed: whatever
+            // height the phone has left over is shared out evenly between
+            // the groups (mascot, heading, choices, button), and the mascot
+            // itself grows with the screen. Pinning the button to the bottom
+            // left one wide empty band above it on a tall phone; centring
+            // the block just split that band into two, above and below.
+            // Scrolls instead when the text is too large to fit.
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  const vPad = ZirenTokens.space16;
+                  final mascot = (box.maxHeight * 0.21).clamp(92.0, 170.0);
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: ZirenTokens.space24,
+                      vertical: vPad,
                     ),
-              ),
-              const SizedBox(height: ZirenTokens.space12),
-              _LanguageCard(
-                title: 'English',
-                sample: 'Report an emergency',
-                selected: _selected == LocaleProvider.languageEnglish,
-                onTap:
-                    () => setState(
-                      () => _selected = LocaleProvider.languageEnglish,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: math.max(0, box.maxHeight - vPad * 2),
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            OnboardingMascot(
+                              text: t.onbLangGreeting,
+                              size: mascot,
+                            ),
+                            const Spacer(),
+                            const SizedBox(height: ZirenTokens.space16),
+                            Text(
+                              t.onbLangTitle,
+                              style: TextStyle(
+                                fontSize: 27,
+                                fontWeight: FontWeight.w800,
+                                height: 1.15,
+                                letterSpacing: -0.5,
+                                color: ZirenTokens.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            // The same heading in the other language, for
+                            // someone who reads that one instead.
+                            Text(
+                              english
+                                  ? 'Piliin ang inyong wika'
+                                  : 'Choose your language',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: ZirenTokens.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: ZirenTokens.space8),
+                            Text(
+                              t.onbLangSubtitle,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.5,
+                                color: ZirenTokens.textSecondary,
+                              ),
+                            ),
+                            const Spacer(),
+                            const SizedBox(height: ZirenTokens.space16),
+                            _LanguageCard(
+                              key: const Key('lang-fil'),
+                              badge: 'FIL',
+                              title: 'Tagalog',
+                              sample: 'Mag-ulat ng emerhensiya',
+                              selectedLabel: t.onbLangSelected,
+                              selected: !english,
+                              onTap:
+                                  () =>
+                                      _choose(LocaleProvider.languageFilipino),
+                            ),
+                            const SizedBox(height: ZirenTokens.space12),
+                            _LanguageCard(
+                              key: const Key('lang-en'),
+                              badge: 'EN',
+                              title: 'English',
+                              sample: 'Report an emergency',
+                              selectedLabel: t.onbLangSelected,
+                              selected: english,
+                              onTap:
+                                  () => _choose(LocaleProvider.languageEnglish),
+                            ),
+                            const SizedBox(height: ZirenTokens.space16),
+                            // Waray is the language of Biliran and its absence
+                            // here is deliberate, not an oversight. See
+                            // l10n.yaml: machine-drafted Waray in an emergency
+                            // app is not safe to ship, and saying so is better
+                            // than quietly offering two languages and hoping
+                            // nobody notices which one is missing.
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  LucideIcons.languages,
+                                  size: 15,
+                                  color: ZirenTokens.textMuted,
+                                ),
+                                const SizedBox(width: ZirenTokens.space8),
+                                Expanded(
+                                  child: Text(
+                                    t.onbLangMoreSoon,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      height: 1.4,
+                                      color: ZirenTokens.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            const SizedBox(height: ZirenTokens.space20),
+                            ZirenButton(
+                              key: const Key('lang-continue'),
+                              label: t.onbLangContinue,
+                              icon: LucideIcons.arrow_right,
+                              onPressed: _continue,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                  );
+                },
               ),
-
-              const Spacer(),
-
-              // Waray is the language of Biliran and its absence here is
-              // deliberate, not an oversight. See l10n.yaml: machine-drafted
-              // Waray in an emergency app is not safe to ship, and saying so
-              // is better than quietly offering two languages and hoping
-              // nobody notices which one is missing.
-              Text(
-                'Waray and Bisaya are coming once a native speaker has '
-                'reviewed them.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
-              ),
-              const SizedBox(height: ZirenTokens.space16),
-
-              ZirenButton(
-                label: 'Continue  ·  Magpatuloy',
-                onPressed: _continue,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -146,14 +223,19 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
 class _LanguageCard extends StatelessWidget {
   const _LanguageCard({
+    super.key,
+    required this.badge,
     required this.title,
     required this.sample,
+    required this.selectedLabel,
     required this.selected,
     required this.onTap,
   });
 
+  final String badge;
   final String title;
   final String sample;
+  final String selectedLabel;
   final bool selected;
   final VoidCallback onTap;
 
@@ -171,8 +253,9 @@ class _LanguageCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(ZirenTokens.radius20),
-            child: Container(
-              padding: const EdgeInsets.all(ZirenTokens.space20),
+            child: AnimatedContainer(
+              duration: ZirenTokens.motionQuick,
+              padding: const EdgeInsets.all(ZirenTokens.space16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(ZirenTokens.radius20),
                 border: Border.all(
@@ -185,6 +268,30 @@ class _LanguageCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
+                  AnimatedContainer(
+                    duration: ZirenTokens.motionQuick,
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color:
+                          selected
+                              ? ZirenTokens.brandOrange
+                              : ZirenTokens.surfaceRaised,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                        color:
+                            selected ? Colors.white : ZirenTokens.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: ZirenTokens.space12 + 2),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,34 +299,42 @@ class _LanguageCard extends StatelessWidget {
                         Text(
                           title,
                           style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
                             color:
                                 selected
                                     ? ZirenTokens.brandActive
                                     : ZirenTokens.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: ZirenTokens.space4),
+                        const SizedBox(height: 2),
                         Text(
-                          sample,
+                          '“$sample”',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13.5,
                             color: ZirenTokens.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    selected
-                        ? LucideIcons.circle_dot
-                        : LucideIcons.circle,
-                    color:
+                  AnimatedSwitcher(
+                    duration: ZirenTokens.motionQuick,
+                    child:
                         selected
-                            ? ZirenTokens.brandOrange
-                            : ZirenTokens.textMuted,
-                    size: 26,
+                            ? Icon(
+                              LucideIcons.circle_check,
+                              key: const ValueKey('on'),
+                              color: ZirenTokens.brandOrange,
+                              size: 26,
+                              semanticLabel: selectedLabel,
+                            )
+                            : Icon(
+                              LucideIcons.circle,
+                              key: const ValueKey('off'),
+                              color: ZirenTokens.textMuted,
+                              size: 26,
+                            ),
                   ),
                 ],
               ),

@@ -11,10 +11,11 @@ import '../data/onboarding_repository.dart';
 import '../domain/legal_documents.dart';
 import 'legal_reader_screen.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'widgets/onboarding_kit.dart';
 
 /// Data Privacy Notice and Terms of Use, with a separate agreement for each.
 ///
-/// Two checkboxes, not one
+/// Two agreements, not one
 /// -----------------------
 /// Bundling them into a single "I agree to the Terms and Privacy Policy" tick
 /// is the common pattern and it is the wrong one here. They are different
@@ -23,11 +24,15 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 /// cannot evidence the second, and the second is the one a regulator asks
 /// about.
 ///
-/// Each checkbox stays disabled until its document has actually been opened
+/// Each agreement stays disabled until its document has actually been opened
 /// and scrolled through. The plain-language summary above them is what a
 /// hurried person will really read, so it carries the four things that
 /// genuinely change someone's decision — including the one no product wants
 /// to lead with, that this app is not a replacement for calling 911.
+///
+/// Each document and its agreement share one card: open it, read it, agree —
+/// in the order the card is read, with its state (to read / read / agreed)
+/// written on it.
 class ConsentScreen extends StatefulWidget {
   const ConsentScreen({super.key});
 
@@ -98,6 +103,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final agreed = (_privacyAgreed ? 1 : 0) + (_termsAgreed ? 1 : 0);
 
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
@@ -105,95 +111,137 @@ class _ConsentScreenState extends State<ConsentScreen> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   ZirenTokens.space24,
-                  ZirenTokens.space32,
+                  ZirenTokens.space16,
                   ZirenTokens.space24,
                   ZirenTokens.space24,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      t.consentTitle,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        letterSpacing: -0.5,
-                        color: ZirenTokens.textPrimary,
+                children: [
+                  Row(
+                    children: [
+                      // Back to the language choice — someone who picked the
+                      // wrong one should not be stuck reading it.
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          right: ZirenTokens.space8,
+                        ),
+                        child: IconButton(
+                          key: const Key('consent-back'),
+                          tooltip:
+                              MaterialLocalizations.of(
+                                context,
+                              ).backButtonTooltip,
+                          style: IconButton.styleFrom(
+                            backgroundColor: ZirenTokens.surfaceCard,
+                            side: BorderSide(color: ZirenTokens.surfaceBorder),
+                          ),
+                          icon: Icon(
+                            LucideIcons.arrow_left,
+                            size: 18,
+                            color: ZirenTokens.textPrimary,
+                          ),
+                          onPressed: () => context.go('/onboarding/language'),
+                        ),
+                      ),
+                      const Expanded(child: OnboardingSteps(step: 2)),
+                    ],
+                  ),
+                  const SizedBox(height: ZirenTokens.space20),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: ZirenTokens.brandOrange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        LucideIcons.shield_check,
+                        size: 28,
+                        color: ZirenTokens.brandOrange,
                       ),
                     ),
-                    const SizedBox(height: ZirenTokens.space8),
-                    Text(
-                      t.consentSubtitle,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        height: 1.5,
-                        color: ZirenTokens.textSecondary,
+                  ),
+                  const SizedBox(height: ZirenTokens.space16),
+                  Text(
+                    t.consentTitle,
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      letterSpacing: -0.5,
+                      color: ZirenTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: ZirenTokens.space8),
+                  Text(
+                    t.consentSubtitle,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      height: 1.5,
+                      color: ZirenTokens.textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(height: ZirenTokens.space20),
+                  _Summary(
+                    title: t.consentSummaryTitle,
+                    points: [
+                      (
+                        LucideIcons.locate_fixed,
+                        ZirenTokens.systemInfo,
+                        t.consentSummaryLocation,
                       ),
-                    ),
+                      (
+                        LucideIcons.share_2,
+                        ZirenTokens.brandOrange,
+                        t.consentSummaryReporting,
+                      ),
+                      (
+                        LucideIcons.lock,
+                        ZirenTokens.systemSuccess,
+                        t.consentSummaryPhotos,
+                      ),
+                      (
+                        LucideIcons.phone_call,
+                        ZirenTokens.severityCritical,
+                        t.consentSummaryNotHotline,
+                      ),
+                    ],
+                  ),
 
-                    const SizedBox(height: ZirenTokens.space24),
-                    _Summary(
-                      title: t.consentSummaryTitle,
-                      points: [
-                        (LucideIcons.locate_fixed, t.consentSummaryLocation),
-                        (
-                          LucideIcons.share_2,
-                          t.consentSummaryReporting,
-                        ),
-                        (LucideIcons.lock, t.consentSummaryPhotos),
-                        (
-                          LucideIcons.phone_call,
-                          t.consentSummaryNotHotline,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: ZirenTokens.space24),
-
-                    _DocumentRow(
-                      title: t.consentPrivacyTitle,
-                      subtitle: t.consentPrivacySubtitle,
-                      version: LegalDocuments.privacyVersion,
-                      hasRead: _privacyRead,
-                      readLabel: t.consentActionRead,
-                      readBadge: t.consentBadgeRead,
-                      onOpen:
-                          () => _open(LegalDoc.privacy, t.consentPrivacyTitle),
-                    ),
-                    const SizedBox(height: ZirenTokens.space12),
-                    _DocumentRow(
-                      title: t.consentTermsTitle,
-                      subtitle: t.consentTermsSubtitle,
-                      version: LegalDocuments.termsVersion,
-                      hasRead: _termsRead,
-                      readLabel: t.consentActionRead,
-                      readBadge: t.consentBadgeRead,
-                      onOpen: () => _open(LegalDoc.terms, t.consentTermsTitle),
-                    ),
-
-                    const SizedBox(height: ZirenTokens.space24),
-
-                    _AgreeCheck(
-                      label: t.consentAgreePrivacy,
-                      value: _privacyAgreed,
-                      enabled: _privacyRead,
-                      disabledHint: t.consentMustReadFirst,
-                      onChanged: (v) => setState(() => _privacyAgreed = v),
-                    ),
-                    const SizedBox(height: ZirenTokens.space8),
-                    _AgreeCheck(
-                      label: t.consentAgreeTerms,
-                      value: _termsAgreed,
-                      enabled: _termsRead,
-                      disabledHint: t.consentMustReadFirst,
-                      onChanged: (v) => setState(() => _termsAgreed = v),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: ZirenTokens.space20),
+                  _AgreementCard(
+                    key: const Key('consent-privacy'),
+                    icon: LucideIcons.shield,
+                    title: t.consentPrivacyTitle,
+                    subtitle: t.consentPrivacySubtitle,
+                    version: LegalDocuments.privacyVersion,
+                    hasRead: _privacyRead,
+                    agreed: _privacyAgreed,
+                    agreeLabel: t.consentAgreePrivacy,
+                    onOpen:
+                        () => _open(LegalDoc.privacy, t.consentPrivacyTitle),
+                    onAgree: (v) => setState(() => _privacyAgreed = v),
+                  ),
+                  const SizedBox(height: ZirenTokens.space12),
+                  _AgreementCard(
+                    key: const Key('consent-terms'),
+                    icon: LucideIcons.file_text,
+                    title: t.consentTermsTitle,
+                    subtitle: t.consentTermsSubtitle,
+                    version: LegalDocuments.termsVersion,
+                    hasRead: _termsRead,
+                    agreed: _termsAgreed,
+                    agreeLabel: t.consentAgreeTerms,
+                    onOpen: () => _open(LegalDoc.terms, t.consentTermsTitle),
+                    onAgree: (v) => setState(() => _termsAgreed = v),
+                  ),
+                ],
               ),
             ),
 
@@ -204,11 +252,56 @@ class _ConsentScreenState extends State<ConsentScreen> {
                   top: BorderSide(color: ZirenTokens.surfaceBorder),
                 ),
               ),
-              padding: const EdgeInsets.all(ZirenTokens.space20),
-              child: ZirenButton(
-                label: t.consentContinue,
-                isLoading: _busy,
-                onPressed: _canContinue ? _continue : null,
+              padding: const EdgeInsets.fromLTRB(
+                ZirenTokens.space20,
+                ZirenTokens.space12,
+                ZirenTokens.space20,
+                ZirenTokens.space16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      for (var i = 0; i < 2; i++) ...[
+                        if (i > 0) const SizedBox(width: 4),
+                        Expanded(
+                          child: AnimatedContainer(
+                            duration: ZirenTokens.motionQuick,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color:
+                                  i < agreed
+                                      ? ZirenTokens.systemSuccess
+                                      : ZirenTokens.surfaceBorder,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: ZirenTokens.space10),
+                      Text(
+                        t.consentAgreedCount('$agreed'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              agreed == 2
+                                  ? ZirenTokens.systemSuccess
+                                  : ZirenTokens.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: ZirenTokens.space12),
+                  ZirenButton(
+                    key: const Key('consent-continue'),
+                    label: t.consentContinue,
+                    isLoading: _busy,
+                    onPressed: _canContinue ? _continue : null,
+                  ),
+                ],
               ),
             ),
           ],
@@ -224,12 +317,12 @@ class _Summary extends StatelessWidget {
   const _Summary({required this.title, required this.points});
 
   final String title;
-  final List<(IconData, String)> points;
+  final List<(IconData, Color, String)> points;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(ZirenTokens.space20),
+      padding: const EdgeInsets.all(ZirenTokens.space16),
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
         borderRadius: BorderRadius.circular(ZirenTokens.radius20),
@@ -239,30 +332,44 @@ class _Summary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
+            title.toUpperCase(),
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              color: ZirenTokens.textMuted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
+              color: ZirenTokens.textSecondary,
             ),
           ),
-          const SizedBox(height: ZirenTokens.space16),
-          for (final (icon, text) in points)
+          const SizedBox(height: ZirenTokens.space12),
+          for (var i = 0; i < points.length; i++)
             Padding(
-              padding: const EdgeInsets.only(bottom: ZirenTokens.space12),
+              padding: EdgeInsets.only(
+                bottom: i == points.length - 1 ? 0 : ZirenTokens.space12,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 18, color: ZirenTokens.brandOrange),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: points[i].$2.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(points[i].$1, size: 17, color: points[i].$2),
+                  ),
                   const SizedBox(width: ZirenTokens.space12),
                   Expanded(
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
-                        color: ZirenTokens.textSecondary,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        points[i].$3,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: ZirenTokens.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -275,96 +382,144 @@ class _Summary extends StatelessWidget {
   }
 }
 
-// ── One document ──────────────────────────────────────────────
+// ── One document and its agreement ────────────────────────────
 
-class _DocumentRow extends StatelessWidget {
-  const _DocumentRow({
+class _AgreementCard extends StatelessWidget {
+  const _AgreementCard({
+    super.key,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.version,
     required this.hasRead,
-    required this.readLabel,
-    required this.readBadge,
+    required this.agreed,
+    required this.agreeLabel,
     required this.onOpen,
+    required this.onAgree,
   });
 
+  final IconData icon;
   final String title;
   final String subtitle;
   final String version;
   final bool hasRead;
-  final String readLabel;
-  final String readBadge;
+  final bool agreed;
+  final String agreeLabel;
   final VoidCallback onOpen;
+  final ValueChanged<bool> onAgree;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: ZirenTokens.surfaceCard,
-      borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-      child: InkWell(
-        onTap: onOpen,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        child: Container(
-          padding: const EdgeInsets.all(ZirenTokens.space16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-            border: Border.all(
-              color:
-                  hasRead
-                      ? ZirenTokens.systemSuccess.withValues(alpha: 0.4)
-                      : ZirenTokens.surfaceBorder,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                hasRead ? LucideIcons.circle_check_big : LucideIcons.file_text,
-                size: 22,
-                color:
-                    hasRead ? ZirenTokens.systemSuccess : ZirenTokens.textMuted,
-              ),
-              const SizedBox(width: ZirenTokens.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    final t = AppLocalizations.of(context);
+    final (chip, chipColor) =
+        agreed
+            ? (t.consentAgreed, ZirenTokens.systemSuccess)
+            : hasRead
+            ? (t.consentBadgeRead, ZirenTokens.systemInfo)
+            : (t.consentNeedsReading, ZirenTokens.brandOrange);
+
+    return AnimatedContainer(
+      duration: ZirenTokens.motionQuick,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: ZirenTokens.surfaceCard,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius20),
+        border: Border.all(
+          color:
+              agreed
+                  ? ZirenTokens.systemSuccess.withValues(alpha: 0.55)
+                  : ZirenTokens.surfaceBorder,
+          width: agreed ? 1.5 : 1,
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: onOpen,
+              child: Padding(
+                padding: const EdgeInsets.all(ZirenTokens.space16),
+                child: Row(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: ZirenTokens.textPrimary,
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: chipColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        agreed ? LucideIcons.circle_check_big : icon,
+                        size: 20,
+                        color: chipColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$subtitle  ·  v$version',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: ZirenTokens.textMuted,
+                    const SizedBox(width: ZirenTokens.space12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: ZirenTokens.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$subtitle  ·  v$version',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: ZirenTokens.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: ZirenTokens.space6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: chipColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(
+                                ZirenTokens.radius32,
+                              ),
+                            ),
+                            child: Text(
+                              chip,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                                color: chipColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    Icon(
+                      LucideIcons.chevron_right,
+                      size: 20,
+                      color: ZirenTokens.textMuted,
                     ),
                   ],
                 ),
               ),
-              Text(
-                hasRead ? readBadge : readLabel,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      hasRead
-                          ? ZirenTokens.systemSuccess
-                          : ZirenTokens.brandOrange,
-                ),
-              ),
-              Icon(
-                LucideIcons.chevron_right,
-                size: 20,
-                color: ZirenTokens.textMuted,
-              ),
-            ],
-          ),
+            ),
+            Divider(height: 1, color: ZirenTokens.surfaceBorder),
+            _AgreeCheck(
+              label: agreeLabel,
+              value: agreed,
+              enabled: hasRead,
+              disabledHint: t.consentMustReadFirst,
+              onChanged: onAgree,
+            ),
+          ],
         ),
       ),
     );
@@ -397,11 +552,14 @@ class _AgreeCheck extends StatelessWidget {
       child: ExcludeSemantics(
         child: InkWell(
           onTap: enabled ? () => onChanged(!value) : null,
-          borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-          child: Padding(
+          child: Container(
+            color:
+                value
+                    ? ZirenTokens.systemSuccess.withValues(alpha: 0.06)
+                    : Colors.transparent,
             padding: const EdgeInsets.symmetric(
-              vertical: ZirenTokens.space8,
-              horizontal: ZirenTokens.space4,
+              vertical: ZirenTokens.space12,
+              horizontal: ZirenTokens.space16,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,8 +570,11 @@ class _AgreeCheck extends StatelessWidget {
                   child: Checkbox(
                     value: value,
                     onChanged: enabled ? (v) => onChanged(v ?? false) : null,
-                    activeColor: ZirenTokens.brandOrange,
+                    activeColor: ZirenTokens.systemSuccess,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                   ),
                 ),
                 const SizedBox(width: ZirenTokens.space12),
@@ -426,6 +587,7 @@ class _AgreeCheck extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.4,
+                          fontWeight: FontWeight.w600,
                           color:
                               enabled
                                   ? ZirenTokens.textPrimary
@@ -434,12 +596,24 @@ class _AgreeCheck extends StatelessWidget {
                       ),
                       if (!enabled) ...[
                         const SizedBox(height: 2),
-                        Text(
-                          disabledHint,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: ZirenTokens.textMuted,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.lock,
+                              size: 12,
+                              color: ZirenTokens.textMuted,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                disabledHint,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: ZirenTokens.textMuted,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],

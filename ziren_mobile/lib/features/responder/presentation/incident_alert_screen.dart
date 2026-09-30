@@ -311,7 +311,7 @@ class _IncidentAlertScreenState extends State<IncidentAlertScreen>
                           child: Text(
                             incident.locationAddress ??
                                 incident.landmarkNote ??
-                                'Walang address na naitala',
+                                t.respNoAddress,
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -418,11 +418,7 @@ class _IncidentAlertScreenState extends State<IncidentAlertScreen>
                     ),
                     const SizedBox(height: ZirenTokens.space12),
                     Text(
-                      _overdue
-                          ? 'Nakikita na ito ng dispatcher bilang walang sagot. '
-                              'Puwede mo pa ring tanggapin.'
-                          : 'Kapag walang sagot, babalik ito sa dispatcher '
-                              'para may maipadala silang iba.',
+                      _overdue ? t.respAlertOverdueNote : t.respAlertTimeoutNote,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 12,

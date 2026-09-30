@@ -2531,25 +2531,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsFaqReportQ => 'Paano mag-report ng emergency?';
 
   @override
-  String get settingsFaqReportA => 'I-tap ang SOS button sa Home, o punan ang report sa Report tab. Parehong aabot sa pinakamalapit na ahensya.';
+  String get settingsFaqReportA => 'Sa Home, pindutin ang uri ng emergency (Sunog, Medikal, Aksidente, Krimen, Kalamidad o Iba pa). Tingnan ang landmark, sabihin o i-type ang nangyari, i-review, saka ipadala. Ipapadala ito ng Ziren sa pinakamalapit na station na humahawak nito.';
 
   @override
   String get settingsFaqOfflineQ => 'Ano ang mangyayari kung walang internet?';
 
   @override
-  String get settingsFaqOfflineA => 'Kailangan ng internet connection ang Ziren para makapagpadala ng ulat. Kung walang signal o data, tumawag na lang agad sa 911 o sa lokal ninyong emergency number.';
+  String get settingsFaqOfflineA => 'Kailangan ng internet para maipadala ang report. Kung walang data, pindutin pa rin ang uri ng emergency sa Home: ipapakita ng Ziren ang opisyal na hotline ng mga station, at signal lang ang kailangan sa tawag. Puwede ring tumawag sa 911.';
 
   @override
   String get settingsFaqAgencyQ => 'Aling ahensya ang tutugon sa report ko?';
 
   @override
-  String get settingsFaqAgencyA => 'Ipapadala ng Ziren ang report mo sa BFP, PNP, o MDRRMO depende sa uri at severity ng report.';
+  String get settingsFaqAgencyA => 'Depende sa emergency: BFP sa sunog, PNP sa krimen, MDRRMO sa medikal, aksidente at kalamidad. Ang station sa bayan kung nasaan ang insidente ang tatanggap nito.';
 
   @override
   String get settingsFaqAccountQ => 'Paano i-update ang emergency contact ko?';
 
   @override
-  String get settingsFaqAccountA => 'Pumunta sa Settings & Profile → I-edit ang personal na impormasyon para i-update anumang oras ang emergency contact mo.';
+  String get settingsFaqAccountA => 'Sa Settings, buksan ang \"I-edit ang personal na impormasyon\", palitan ang pangalan o numero ng contact, at pindutin ang \"I-save ang mga pagbabago\".';
 
   @override
   String get settingsAboutZiren => 'Tungkol sa Ziren';
@@ -3794,4 +3794,374 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get respEmergencyContactShort => 'Emergency contact';
+
+  @override
+  String get profileChipVerified => 'Beripikado';
+
+  @override
+  String get profileChipInReview => 'Sinusuri';
+
+  @override
+  String get profileChipNotVerified => 'Hindi pa beripikado';
+
+  @override
+  String get profileSafetyHelp => 'Kaligtasan at tulong';
+
+  @override
+  String get profileStationContact => 'Numero ng istasyon';
+
+  @override
+  String get profileStationSection => 'Istasyon';
+
+  @override
+  String get profileSettings => 'Mga setting';
+
+  @override
+  String get profileCallStation => 'Tawagan ang istasyon';
+
+  @override
+  String get settingsAccountCardHint => 'Tingnan at baguhin ang detalye mo';
+
+  @override
+  String get settingsNotifDesc => 'Mga update sa report mo at mga alerto';
+
+  @override
+  String get settingsLocationDesc => 'Ipinapadala ang lokasyon mo kasama ng report';
+
+  @override
+  String get settingsReduceMotionDesc => 'Mas kaunting gumagalaw na animation';
+
+  @override
+  String get settingsHighContrastDesc => 'Mas malinaw na text at border';
+
+  @override
+  String get settingsSaveChanges => 'I-save ang mga pagbabago';
+
+  @override
+  String get settingsDiscardTitle => 'Itapon ang mga binago?';
+
+  @override
+  String get settingsDiscardBody => 'May binago ka na hindi pa naka-save.';
+
+  @override
+  String get settingsDiscard => 'Itapon';
+
+  @override
+  String get settingsKeepEditing => 'Ituloy ang pag-edit';
+
+  @override
+  String get settingsEditorIntro => 'Nakikita ng station ang mga detalyeng ito kapag nag-report ka.';
+
+  @override
+  String get cpIntro => 'Ilagay ang kasalukuyang password mo, saka pumili ng bago.';
+
+  @override
+  String get cpCurrent => 'Kasalukuyang password';
+
+  @override
+  String get cpNew => 'Bagong password';
+
+  @override
+  String get cpConfirm => 'Ulitin ang bagong password';
+
+  @override
+  String get cpEnterCurrent => 'Ilagay ang kasalukuyang password mo.';
+
+  @override
+  String get cpMismatch => 'Hindi magkapareho ang dalawang bagong password.';
+
+  @override
+  String get cpSameAsOld => 'Dapat iba ang bagong password sa kasalukuyan.';
+
+  @override
+  String get cpWrongCurrent => 'Mali ang kasalukuyang password.';
+
+  @override
+  String get cpFailed => 'Hindi napalitan ang password. Tingnan ang koneksyon at subukan ulit.';
+
+  @override
+  String get cpDone => 'Napalitan na ang password mo.';
+
+  @override
+  String get cpForgot => 'Nakalimutan ang kasalukuyang password?';
+
+  @override
+  String get faqIntro => 'Mabilis na sagot sa mga karaniwang tanong.';
+
+  @override
+  String get faqStillNeedHelp => 'Kailangan pa ng tulong?';
+
+  @override
+  String get settingsFaqLandmarkQ => 'Bakit kailangan ang landmark?';
+
+  @override
+  String get settingsFaqLandmarkA => 'Puwedeng magkamali ang GPS nang ilang sampung metro. Sa landmark (tindahan, kapilya, court) mabilis mahahanap ng responder ang lugar. Pinupunan ito ng Ziren ng pinakamalapit; itama kung mali.';
+
+  @override
+  String get settingsFaqElsewhereQ => 'Wala ako sa lugar ng emergency. Ano ang gagawin ko?';
+
+  @override
+  String get settingsFaqElsewhereA => 'Sa report, piliin ang \"Sa ibang lugar\" at ilipat ang pin sa mapa sa mismong lugar ng insidente. Sa pin pupunta ang responder, hindi sa iyo, at sasabihin sa station na nasa ibang lugar ka.';
+
+  @override
+  String get settingsFaqTrackQ => 'Paano ko malalaman na may darating na tulong?';
+
+  @override
+  String get settingsFaqTrackA => 'Buksan ang Mga Ulat Ko. Makikita sa bawat report kung nasaan na ito — natanggap, na-dispatch, papunta, nasa lugar, natapos — at may notification tuwing nagbabago ito.';
+
+  @override
+  String get settingsFaqVerifyQ => 'Kailangan ko bang i-verify ang account ko?';
+
+  @override
+  String get settingsFaqVerifyA => 'Hindi, opsyonal ito. Ang verified na account (litrato ng valid na ID) ay nakakatulong para mas mabilis pagkatiwalaan ng station ang report mo.';
+
+  @override
+  String get safetyGuideIntro => 'Ano ang gagawin habang hinihintay ang tulong. Gumagana kahit walang internet.';
+
+  @override
+  String safetyGuideSteps(String count) {
+    return '$count hakbang';
+  }
+
+  @override
+  String get safetyGuideCallHotline => 'Tumawag sa hotline';
+
+  @override
+  String get aboutAgencies => 'Nag-uugnay sa mga residente at sa mga istasyon ng BFP, PNP at MDRRMO sa Biliran.';
+
+  @override
+  String get sosWhereSection => 'Nasaan ka (awtomatiko)';
+
+  @override
+  String get sosLandmarkFinding => 'Hinahanap ang pinakamalapit na landmark…';
+
+  @override
+  String sosLandmarkNear(String landmark) {
+    return 'Malapit sa $landmark';
+  }
+
+  @override
+  String get sosLandmarkAuto => 'Pinakamalapit na landmark sa mapa · pindutin para palitan';
+
+  @override
+  String get sosLandmarkTyped => 'Landmark na inilagay mo · pindutin para palitan';
+
+  @override
+  String get sosLandmarkNone => 'Walang nakitang landmark sa malapit';
+
+  @override
+  String get sosLandmarkNoneHint => 'Pindutin para maglagay — hindi kailangan';
+
+  @override
+  String get sosLandmarkEditTitle => 'Landmark malapit sa iyo';
+
+  @override
+  String get sosLandmarkEditBody => 'Ano ang puwedeng hanapin ng mga responder? Iwanang blangko para gamitin ang nakita sa mapa.';
+
+  @override
+  String get sosLandmarkEditHint => 'hal. tabi ng barangay hall';
+
+  @override
+  String get sosLandmarkEditSave => 'Gamitin ito';
+
+  @override
+  String get sosLandmarkEditCancel => 'Kanselahin';
+
+  @override
+  String mapStationsOnMap(String count) {
+    return 'Mga istasyon sa mapa: $count';
+  }
+
+  @override
+  String get mapRecenter => 'Pumunta sa lokasyon ko';
+
+  @override
+  String get mapNearestStation => 'Pinakamalapit na istasyon';
+
+  @override
+  String get mapSelectedStation => 'Napiling istasyon';
+
+  @override
+  String mapOtherStations(String count) {
+    return 'Iba pang istasyon ($count)';
+  }
+
+  @override
+  String get stageShortReceived => 'Natanggap';
+
+  @override
+  String get stageShortChecking => 'Sinusuri';
+
+  @override
+  String get stageShortOnTheWay => 'Papunta na';
+
+  @override
+  String get stageShortResolved => 'Tapos na';
+
+  @override
+  String reportSentAt(String when) {
+    return 'Ipinadala $when';
+  }
+
+  @override
+  String get reportSectionYourReport => 'Ang iniulat mo';
+
+  @override
+  String get reportSectionProgress => 'Takbo ng report';
+
+  @override
+  String get reportSectionLocation => 'Lokasyon';
+
+  @override
+  String get reportSectionDetails => 'Mga detalye';
+
+  @override
+  String get reportFactId => 'Numero ng report';
+
+  @override
+  String get reportFactVia => 'Ipinadala sa pamamagitan ng';
+
+  @override
+  String get reportFactAddress => 'Address';
+
+  @override
+  String get reportFactDistance => 'Mula sa kinaroroonan mo ngayon';
+
+  @override
+  String reportDistanceKm(String km) {
+    return '$km km ang layo';
+  }
+
+  @override
+  String get reportViaApp => 'Ziren app';
+
+  @override
+  String get reportViaSos => 'Emergency SOS';
+
+  @override
+  String get reportViaSms => 'Text (SMS)';
+
+  @override
+  String reportNextStep(String step) {
+    return 'Susunod: $step';
+  }
+
+  @override
+  String get mapYourReportLabel => 'Ang report mo';
+
+  @override
+  String onbStep(String step, String total) {
+    return 'Hakbang $step sa $total';
+  }
+
+  @override
+  String get onbLangGreeting => 'Kumusta, ako si Ziren! Anong wika ang gusto mong gamitin ko?';
+
+  @override
+  String get onbLangTitle => 'Piliin ang inyong wika';
+
+  @override
+  String get onbLangSubtitle => 'Ito ang gagamitin ng buong app. Maaari itong palitan kahit kailan sa Settings.';
+
+  @override
+  String get onbLangMoreSoon => 'Darating ang Waray at Bisaya kapag nasuri na ng katutubong nagsasalita.';
+
+  @override
+  String get onbLangContinue => 'Magpatuloy';
+
+  @override
+  String get onbLangSelected => 'Napili';
+
+  @override
+  String consentAgreedCount(String done) {
+    return '$done sa 2 ang sinang-ayunan';
+  }
+
+  @override
+  String get consentNeedsReading => 'Buksan para basahin';
+
+  @override
+  String get consentAgreed => 'Sinang-ayunan';
+
+  @override
+  String get welcomeHeadline => 'Tulong, isang pindot lang.';
+
+  @override
+  String get welcomeFeatureReport => 'Mag-report ng sunog, aksidente o medikal na emergency sa loob ng ilang segundo';
+
+  @override
+  String get welcomeFeatureStation => 'Diretso sa pinakamalapit na istasyon ng BFP, PNP o MDRRMO ang report mo';
+
+  @override
+  String get welcomeFeatureTrack => 'Makikita mo kung papunta na ang responder';
+
+  @override
+  String get welcomeNewHere => 'Bago sa Ziren?';
+
+  @override
+  String legalMeta(String sections, String minutes) {
+    return '$sections na bahagi · mga $minutes minutong basahin';
+  }
+
+  @override
+  String legalProgress(String percent) {
+    return '$percent% ang nabasa';
+  }
+
+  @override
+  String get legalReachedEnd => 'Naabot mo na ang dulo';
+
+  @override
+  String get legalBackToTop => 'Bumalik sa itaas';
+
+  @override
+  String get welcomeMascotLine => 'Handa na tayo! Gumawa ng account, o mag-sign in kung mayroon ka na.';
+
+  @override
+  String get categoryMissingPerson => 'Nawawalang Tao';
+
+  @override
+  String get categoryEmergency => 'Emerhensiya';
+
+  @override
+  String get respStatusDispatchedRespond => 'Na-dispatch — Tumugon Na';
+
+  @override
+  String get respNextEnRoute => 'Papunta Na (En Route)';
+
+  @override
+  String get respNextOnScene => 'Nakarating Na (On Scene)';
+
+  @override
+  String get respNextResolved => 'Natapos Na (Resolved)';
+
+  @override
+  String get respNoAddress => 'Walang address na naitala';
+
+  @override
+  String get respAlertOverdueNote => 'Nakikita na ito ng dispatcher bilang walang sagot. Puwede mo pa ring tanggapin.';
+
+  @override
+  String get respAlertTimeoutNote => 'Kapag walang sagot, babalik ito sa dispatcher para may maipadala silang iba.';
+
+  @override
+  String get respNoMapApp => 'Walang mabuksang mapa sa telepono na ito.';
+
+  @override
+  String get respJustNow => 'ngayon lang';
+
+  @override
+  String get wizardSpeakDetails => 'Sabihin ang detalye';
+
+  @override
+  String get wizardListening => 'Nakikinig… (pindutin para itigil)';
+
+  @override
+  String get wizardNext => 'Susunod →';
+
+  @override
+  String get respNavByRoad => 'sa daan';
+
+  @override
+  String get respNavRoadNote => 'Sinusundan ng ruta ang mga daan sa mapa. Mag-ingat sa sarado o bahang daan.';
 }

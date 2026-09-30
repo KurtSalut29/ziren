@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/config/locale_provider.dart';
+import '../../incident_report/presentation/incident_labels.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import 'responder_incident_model.dart';
@@ -67,33 +69,43 @@ class ResponderVocabulary {
     _ => LucideIcons.circle_question_mark,
   };
 
-  /// The category, in the words this app already shows a responder — the same
-  /// bilingual phrasing ResponderIncidentModel.categoryLabel always used, now
-  /// in one place so the nearby-incident alert cannot drift from the queue
-  /// card. Wire values, not the IncidentCategory enum: this reads what the
-  /// backend actually sent, including retired pre-migration-019 categories.
+  /// The category, in the responder's chosen language — one copy, so the
+  /// nearby-incident alert cannot drift from the queue card. Wire values, not
+  /// the IncidentCategory enum: this reads what the backend actually sent,
+  /// including retired pre-migration-019 categories.
+  ///
+  /// These used to be hard-coded in Filipino ("Sunog / Fire", "Aksidente sa
+  /// Daan", "Iba pa"), so a responder who chose English still read Filipino
+  /// on every card. [LocaleProvider.strings] rather than a BuildContext,
+  /// because model getters and background notifications call this too.
   static String categoryLabel(String? category) {
+    final t = LocaleProvider.strings;
     switch (category) {
       case 'fire':
-        return 'Sunog / Fire';
+        return t.categoryFire;
       case 'medical_trauma':
-        return 'Medical / Trauma';
+        return t.categoryMedicalTrauma;
       case 'vehicular':
-        return 'Aksidente sa Daan';
+        return t.categoryVehicular;
       case 'flood_landslide_calamity':
-        return 'Baha / Landslide / Kalamidad';
+        return t.categoryFloodLandslideCalamity;
       case 'domestic_dispute_crime':
-        return 'Kaguluhan / Krimen';
+        return t.categoryDomesticDisputeCrime;
       case 'hazmat':
         return 'HAZMAT';
       case 'missing_person':
-        return 'Nawawalang Tao';
+        return t.categoryMissingPerson;
       case 'other':
-        return 'Iba pa';
+        return t.categoryOther;
       default:
-        return 'Emergency';
+        return t.categoryEmergency;
     }
   }
+
+  /// The report's text for display, its stored Filipino category prefix
+  /// translated — see IncidentLabels.reportText.
+  static String reportText(String raw) =>
+      IncidentLabels.reportText(LocaleProvider.strings, raw);
 
   /// What the incident IS, as an icon — fire, medical, road, flood, crime.
   /// Severity says how bad; this says what kind, which is the first thing a
@@ -267,7 +279,7 @@ class ResponderVocabulary {
   /// nearest value is the accurate one.
   static String waiting(int? minutes) {
     if (minutes == null) return '—';
-    if (minutes < 1) return 'just now';
+    if (minutes < 1) return LocaleProvider.strings.respJustNow;
     if (minutes < 60) return '${minutes}m';
     final hours = minutes ~/ 60;
     if (hours < 24) return '${hours}h';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Holds the app's active locale and keeps it in step with the resident's
 /// `preferred_language` profile field.
 ///
@@ -10,9 +12,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// the app on a bad connection, or before logging in, would otherwise get the
 /// default language until the request lands — and in this app the first screen
 /// someone sees may be the one they are trying to report an emergency from.
-/// The choice is therefore mirrored into SharedPreferences and read
-/// synchronously at startup; the profile stays the source of truth and
-/// overwrites it whenever it loads.
+/// The choice is therefore kept in SharedPreferences and read synchronously
+/// at startup.
+///
+/// The PHONE's choice is the source of truth, and the profile records it
+/// (Settings writes it there). Every phone asks for the language before
+/// sign-in, so what is on the device is always the newest explicit choice.
+/// The profile used to win instead, and a stale "English" on an account
+/// undid the Filipino a resident had just picked on the first screen.
 ///
 /// Supported locales
 /// -----------------
@@ -48,6 +55,18 @@ class LocaleProvider extends ChangeNotifier {
   Locale _locale = const Locale('fil');
   Locale get locale => _locale;
 
+  /// The app's language for code with no BuildContext: a model getter such
+  /// as `ResponderIncidentModel.categoryLabel`, a notification built in the
+  /// background. Kept in step with [locale] by [load] and [setLanguageName].
+  ///
+  /// Those labels used to be written in Filipino in the code itself ("Sunog /
+  /// Fire", "Papunta Na (En Route)"), so a responder who had chosen English
+  /// still read Filipino across the responder screens.
+  static Locale current = const Locale('fil');
+
+  /// The strings for [current].
+  static AppLocalizations get strings => lookupAppLocalizations(current);
+
   /// The display name for the active locale, for the Settings picker.
   String get languageName =>
       _locale.languageCode == 'en' ? languageEnglish : languageFilipino;
@@ -60,6 +79,7 @@ class LocaleProvider extends ChangeNotifier {
       final stored = prefs.getString(_prefsKey);
       if (stored != null) {
         _locale = localeForLanguageName(stored);
+        current = _locale;
         notifyListeners();
       }
     } catch (_) {
@@ -68,9 +88,11 @@ class LocaleProvider extends ChangeNotifier {
     }
   }
 
-  /// Apply the language held on the resident's profile. Called when the
-  /// profile loads, so a resident who set their language on another device
-  /// gets it here too.
+  /// Apply the language held on the resident's profile.
+  ///
+  /// Not called when the profile loads any more — the phone's own choice wins
+  /// (see the class doc). Kept for an explicit "use my account's language"
+  /// action, should one be added.
   Future<void> syncFromProfile(String? preferredLanguage) async {
     if (preferredLanguage == null) return;
     await setLanguageName(preferredLanguage);
@@ -82,6 +104,7 @@ class LocaleProvider extends ChangeNotifier {
     final next = localeForLanguageName(name);
     if (next == _locale) return;
     _locale = next;
+    current = next;
     notifyListeners();
 
     try {

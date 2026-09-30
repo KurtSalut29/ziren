@@ -416,7 +416,7 @@
      until hover. Also the value .a11y-high-contrast swaps --color-surface-
      border TO, which meant that toggle did nothing for a dark-mode reader —
      an accessibility control that was accidentally a no-op on this theme.
-     #71717A (zinc-500) is ~4.2:1, comfortably past the floor, without going
+     #71717A (zinc-500) is ~3.7:1, past the 3:1 floor, without going
      all the way to a text-contrast tone that would make a border compete
      with the label or content sitting inside it. 2026-09-26. */
   --color-border-strong:    #71717A;

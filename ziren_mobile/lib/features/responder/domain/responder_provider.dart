@@ -823,11 +823,19 @@ class ResponderProvider extends ChangeNotifier {
     }
   }
 
-  void clearDetail() {
+  /// Forget the incident the detail screen was showing.
+  ///
+  /// The detail screen calls this from its own `dispose`, and it passes
+  /// [notify] false there. Notifying during `dispose` runs while the widget
+  /// tree is being torn down, when nothing may be marked for rebuild, and it
+  /// threw "setState() or markNeedsBuild() called when widget tree was
+  /// locked" every time the screen was closed. Nothing still on screen reads
+  /// the detail, and the next detail screen loads its own.
+  void clearDetail({bool notify = true}) {
     _detailIncident = null;
     _detailError = null;
     _statusUpdateError = null;
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   // ── Location reporting ────────────────────────────────────

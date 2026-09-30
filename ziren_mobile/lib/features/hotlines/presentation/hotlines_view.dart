@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
+import '../../../shared/widgets/profile_kit.dart';
+import '../../auth/domain/auth_provider.dart';
 import '../../incident_report/domain/incident_provider.dart';
 import '../../incident_report/presentation/incident_labels.dart';
 import '../data/hotlines_store.dart';
@@ -232,11 +234,11 @@ class HotlineCard extends StatelessWidget {
     final color = _agencyColor(entry.agencyType);
     return Container(
       padding: const EdgeInsets.all(ZirenTokens.space12),
-      decoration: BoxDecoration(
-        color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
+      decoration: profileCardDecoration().copyWith(
         border: Border.all(
-          color: nearest ? color.withValues(alpha: 0.55) : ZirenTokens.surfaceBorder,
+          color: nearest
+              ? color.withValues(alpha: 0.55)
+              : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
           width: nearest ? 1.6 : 1,
         ),
       ),
@@ -246,11 +248,11 @@ class HotlineCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: ZirenTokens.isDark ? 0.2 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
                 child: Icon(icon ?? _agencyIcon(entry.agencyType), size: 20, color: color),
@@ -382,6 +384,11 @@ class _CallButton extends StatelessWidget {
 }
 
 /// Every station hotline in Biliran, filterable by agency, nearest town first.
+///
+/// 911 opens the list rather than closing it - it is the one number that
+/// works anywhere, and in a panic it should not need scrolling to. Then the
+/// agency filter, then each town under its own heading, the nearest one first
+/// when there is a location fix.
 class HotlinesScreen extends StatefulWidget {
   const HotlinesScreen({super.key});
 
@@ -403,9 +410,17 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
     final t = AppLocalizations.of(context);
     final pos = Provider.of<IncidentProvider?>(context)?.currentPosition;
     final towns = StationHotlines.nearestTowns(lat: pos?.latitude, lng: pos?.longitude);
+    // /map is the RESIDENT shell's tab. The router has no role guard, so a
+    // responder sent there landed in the resident app; theirs is
+    // /responder/map.
+    final isResponder =
+        Provider.of<AuthProvider?>(context, listen: false)?.userRole == 'responder';
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
-      appBar: AppBar(title: Text(t.hotlinesTitle)),
+      appBar: AppBar(
+        backgroundColor: ZirenTokens.surfaceBase,
+        title: Text(t.hotlinesTitle),
+      ),
       body: ListenableBuilder(
         listenable: HotlinesStore.instance,
         builder: (context, _) {
@@ -415,44 +430,50 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(
               ZirenTokens.space16,
-              ZirenTokens.space12,
+              ZirenTokens.space4,
               ZirenTokens.space16,
-              ZirenTokens.space24,
+              ZirenTokens.space32,
             ),
             children: [
-              Text(
-                t.hotlinesScreenIntro,
-                style: TextStyle(fontSize: 13, height: 1.4, color: ZirenTokens.textSecondary),
+              const _NationalHotline(),
+              const SizedBox(height: ZirenTokens.space16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space4),
+                child: Text(
+                  t.hotlinesScreenIntro,
+                  style: TextStyle(fontSize: 13, height: 1.45, color: ZirenTokens.textSecondary),
+                ),
               ),
               const SizedBox(height: ZirenTokens.space12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final (label, value) in [
-                    (t.hotlinesFilterAll, null),
-                    ('BFP', 'BFP'),
-                    ('PNP', 'PNP'),
-                    ('MDRRMO', 'MDRRMO'),
-                    ('RHU', 'RHU'),
-                  ])
-                    ChoiceChip(
-                      label: Text(label),
-                      selected: _type == value,
-                      onSelected: (_) => setState(() => _type = value),
-                    ),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final (label, value) in [
+                      (t.hotlinesFilterAll, null),
+                      ('BFP', 'BFP'),
+                      ('PNP', 'PNP'),
+                      ('MDRRMO', 'MDRRMO'),
+                      ('RHU', 'RHU'),
+                    ]) ...[
+                      _FilterPill(
+                        label: label,
+                        icon: value == null ? LucideIcons.list : _agencyIcon(value),
+                        color: value == null ? ZirenTokens.brandOrange : _agencyColor(value),
+                        selected: _type == value,
+                        onTap: () => setState(() => _type = value),
+                      ),
+                      const SizedBox(width: ZirenTokens.space8),
+                    ],
+                  ],
+                ),
               ),
               for (final town in towns)
                 if (all.any((h) => h.municipality == town)) ...[
                   const SizedBox(height: ZirenTokens.space20),
-                  Text(
-                    town == towns.first && pos != null ? '$town · ${t.hotlinesNearest}' : town,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: ZirenTokens.textPrimary,
-                    ),
+                  _TownHeading(
+                    town: town,
+                    nearest: town == towns.first && pos != null,
                   ),
                   const SizedBox(height: ZirenTokens.space8),
                   for (final h in all.where((h) => h.municipality == town)) ...[
@@ -460,65 +481,127 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
                     const SizedBox(height: ZirenTokens.space10),
                   ],
                 ],
-              const SizedBox(height: ZirenTokens.space12),
-              const _NationalHotline(),
-              const SizedBox(height: ZirenTokens.space20),
-              Text(
-                t.contactsHospitalsSection,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: ZirenTokens.textPrimary,
-                ),
-              ),
-              const SizedBox(height: ZirenTokens.space8),
-              // The whole card opens the map. go, not push: /map is a tab of
-              // the shell, and pushing it builds a second shell over the first
-              // (the white screen the old contacts page used to open).
-              Material(
-                color: ZirenTokens.surfaceCard,
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-                  side: BorderSide(color: ZirenTokens.surfaceBorder),
-                ),
-                child: InkWell(
-                  onTap: () => context.go('/map'),
-                  child: Padding(
-                    padding: const EdgeInsets.all(ZirenTokens.space16),
-                    child: Row(
-                      children: [
-                        Icon(LucideIcons.hospital, size: 20, color: ZirenTokens.textMuted),
-                        const SizedBox(width: ZirenTokens.space12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.contactsFindOnMap,
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: ZirenTokens.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                t.contactsFindOnMapBody,
-                                style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(LucideIcons.chevron_right, size: 18, color: ZirenTokens.textMuted),
-                      ],
-                    ),
+              const SizedBox(height: ZirenTokens.space16),
+              ProfileGroup(
+                title: t.contactsHospitalsSection,
+                children: [
+                  // go, not push: the map is a tab of the shell, and pushing it
+                  // builds a second shell over the first.
+                  ProfileTile(
+                    icon: LucideIcons.hospital,
+                    tone: ZirenTokens.systemInfo,
+                    label: t.contactsFindOnMap,
+                    value: t.contactsFindOnMapBody,
+                    onTap: () => context.go(isResponder ? '/responder/map' : '/map'),
                   ),
-                ),
+                ],
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _TownHeading extends StatelessWidget {
+  const _TownHeading({required this.town, required this.nearest});
+
+  final String town;
+  final bool nearest;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: ZirenTokens.space4),
+      child: Row(
+        children: [
+          Icon(LucideIcons.map_pin, size: 14, color: ZirenTokens.textSecondary),
+          const SizedBox(width: ZirenTokens.space6),
+          Text(
+            town.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.0,
+              color: ZirenTokens.textSecondary,
+            ),
+          ),
+          if (nearest) ...[
+            const SizedBox(width: ZirenTokens.space8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: ZirenTokens.systemSuccess.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(ZirenTokens.radius32),
+              ),
+              child: Text(
+                t.hotlinesNearest,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: ZirenTokens.systemSuccess,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One agency filter: a pill with the agency's own icon and hue.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: Material(
+        color: selected ? color : ZirenTokens.surfaceCard,
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: selected ? color : ZirenTokens.surfaceBorder,
+          ),
+        ),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 15, color: selected ? Colors.white : color),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: selected ? Colors.white : ZirenTokens.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

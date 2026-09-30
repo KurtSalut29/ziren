@@ -1,16 +1,17 @@
-import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart'
+    show MissingPluginException, PlatformException, rootBundle;
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../features/incident_report/domain/incident_model.dart';
 import '../../../features/incident_report/domain/incident_provider.dart';
 import '../../../features/incident_report/domain/station_model.dart';
+import '../../../features/incident_report/domain/incident_category_style.dart';
+import '../../../features/incident_report/presentation/incident_labels.dart';
 import '../../../features/hotlines/data/hotlines_store.dart';
 import '../../../features/hotlines/domain/station_hotlines.dart';
 import '../../../features/hotlines/presentation/hotlines_view.dart';
@@ -20,6 +21,7 @@ import '../../../shared/widgets/ziren_button.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../domain/geo_circle.dart';
 import '../../../shared/map/offline_map_service.dart';
+import '../../../shared/map/road_route.dart';
 import '../../../shared/map/ziren_map_style.dart';
 import '../domain/map_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -143,6 +145,21 @@ const _kMePointLayer = 'me-point';
 // the device's own position layers above.
 const _kRouteLineSource = 'route-line-src';
 const _kRouteLineLayer = 'route-line';
+
+// The one report opened from My Reports → View on Map, drawn at its own
+// coordinates. Reports in general are not drawn on this map (see _drawPins),
+// but the report the resident asked to see has to be: without it the only
+// marks were the station and the "You" pin — where the phone is NOW — and
+// "You" read as where the report was.
+const _kFocusSource = 'focus-incident-src';
+const _kFocusHaloLayer = 'focus-incident-halo';
+const _kFocusPointLayer = 'focus-incident-point';
+const _kFocusLabelLayer = 'focus-incident-label';
+
+/// Space the floating header takes at the top of the map, and the cards at
+/// the bottom, when the camera fits a line or a point between them.
+const double _kFitTop = 190;
+const double _kFitBottom = 360;
 
 // Stations and incidents — one shared GeoJSON source and symbol layer each,
 // same reasoning as the device's own position above, and the only way to get
@@ -377,10 +394,13 @@ class _MapScreenState extends State<MapScreen> {
 
   void _onMapCreated(MapLibreMapController ctrl) {
     _mapController = ctrl;
-    // A new native map has none of the layers the last one had.
+    // A new native map has none of the layers the last one had — including
+    // the focused report's marker and line, which are drawn again once the
+    // pins are.
     _styleReady = false;
     _pinsDrawn = false;
     _markerArtReady = false;
+    _focusHandled = false;
     // One shared listener for both raw layers, routed by layerId rather than
     // one closure per pin the way the old per-symbol onSymbolTapped did —
     // there is no per-feature callback to attach to on a style layer, only
@@ -420,11 +440,23 @@ class _MapScreenState extends State<MapScreen> {
     // stayed at its default false, and the device's own pin silently fell
     // back to a plain circle instead of the real artwork — a second,
     // separate symptom of the exact same race as the one on _drawPins.
-    await _registerMarkerImages(ctrl);
-    // Added before stations/incidents so the device sits above them.
-    await _addMyLocationLayers(ctrl);
-    await _renderMyLocation();
-    await _drawPins();
+    //
+    // Guarded because the map can be torn down while this is still running:
+    // switching tabs straight after opening the map left these calls talking
+    // to a platform view that no longer existed, and the result was an
+    // unhandled "MissingPluginException: style#addSource" in the log.
+    try {
+      await _registerMarkerImages(ctrl);
+      if (!mounted) return;
+      // Added before stations/incidents so the device sits above them.
+      await _addMyLocationLayers(ctrl);
+      await _renderMyLocation();
+      await _drawPins();
+    } on MissingPluginException catch (e) {
+      debugPrint('[map] map closed while its layers were being added: $e');
+    } on PlatformException catch (e) {
+      debugPrint('[map] style changed while its layers were being added: $e');
+    }
   }
 
   /// Plots every station and incident currently known to [_mapProvider].
@@ -661,6 +693,8 @@ class _MapScreenState extends State<MapScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      await _drawFocusMarker(incident, lat, lng);
+      if (!mounted) return;
       if (station != null && stationLat != null && stationLng != null) {
         // Help travels FROM the station TO the incident — the direction a
         // resident actually cares about here, even though the line itself
@@ -673,9 +707,22 @@ class _MapScreenState extends State<MapScreen> {
           color: _statusLineHex(incident.status),
         );
       } else {
+        // No station to draw a line from: centre on the report itself. A
+        // tiny box around the point, fitted with the same padding as a
+        // line, so the pin lands in the part of the map the header and the
+        // card leave visible rather than at the screen's centre, which the
+        // card covers.
+        const d = 0.0015; // ~170 m
         await _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: LatLng(lat, lng), zoom: 16),
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              southwest: LatLng(lat - d, lng - d),
+              northeast: LatLng(lat + d, lng + d),
+            ),
+            left: 60,
+            top: _kFitTop,
+            right: 60,
+            bottom: _kFitBottom,
           ),
         );
       }
@@ -688,6 +735,92 @@ class _MapScreenState extends State<MapScreen> {
       setState(() => _focusCardOpen = true);
     });
   }
+
+  /// The focused report's own marker, exactly at its stored coordinates: a
+  /// dot in the report's category colour inside a soft halo, labelled "Your
+  /// report". Circles, not artwork, so it draws even when the sprite atlas
+  /// did not load.
+  Future<void> _drawFocusMarker(
+    IncidentModel incident,
+    double lat,
+    double lng,
+  ) async {
+    final ctrl = _mapController;
+    if (ctrl == null || !mounted) return;
+    final category =
+        IncidentCategory.fromValue(incident.incidentCategory) ??
+        IncidentCategory.other;
+    final hex = _hexOf(IncidentCategoryStyle.color(category));
+    final label = AppLocalizations.of(context).mapYourReportLabel;
+    try {
+      await ctrl.addSource(
+        _kFocusSource,
+        GeojsonSourceProperties(
+          data: {
+            'type': 'FeatureCollection',
+            'features': [
+              {
+                'type': 'Feature',
+                'properties': {'label': label},
+                'geometry': {
+                  'type': 'Point',
+                  'coordinates': [lng, lat],
+                },
+              },
+            ],
+          },
+        ),
+      );
+      await ctrl.addLayer(
+        _kFocusSource,
+        _kFocusHaloLayer,
+        CircleLayerProperties(
+          circleRadius: 22,
+          circleColor: hex,
+          circleOpacity: 0.18,
+          circleStrokeWidth: 1.5,
+          circleStrokeColor: hex,
+          circleStrokeOpacity: 0.55,
+        ),
+      );
+      await ctrl.addLayer(
+        _kFocusSource,
+        _kFocusPointLayer,
+        CircleLayerProperties(
+          circleRadius: 9,
+          circleColor: hex,
+          circleStrokeWidth: 3,
+          circleStrokeColor: '#FFFFFF',
+        ),
+      );
+      if (_styleHasGlyphs) {
+        await ctrl.addLayer(
+          _kFocusSource,
+          _kFocusLabelLayer,
+          SymbolLayerProperties(
+            textField: [Expressions.get, 'label'],
+            textFont: _kPinLabelFont,
+            textSize: 12,
+            textColor: '#FFFFFF',
+            textHaloColor: hex,
+            textHaloWidth: 2.2,
+            textAnchor: 'top',
+            textOffset: const [
+              Expressions.literal,
+              [0, 1.5],
+            ],
+            textAllowOverlap: true,
+            textIgnorePlacement: true,
+          ),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('[map] focus marker FAILED: $e\n$st');
+    }
+  }
+
+  static String _hexOf(Color c) =>
+      '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
   /// Load the pin artwork into the map's sprite atlas.
   ///
@@ -960,12 +1093,17 @@ class _MapScreenState extends State<MapScreen> {
     if (ctrl == null) return;
 
     final roadRoute = await _fetchRoadRoute(fromLat, fromLng, toLat, toLng);
-    final coordinates =
-        roadRoute ??
-        [
-          [fromLng, fromLat],
-          [toLng, toLat],
-        ];
+    // OSRM starts and ends its path on the nearest ROAD, not on the points it
+    // was given. A house or field off the road therefore had the line stop
+    // short — up to a few hundred metres in rural Biliran — and with nothing
+    // else marking the spot, where the line stopped read as where the report
+    // was. The real endpoints are joined back on, so the line always ends
+    // exactly on the report (and on the station).
+    final coordinates = <List<double>>[
+      [fromLng, fromLat],
+      ...?roadRoute,
+      [toLng, toLat],
+    ];
     if (!mounted) return;
 
     await ctrl.setLayerProperties(
@@ -983,10 +1121,16 @@ class _MapScreenState extends State<MapScreen> {
       ],
     });
 
-    final south = math.min(fromLat, toLat);
-    final north = math.max(fromLat, toLat);
-    final west = math.min(fromLng, toLng);
-    final east = math.max(fromLng, toLng);
+    // Fitted to the whole path, not just its two ends: a road that bends
+    // away from the straight line used to run off the edge of the screen.
+    var south = double.infinity, north = -double.infinity;
+    var west = double.infinity, east = -double.infinity;
+    for (final c in coordinates) {
+      west = math.min(west, c[0]);
+      east = math.max(east, c[0]);
+      south = math.min(south, c[1]);
+      north = math.max(north, c[1]);
+    }
     await ctrl.animateCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
@@ -994,56 +1138,23 @@ class _MapScreenState extends State<MapScreen> {
           northeast: LatLng(north, east),
         ),
         left: 60,
-        top: 100,
+        // Clear of the floating header at the top and the card at the
+        // bottom, so neither end of the line sits under one of them.
+        top: _kFitTop,
         right: 60,
-        // Clears the station card overlapping the bottom of the map, so
-        // the line's own endpoint is not hidden behind it.
-        bottom: 340,
+        bottom: _kFitBottom,
       ),
     );
   }
 
-  /// A road-following path from ([fromLat], [fromLng]) to ([toLat], [toLng]),
-  /// as a list of `[lon, lat]` pairs ready to drop straight into a GeoJSON
-  /// LineString — or null if OSRM's demo server did not answer with one for
-  /// any reason. Every failure mode collapses to null on purpose: a caller
-  /// that only has to handle "got a route" and "did not" cannot forget to
-  /// fall back.
+  /// A road-following path as `[lon, lat]` pairs, or null. See [RoadRoute].
   Future<List<List<double>>?> _fetchRoadRoute(
     double fromLat,
     double fromLng,
     double toLat,
     double toLng,
-  ) async {
-    try {
-      final uri = Uri.parse(
-        'https://router.project-osrm.org/route/v1/driving/'
-        '$fromLng,$fromLat;$toLng,$toLat'
-        '?geometries=geojson&overview=full',
-      );
-      final response = await http
-          .get(uri)
-          .timeout(const Duration(seconds: 8));
-      if (response.statusCode != 200) return null;
-
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
-      final routes = body['routes'] as List<dynamic>?;
-      if (routes == null || routes.isEmpty) return null;
-
-      final geometry = (routes.first as Map<String, dynamic>)['geometry']
-          as Map<String, dynamic>?;
-      final coords = geometry?['coordinates'] as List<dynamic>?;
-      if (coords == null || coords.isEmpty) return null;
-
-      return [
-        for (final c in coords)
-          [(c[0] as num).toDouble(), (c[1] as num).toDouble()],
-      ];
-    } catch (e) {
-      debugPrint('[map] OSRM route fetch failed, falling back to line: $e');
-      return null;
-    }
-  }
+  ) async =>
+      (await RoadRoute.fetch(fromLat, fromLng, toLat, toLng))?.coordinates;
 
   String _agencyHex(String type) => switch (type) {
     'BFP' => '#E53935',
@@ -1137,32 +1248,20 @@ class _MapScreenState extends State<MapScreen> {
             ),
           );
 
+          // The card names "the nearest station" only when it really is: no
+          // pin picked (or the picked one filtered away) and a GPS fix to
+          // measure from.
+          final selected = _selectedStation;
+          final showingNearest =
+              _incidents?.currentPosition != null &&
+              (selected == null ||
+                  !provider.isAgencyVisible(selected.agencyType));
+
           return Scaffold(
             backgroundColor: ZirenTokens.surfaceBase,
-            body: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  // ── Header ──────────────────────────────────
-                  _MapHeader(
-                    title:
-                        widget.forResponder
-                            ? t.mapResponderTitle
-                            : isFocused
-                            ? t.mapReportLocationTitle
-                            : t.mapNearbyStationsTitle,
-                    showBack: widget.forResponder || isFocused,
-                  ),
-
-                  // ── Agency filter pills ─────────────────────
-                  if (!isFocused) ...[
-                    _AgencyFilterRow(provider: provider),
-                    const SizedBox(height: ZirenTokens.space8),
-                  ],
-
-                  // ── Map + everything that overlaps it ───────
-                  Expanded(
-                    child: Stack(
+            // The map runs edge to edge, under the status bar; the header
+            // floats over it instead of taking a band of the screen.
+            body: Stack(
                       children: [
                         if (_resolvedStyle == null)
                           const Center(child: CircularProgressIndicator())
@@ -1188,36 +1287,6 @@ class _MapScreenState extends State<MapScreen> {
                           )
                         else
                           const SizedBox.expand(),
-
-                        // ── Floating map controls ─────────────
-                        Positioned(
-                          right: ZirenTokens.space16,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                _MyLocationChip(
-                                  provider: context.watch<IncidentProvider>(),
-                                ),
-                                const SizedBox(height: ZirenTokens.space12),
-                                _MapFab(
-                                  icon: LucideIcons.locate_fixed,
-                                  iconColor: ZirenTokens.brandOrange,
-                                  onTap: _locateMe,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // ── Loading overlay ───────────────────
-                        if (provider.loading) const _LoadingOverlay(),
-
-                        // ── Error banner ───────────────────────
-                        if (provider.error != null)
-                          _ErrorBanner(message: provider.error!),
 
                         // ── Nearest / selected station card ───
                         // Suppressed when focused — the incident detail
@@ -1250,8 +1319,9 @@ class _MapScreenState extends State<MapScreen> {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            child: _StationDetailSheet(
+                            child: MapStationCard(
                               station: displayStation,
+                              isNearest: showingNearest,
                               distanceKm: displayDistanceKm,
                               onGetDirections:
                                   () => _showDirectionsOnMap(displayStation),
@@ -1270,11 +1340,95 @@ class _MapScreenState extends State<MapScreen> {
                               onSelectStation: _onStationTap,
                             ),
                           ),
+
+                        // ── Floating header, status and controls ──
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          child: SafeArea(
+                            bottom: false,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                ZirenTokens.space12,
+                                ZirenTokens.space8,
+                                ZirenTokens.space12,
+                                0,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  MapHeaderCard(
+                                    title:
+                                        widget.forResponder
+                                            ? t.mapResponderTitle
+                                            : isFocused
+                                            ? t.mapReportLocationTitle
+                                            : t.mapNearbyStationsTitle,
+                                    subtitle:
+                                        isFocused || provider.loading
+                                            ? null
+                                            : t.mapStationsOnMap(
+                                              '${provider.plottableStations.length}',
+                                            ),
+                                    showBack: widget.forResponder || isFocused,
+                                    fallbackRoute:
+                                        widget.forResponder
+                                            ? '/responder/queue'
+                                            : '/my-reports',
+                                    filters:
+                                        isFocused
+                                            ? null
+                                            : MapAgencyFilters(
+                                              provider: provider,
+                                            ),
+                                  ),
+                                  const SizedBox(height: ZirenTokens.space10),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            if (provider.loading)
+                                              const _LoadingOverlay(),
+                                            if (provider.error != null)
+                                              _ErrorBanner(
+                                                message: provider.error!,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: ZirenTokens.space10),
+                                      Column(
+                                        children: [
+                                          _MyLocationChip(
+                                            provider:
+                                                context
+                                                    .watch<IncidentProvider>(),
+                                          ),
+                                          const SizedBox(
+                                            height: ZirenTokens.space10,
+                                          ),
+                                          _MapFab(
+                                            icon: LucideIcons.locate_fixed,
+                                            iconColor: ZirenTokens.brandOrange,
+                                            tooltip: t.mapRecenter,
+                                            onTap: _locateMe,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                ],
-              ),
             ),
           );
         },
@@ -1285,54 +1439,141 @@ class _MapScreenState extends State<MapScreen> {
 
 // ── Header ──────────────────────────────────────────────────────
 
-/// Back arrow (when there is somewhere to go back to) plus the screen title.
+/// Back arrow plus the screen title.
 ///
-/// The resident reaches this screen as the Map tab — the root of its own
-/// branch in the bottom nav, nothing to pop back to — while the responder
-/// shell pushes it on top of an existing stack. [showBack] is driven by
-/// which of those this instance is, not by whether a Navigator happens to
-/// report a stack at the moment of the tap.
-class _MapHeader extends StatelessWidget {
-  const _MapHeader({required this.title, required this.showBack});
+/// [showBack] is driven by which screen this instance is, not by whether a
+/// Navigator happens to report a stack at the moment of the tap. That means
+/// the arrow can be showing with nothing under it: the responder's Incident
+/// Map is the root of its own tab, exactly like the resident's Map tab, and a
+/// report map can be opened by a link rather than pushed. The arrow used to
+/// do `if (canPop) pop()` and nothing else, so on the responder's map it was
+/// drawn, took the tap, and did nothing (tester's report, 2026-09-30). When
+/// there is nothing to pop it now goes to [fallbackRoute].
+///
+/// A card floating over the top of the map rather than a band above it, so
+/// the map gets the whole screen. The agency filters ride inside the same
+/// card: one surface for "what am I looking at".
+///
+/// Public only so a test can draw it: the map itself is a native view a
+/// widget test cannot build.
+@visibleForTesting
+class MapHeaderCard extends StatelessWidget {
+  const MapHeaderCard({
+    super.key,
+    required this.title,
+    required this.showBack,
+    this.fallbackRoute,
+    this.subtitle,
+    this.filters,
+  });
 
   final String title;
   final bool showBack;
 
+  /// Where the back arrow goes when there is no screen under this one.
+  final String? fallbackRoute;
+  final String? subtitle;
+  final Widget? filters;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      decoration: BoxDecoration(
+        color: ZirenTokens.surfaceCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.6),
+        ),
+        boxShadow: ZirenTokens.shadowMd,
+      ),
       padding: const EdgeInsets.fromLTRB(
         ZirenTokens.space8,
         ZirenTokens.space8,
-        ZirenTokens.space20,
-        ZirenTokens.space4,
+        ZirenTokens.space12,
+        ZirenTokens.space12,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (showBack)
-            IconButton(
-              icon: Icon(
-                LucideIcons.arrow_left,
-                color: ZirenTokens.textPrimary,
+          Row(
+            children: [
+              if (showBack)
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  icon: Icon(
+                    LucideIcons.arrow_left,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else if (fallbackRoute != null) {
+                      context.go(fallbackRoute!);
+                    }
+                  },
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    ZirenTokens.space4,
+                    ZirenTokens.space4,
+                    ZirenTokens.space10,
+                    ZirenTokens.space4,
+                  ),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: ZirenTokens.brandOrange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      LucideIcons.map,
+                      size: 19,
+                      color: ZirenTokens.brandOrange,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: ZirenTokens.textPrimary,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: ZirenTokens.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              onPressed: () {
-                if (context.canPop()) context.pop();
-              },
-            )
-          else
-            const SizedBox(width: ZirenTokens.space12),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: ZirenTokens.textPrimary,
-              ),
-            ),
+            ],
           ),
+          if (filters != null) ...[
+            const SizedBox(height: ZirenTokens.space10),
+            Padding(
+              padding: const EdgeInsets.only(left: ZirenTokens.space4),
+              child: filters!,
+            ),
+          ],
         ],
       ),
     );
@@ -1348,27 +1589,39 @@ class _MapFab extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.onTap,
+    this.tooltip,
   });
 
   final IconData icon;
   final Color iconColor;
   final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: ZirenTokens.surfaceCard,
-          shape: BoxShape.circle,
-          boxShadow: ZirenTokens.shadowMd,
+    final button = Material(
+      color: ZirenTokens.surfaceCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: ZirenTokens.surfaceBorder.withValues(alpha: 0.6),
         ),
-        child: Icon(icon, size: 20, color: iconColor),
+      ),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }
 
@@ -1420,22 +1673,54 @@ class _MyLocationChip extends StatelessWidget {
       icon = LucideIcons.locate;
     }
 
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(detail)));
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: ZirenTokens.surfaceCard,
-          shape: BoxShape.circle,
-          border: Border.all(color: colour.withValues(alpha: 0.4)),
-          boxShadow: ZirenTokens.shadowMd,
+    return Tooltip(
+      message: detail,
+      child: Material(
+        color: ZirenTokens.surfaceCard,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: colour.withValues(alpha: 0.45), width: 1.5),
         ),
-        child: Icon(icon, size: 19, color: colour),
+        elevation: 3,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
+        child: InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(detail)));
+          },
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(icon, size: 19, color: colour),
+                // A status dot in the corner, the colour of the fix quality,
+                // so it reads at a glance without opening the detail.
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: colour,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: ZirenTokens.surfaceCard,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1443,41 +1728,47 @@ class _MyLocationChip extends StatelessWidget {
 
 // ── Agency filter row ──────────────────────────────────────────
 
-class _AgencyFilterRow extends StatelessWidget {
-  const _AgencyFilterRow({required this.provider});
+@visibleForTesting
+class MapAgencyFilters extends StatelessWidget {
+  const MapAgencyFilters({super.key, required this.provider});
   final MapProvider provider;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space20),
-      child: Row(
-        children: [
-          _FilterChip(
+    // Each pill takes a third of the card, so the three agencies read as one
+    // control rather than three loose tags.
+    return Row(
+      children: [
+        Expanded(
+          child: _FilterChip(
             label: 'BFP',
             icon: LucideIcons.flame,
             color: ZirenTokens.agencyBFP,
             active: provider.isAgencyVisible('BFP'),
             onTap: () => provider.toggleAgency('BFP'),
           ),
-          const SizedBox(width: ZirenTokens.space8),
-          _FilterChip(
+        ),
+        const SizedBox(width: ZirenTokens.space6),
+        Expanded(
+          child: _FilterChip(
             label: 'PNP',
             icon: LucideIcons.shield,
             color: ZirenTokens.agencyPNP,
             active: provider.isAgencyVisible('PNP'),
             onTap: () => provider.toggleAgency('PNP'),
           ),
-          const SizedBox(width: ZirenTokens.space8),
-          _FilterChip(
+        ),
+        const SizedBox(width: ZirenTokens.space6),
+        Expanded(
+          child: _FilterChip(
             label: 'MDRRMO',
             icon: LucideIcons.shield_plus,
             color: ZirenTokens.agencyMDRRMO,
             active: provider.isAgencyVisible('MDRRMO'),
             onTap: () => provider.toggleAgency('MDRRMO'),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1499,35 +1790,48 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: ZirenTokens.motionQuick,
-        padding: const EdgeInsets.symmetric(
-          horizontal: ZirenTokens.space12,
-          vertical: ZirenTokens.space8,
-        ),
-        decoration: BoxDecoration(
-          color: active ? color : color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-          border: Border.all(
-            color: active ? color : color.withValues(alpha: 0.35),
+    return Semantics(
+      button: true,
+      toggled: active,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: ZirenTokens.motionQuick,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space8),
+          decoration: BoxDecoration(
+            color: active ? color : color.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(ZirenTokens.radius32),
+            border: Border.all(
+              color: active ? color : color.withValues(alpha: 0.30),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: active ? Colors.white : color),
-            const SizedBox(width: ZirenTokens.space6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // A hidden agency shows an eye-off, so "off" is not told by
+              // colour alone.
+              Icon(
+                active ? icon : LucideIcons.eye_off,
+                size: 14,
                 color: active ? Colors.white : color,
               ),
-            ),
-          ],
+              const SizedBox(width: ZirenTokens.space6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: active ? Colors.white : color,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1544,9 +1848,14 @@ class _FilterChip extends StatelessWidget {
 /// tapping a pin on the map: tapping it drops down a plain list of every
 /// other visible station, nearest first. A small pin in a cluster is a hard
 /// target on a phone; a list row never is.
-class _StationDetailSheet extends StatelessWidget {
-  const _StationDetailSheet({
+///
+/// Public only so a test can draw it (see [MapHeaderCard]).
+@visibleForTesting
+class MapStationCard extends StatelessWidget {
+  const MapStationCard({
+    super.key,
     required this.station,
+    required this.isNearest,
     this.distanceKm,
     required this.onGetDirections,
     required this.pickerOpen,
@@ -1557,6 +1866,9 @@ class _StationDetailSheet extends StatelessWidget {
   });
 
   final StationModel station;
+
+  /// No pin picked: this is the station closest to the device.
+  final bool isNearest;
   final double? distanceKm;
   final VoidCallback onGetDirections;
 
@@ -1595,102 +1907,277 @@ class _StationDetailSheet extends StatelessWidget {
     final canPick = otherStations.isNotEmpty;
 
     final km = distanceKm;
-    final subtitle =
-        km == null
-            ? station.agencyType
-            : t.mapStationDistance(km.toStringAsFixed(1), station.agencyType);
 
     return Container(
       decoration: BoxDecoration(
         color: ZirenTokens.surfaceCard,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ZirenTokens.radius20),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(ZirenTokens.radius24),
         ),
+        boxShadow: ZirenTokens.shadowLg,
       ),
-      padding: const EdgeInsets.fromLTRB(
-        ZirenTokens.space20,
-        ZirenTokens.space20,
-        ZirenTokens.space20,
-        ZirenTokens.space20,
+      padding: EdgeInsets.fromLTRB(
+        ZirenTokens.space16,
+        ZirenTokens.space10,
+        ZirenTokens.space16,
+        // The responder reaches this map as a pushed route with no bottom
+        // nav under it, so the card must clear the gesture bar itself.
+        ZirenTokens.space16 + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: canPick ? onTogglePicker : null,
-            borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(ZirenTokens.space12),
-                  decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                  child: Icon(icon, size: 24, color: color),
-                ),
-                const SizedBox(width: ZirenTokens.space12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        station.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: ZirenTokens.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: ZirenTokens.space2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: ZirenTokens.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (canPick)
-                  Padding(
-                    padding: const EdgeInsets.only(left: ZirenTokens.space8),
-                    child: Icon(
-                      pickerOpen
-                          ? LucideIcons.chevron_up
-                          : LucideIcons.chevron_down,
-                      size: 20,
-                      color: ZirenTokens.textMuted,
-                    ),
-                  ),
-              ],
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ZirenTokens.surfaceBorder,
+                borderRadius: BorderRadius.circular(ZirenTokens.radius4),
+              ),
             ),
           ),
+          const SizedBox(height: ZirenTokens.space12),
+          Row(
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                (isNearest ? t.mapNearestStation : t.mapSelectedStation)
+                    .toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: ZirenTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, size: 24, color: color),
+              ),
+              const SizedBox(width: ZirenTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      station.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16.5,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        color: ZirenTokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: ZirenTokens.space6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _SheetChip(
+                          icon: icon,
+                          label: station.agencyType,
+                          color: color,
+                          background: bg,
+                        ),
+                        if (km != null)
+                          _SheetChip(
+                            icon: LucideIcons.navigation,
+                            label: t.mapStationDistanceShort(
+                              km.toStringAsFixed(1),
+                            ),
+                            color: ZirenTokens.textSecondary,
+                            background: ZirenTokens.surfaceRaised,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space16),
+          // Directions and the station's own hotline, side by side. The
+          // hotline comes from the same list the offline sheet uses — so it
+          // is there with or without a connection.
+          ListenableBuilder(
+            listenable: HotlinesStore.instance,
+            builder: (context, _) {
+              StationHotline? entry;
+              for (final h in HotlinesStore.instance.entries) {
+                if (h.agencyId == station.agencyId) entry = h;
+              }
+              final numbers = entry?.numbers ?? const <HotlineNumber>[];
+              final directions = ZirenButton(
+                label: t.mapGetDirections,
+                icon: LucideIcons.navigation,
+                onPressed: onGetDirections,
+              );
+              if (numbers.isEmpty) return directions;
+              return Row(
+                children: [
+                  Expanded(child: directions),
+                  const SizedBox(width: ZirenTokens.space10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(
+                        LucideIcons.phone,
+                        size: 18,
+                        color: ZirenTokens.systemSuccess,
+                      ),
+                      label: Text(
+                        t.hotlinesStationCall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(52),
+                        foregroundColor: ZirenTokens.textPrimary,
+                        side: BorderSide(
+                          color: ZirenTokens.systemSuccess.withValues(
+                            alpha: 0.5,
+                          ),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ZirenTokens.radius16,
+                          ),
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (numbers.length == 1) {
+                          await callHotline(context, numbers.first);
+                          return;
+                        }
+                        final picked = await showZirenOptionSheet<
+                          HotlineNumber
+                        >(
+                          context,
+                          title: station.name,
+                          options: [
+                            for (final n in numbers)
+                              ZirenSheetOption(
+                                icon: LucideIcons.phone,
+                                label: n.display,
+                                subtitle: n.label,
+                                value: n,
+                                tone: ZirenTone.success,
+                              ),
+                          ],
+                        );
+                        if (picked != null && context.mounted) {
+                          await callHotline(context, picked);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          // A second way to change the station, for when a pin is small or
+          // stacked in a cluster: every other visible station, nearest first.
+          if (canPick) ...[
+            const SizedBox(height: ZirenTokens.space8),
+            InkWell(
+              key: const Key('map-other-stations'),
+              onTap: onTogglePicker,
+              borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: ZirenTokens.space10,
+                  horizontal: ZirenTokens.space4,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      LucideIcons.list,
+                      size: 16,
+                      color: ZirenTokens.textSecondary,
+                    ),
+                    const SizedBox(width: ZirenTokens.space8),
+                    Expanded(
+                      child: Text(
+                        t.mapOtherStations('${otherStations.length}'),
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: ZirenTokens.textSecondary,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: pickerOpen ? 0.5 : 0,
+                      duration: ZirenTokens.motionQuick,
+                      child: Icon(
+                        LucideIcons.chevron_down,
+                        size: 18,
+                        color: ZirenTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (pickerOpen && canPick) ...[
-            const SizedBox(height: ZirenTokens.space12),
             Divider(height: 1, color: ZirenTokens.surfaceBorder),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 240),
+              constraints: const BoxConstraints(maxHeight: 220),
               child: ListView.builder(
                 shrinkWrap: true,
-                padding: const EdgeInsets.only(top: ZirenTokens.space4),
+                padding: const EdgeInsets.only(top: ZirenTokens.space6),
                 itemCount: otherStations.length,
                 itemBuilder: (context, index) {
                   final s = otherStations[index];
                   final sKm = distanceKmTo(s);
+                  final sColor = _agencyColor(s.agencyType);
                   return InkWell(
                     onTap: () => onSelectStation(s),
+                    borderRadius: BorderRadius.circular(ZirenTokens.radius12),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        vertical: ZirenTokens.space8,
+                        vertical: ZirenTokens.space6,
+                        horizontal: ZirenTokens.space4,
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            _agencyIcon(s.agencyType),
-                            size: 18,
-                            color: _agencyColor(s.agencyType),
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: _agencyBg(s.agencyType),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              _agencyIcon(s.agencyType),
+                              size: 16,
+                              color: sColor,
+                            ),
                           ),
                           const SizedBox(width: ZirenTokens.space10),
                           Expanded(
@@ -1705,16 +2192,19 @@ class _StationDetailSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (sKm != null)
+                          if (sKm != null) ...[
+                            const SizedBox(width: ZirenTokens.space8),
                             Text(
                               t.mapStationDistanceShort(
                                 sKm.toStringAsFixed(1),
                               ),
                               style: TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w700,
                                 color: ZirenTokens.textMuted,
                               ),
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -1723,64 +2213,46 @@ class _StationDetailSheet extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: ZirenTokens.space16),
-          ZirenButton(
-            label: t.mapGetDirections,
-            icon: LucideIcons.map_pin,
-            onPressed: onGetDirections,
-          ),
-          // The station's own hotline, from the same list the offline sheet
-          // uses — so it is there with or without a connection.
-          ListenableBuilder(
-            listenable: HotlinesStore.instance,
-            builder: (context, _) {
-              StationHotline? entry;
-              for (final h in HotlinesStore.instance.entries) {
-                if (h.agencyId == station.agencyId) entry = h;
-              }
-              if (entry == null || entry.numbers.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              final numbers = entry.numbers;
-              return Padding(
-                padding: const EdgeInsets.only(top: ZirenTokens.space10),
-                child: OutlinedButton.icon(
-                  icon: Icon(LucideIcons.phone, size: 18, color: ZirenTokens.systemSuccess),
-                  label: Text(
-                    numbers.length == 1
-                        ? '${t.hotlinesStationCall} · ${numbers.first.display}'
-                        : t.hotlinesStationCall,
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    foregroundColor: ZirenTokens.textPrimary,
-                  ),
-                  onPressed: () async {
-                    if (numbers.length == 1) {
-                      await callHotline(context, numbers.first);
-                      return;
-                    }
-                    final picked = await showZirenOptionSheet<HotlineNumber>(
-                      context,
-                      title: station.name,
-                      options: [
-                        for (final n in numbers)
-                          ZirenSheetOption(
-                            icon: LucideIcons.phone,
-                            label: n.display,
-                            subtitle: n.label,
-                            value: n,
-                            tone: ZirenTone.success,
-                          ),
-                      ],
-                    );
-                    if (picked != null && context.mounted) {
-                      await callHotline(context, picked);
-                    }
-                  },
-                ),
-              );
-            },
+        ],
+      ),
+    );
+  }
+}
+
+/// A small tinted chip on the station card: the agency, the distance.
+class _SheetChip extends StatelessWidget {
+  const _SheetChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius32),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
           ),
         ],
       ),
@@ -1796,8 +2268,14 @@ class _IncidentDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (statusColor, statusBg, statusLabel) = _statusStyle(incident.status);
+    final t = AppLocalizations.of(context);
+    final (statusColor, statusBg, _) = _statusStyle(incident.status);
+    final statusLabel = IncidentLabels.reportStatus(t, incident);
     final (severityColor, _, severityLabel) = _severityStyle(incident.severity);
+    final category =
+        IncidentCategory.fromValue(incident.incidentCategory) ??
+        IncidentCategory.other;
+    final categoryColor = IncidentCategoryStyle.color(category);
 
     return Container(
       decoration: BoxDecoration(
@@ -1805,12 +2283,13 @@ class _IncidentDetailSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(ZirenTokens.radius24),
         ),
+        boxShadow: ZirenTokens.shadowLg,
       ),
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         ZirenTokens.space20,
         ZirenTokens.space12,
         ZirenTokens.space20,
-        ZirenTokens.space32,
+        ZirenTokens.space24 + MediaQuery.paddingOf(context).bottom,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1826,7 +2305,39 @@ class _IncidentDetailSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: ZirenTokens.space20),
+          const SizedBox(height: ZirenTokens.space16),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  IncidentCategoryStyle.icon(category),
+                  size: 22,
+                  color: categoryColor,
+                ),
+              ),
+              const SizedBox(width: ZirenTokens.space12),
+              Expanded(
+                child: Text(
+                  IncidentLabels.categoryShort(t, category),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space12),
           Row(
             children: [
               Container(
@@ -1886,7 +2397,7 @@ class _IncidentDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: ZirenTokens.space16),
           Text(
-            incident.reportText,
+            IncidentLabels.reportText(t, incident.reportText),
             style: TextStyle(
               fontSize: 14,
               color: ZirenTokens.textPrimary,
@@ -1989,44 +2500,39 @@ class _LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: ZirenTokens.space12,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ZirenTokens.space16,
-            vertical: ZirenTokens.space10,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZirenTokens.space12 + 2,
+        vertical: ZirenTokens.space8,
+      ),
+      decoration: BoxDecoration(
+        color: ZirenTokens.surfaceCard,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius32),
+        boxShadow: ZirenTokens.shadowMd,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation(ZirenTokens.brandOrange),
+            ),
           ),
-          decoration: BoxDecoration(
-            color: ZirenTokens.surfaceCard,
-            borderRadius: BorderRadius.circular(ZirenTokens.radius32),
-            boxShadow: ZirenTokens.shadowMd,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(ZirenTokens.brandOrange),
-                ),
+          const SizedBox(width: ZirenTokens.space10),
+          Flexible(
+            child: Text(
+              AppLocalizations.of(context).mapLoading,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: ZirenTokens.textSecondary,
               ),
-              const SizedBox(width: ZirenTokens.space10),
-              Text(
-                AppLocalizations.of(context).mapLoading,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: ZirenTokens.textSecondary,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -2040,21 +2546,18 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: ZirenTokens.space12,
-      left: ZirenTokens.space16,
-      right: ZirenTokens.space16,
-      child: Container(
+    return Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: ZirenTokens.space16,
+          horizontal: ZirenTokens.space12,
           vertical: ZirenTokens.space10,
         ),
         decoration: BoxDecoration(
           color: ZirenTokens.systemErrorBg,
-          borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: ZirenTokens.systemError.withValues(alpha: 0.30),
           ),
+          boxShadow: ZirenTokens.shadowMd,
         ),
         child: Row(
           children: [
@@ -2075,7 +2578,6 @@ class _ErrorBanner extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

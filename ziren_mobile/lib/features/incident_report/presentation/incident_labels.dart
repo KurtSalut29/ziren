@@ -95,6 +95,25 @@ class IncidentLabels {
     }
   }
 
+  /// A report's text as it should be READ, in [l10n]'s language.
+  ///
+  /// The quick-report and wizard flows store `report_text` as
+  /// "`IncidentCategory.label` — what the person wrote", and those labels
+  /// are Filipino ("Sunog / Fire", "Aksidente sa Daan"). The stored text must
+  /// stay as it is — it is part of what the backend scores (see the wizard
+  /// string contract) — so only the displayed prefix is translated. The
+  /// person's own words are theirs and are never touched.
+  static String reportText(AppLocalizations l10n, String raw) {
+    for (final c in IncidentCategory.values) {
+      final prefix = '${c.label} — ';
+      if (raw.startsWith(prefix)) {
+        return '${category(l10n, c)} — ${raw.substring(prefix.length)}';
+      }
+      if (raw.trim() == c.label) return category(l10n, c);
+    }
+    return raw;
+  }
+
   /// Same as [category], but from the wire value the API stores.
   /// Returns null for an unknown value so callers can omit the row entirely
   /// rather than print a raw enum name at a resident.

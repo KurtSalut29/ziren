@@ -231,6 +231,47 @@ class AuthRepository {
     }
   }
 
+  /// Change the signed-in account's password.
+  ///
+  /// The current password is checked first by signing in with it again. That
+  /// is the proof a change needs — without it, anyone holding an unlocked
+  /// phone could lock the owner out of their own account — and a failed
+  /// sign-in leaves the existing session untouched. "Change password" used to
+  /// open the forgot-password screen instead, which asked a signed-in person
+  /// to type their email and then sent them to the login screen.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final email = _client.auth.currentUser?.email;
+    if (email == null) throw const AuthFailure('Not signed in.');
+    try {
+      await _client.auth.signInWithPassword(
+        email: email,
+        password: currentPassword,
+      );
+    } on AuthApiException catch (e) {
+      // A 400 from the token endpoint is wrong credentials; anything else
+      // (a 5xx, a rate limit) is not the person's fault.
+      if (e.code == 'invalid_credentials' || e.statusCode == '400') {
+        throw const WrongPasswordFailure();
+      }
+      throw AuthFailure(e.message);
+    } on AuthException catch (e) {
+      throw AuthFailure(e.message);
+    }
+
+    try {
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      if (e.code == 'same_password' ||
+          e.message.toLowerCase().contains('different from the old')) {
+        throw const SamePasswordFailure();
+      }
+      throw AuthFailure(e.message);
+    }
+  }
+
   User? get currentUser => _client.auth.currentUser;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

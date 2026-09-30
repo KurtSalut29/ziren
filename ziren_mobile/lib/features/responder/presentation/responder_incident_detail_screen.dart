@@ -76,7 +76,7 @@ class _ResponderIncidentDetailScreenState
 
   @override
   void dispose() {
-    _provider?.clearDetail();
+    _provider?.clearDetail(notify: false);
     super.dispose();
   }
 
@@ -400,7 +400,7 @@ class _ResponderIncidentDetailScreenState
     if (!mounted) return;
     _toast(
       context,
-      'Walang mabuksang mapa sa telepono na ito.',
+      AppLocalizations.of(context).respNoMapApp,
       ZirenTokens.systemError,
     );
   }
@@ -779,7 +779,7 @@ class _SummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      incident.reportText,
+                      ResponderVocabulary.reportText(incident.reportText),
                       style: TextStyle(
                         fontSize: 16,
                         height: 1.45,
@@ -1556,6 +1556,7 @@ class _InlineMap extends StatefulWidget {
 
 class _InlineMapState extends State<_InlineMap> {
   String? _styleJson;
+  MapLibreMapController? _ctrl;
 
   @override
   void initState() {
@@ -1606,19 +1607,62 @@ class _InlineMapState extends State<_InlineMap> {
           zoomGesturesEnabled: false,
           rotateGesturesEnabled: false,
           tiltGesturesEnabled: false,
-          onMapCreated: (ctrl) async {
-            await ctrl.addSymbol(
-              SymbolOptions(
-                geometry: LatLng(widget.lat, widget.lng),
-                iconImage: 'marker-15',
-                iconColor: '#E53935',
-                iconSize: 2.0,
-              ),
-            );
-          },
+          onMapCreated: (ctrl) => _ctrl = ctrl,
+          // A GeoJSON circle, drawn once the style is up, rather than an
+          // annotation symbol from onMapCreated: the annotation layer is the
+          // one MapLibre rejected on the navigation screen ("invalid value
+          // for text-font"), and onMapCreated can run before there is a style
+          // to draw into.
+          onStyleLoadedCallback: _drawPin,
         ),
       ),
     );
+  }
+
+  Future<void> _drawPin() async {
+    final ctrl = _ctrl;
+    if (ctrl == null) return;
+    try {
+      await ctrl.addSource(
+        'scene-src',
+        GeojsonSourceProperties(
+          data: {
+            'type': 'FeatureCollection',
+            'features': [
+              {
+                'type': 'Feature',
+                'properties': const <String, dynamic>{},
+                'geometry': {
+                  'type': 'Point',
+                  'coordinates': [widget.lng, widget.lat],
+                },
+              },
+            ],
+          },
+        ),
+      );
+      await ctrl.addLayer(
+        'scene-src',
+        'scene-halo',
+        const CircleLayerProperties(
+          circleRadius: 20,
+          circleColor: '#DC2626',
+          circleOpacity: 0.18,
+        ),
+      );
+      await ctrl.addLayer(
+        'scene-src',
+        'scene-point',
+        const CircleLayerProperties(
+          circleRadius: 9,
+          circleColor: '#DC2626',
+          circleStrokeWidth: 3,
+          circleStrokeColor: '#FFFFFF',
+        ),
+      );
+    } catch (e) {
+      debugPrint('[detail] scene pin not drawn: $e');
+    }
   }
 }
 

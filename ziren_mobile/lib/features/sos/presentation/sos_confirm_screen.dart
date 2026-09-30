@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/loading_indicator.dart';
+import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../incident_report/domain/incident_category_style.dart';
 import '../../incident_report/domain/incident_provider.dart' show IncidentCategory;
 import '../../incident_report/presentation/incident_labels.dart';
@@ -21,8 +22,9 @@ import '../../hotlines/presentation/hotlines_view.dart';
 /// (QuickReportSectionLabel / QuickReportCard, a plain AppBar, the same
 /// tinted category banner) rather than its own look — one resident-facing
 /// report screen and one emergency-report screen should not read as two
-/// different apps. What stays SOS-specific: no landmark or media fields (see
-/// submit_sos's docstring — this path skips them for speed), the legal
+/// different apps. What stays SOS-specific: no typed landmark or media fields
+/// (see submit_sos's docstring — this path skips them for speed; the landmark
+/// is found from the bundled map instead, see _LandmarkRow), the legal
 /// warning + truthfulness checkbox, the cooldown banner, and the send
 /// control itself, which holds instead of taps (see _SendButton).
 ///
@@ -88,7 +90,7 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
             const SizedBox(height: ZirenTokens.space20),
 
             // ── GPS / location status ─────────────────────────
-            const QuickReportSectionLabel('Your location (auto-detected)'),
+            QuickReportSectionLabel(t.sosWhereSection),
             const SizedBox(height: ZirenTokens.space8),
             _LocationStatus(provider: provider),
             const SizedBox(height: ZirenTokens.space20),
@@ -455,8 +457,33 @@ class _LocationStatus extends StatelessWidget {
       subtitle = t.sosStationAuto;
     }
 
+    final located = !provider.isLocating && provider.hasLocation;
+
     return QuickReportCard(
-      child: Row(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(ZirenTokens.space12),
+            child: _locationRow(icon, color, title, subtitle),
+          ),
+          if (located) ...[
+            Divider(height: 1, thickness: 1, color: ZirenTokens.surfaceBorder),
+            _LandmarkRow(provider: provider),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _locationRow(
+    IconData icon,
+    Color color,
+    String title,
+    String subtitle,
+  ) {
+    return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: color),
@@ -499,6 +526,205 @@ class _LocationStatus extends StatelessWidget {
               ),
             ),
         ],
+      );
+  }
+}
+
+/// The landmark the station will be told, found from the map bundled in the
+/// app the moment the GPS fix arrives — no typing needed, which is the point
+/// of this screen. Tapping it lets the resident say it in their own words.
+class _LandmarkRow extends StatelessWidget {
+  const _LandmarkRow({required this.provider});
+  final SosProvider provider;
+
+  Future<void> _edit(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    var text = provider.typedLandmark ?? provider.detectedLandmark ?? '';
+    final save = await showZirenDialog<bool>(
+      context,
+      icon: LucideIcons.landmark,
+      tone: ZirenTone.brand,
+      title: t.sosLandmarkEditTitle,
+      message: t.sosLandmarkEditBody,
+      body: _LandmarkField(
+        initial: text,
+        hint: t.sosLandmarkEditHint,
+        onChanged: (v) => text = v,
+        // The dialog sits on the root navigator (showGeneralDialog's
+        // default); the screen's own navigator would pop the SOS screen.
+        onSubmitted: () => Navigator.of(context, rootNavigator: true).pop(true),
+      ),
+      horizontalActions: true,
+      actions: [
+        ZirenDialogAction(
+          label: t.sosLandmarkEditCancel,
+          value: false,
+          kind: ZirenActionKind.secondary,
+        ),
+        ZirenDialogAction(
+          label: t.sosLandmarkEditSave,
+          value: true,
+          kind: ZirenActionKind.primary,
+        ),
+      ],
+    );
+    if (save == true) {
+      final trimmed = text.trim();
+      // Saving the detected name unchanged is not "typing one": keep it as
+      // the detected landmark so the note still reads "Near …".
+      provider.setTypedLandmark(
+        trimmed == provider.detectedLandmark ? null : trimmed,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final typed = provider.typedLandmark;
+    final found = provider.detectedLandmark;
+    final finding = provider.findingLandmark && typed == null && found == null;
+
+    final String title;
+    final String caption;
+    final Color accent;
+    if (finding) {
+      title = t.sosLandmarkFinding;
+      caption = t.sosLandmarkAuto;
+      accent = ZirenTokens.textMuted;
+    } else if (typed != null) {
+      title = typed;
+      caption = t.sosLandmarkTyped;
+      accent = ZirenTokens.brandOrange;
+    } else if (found != null) {
+      title = t.sosLandmarkNear(found);
+      caption = t.sosLandmarkAuto;
+      accent = ZirenTokens.brandOrange;
+    } else {
+      title = t.sosLandmarkNone;
+      caption = t.sosLandmarkNoneHint;
+      accent = ZirenTokens.textMuted;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('sos-landmark-row'),
+        onTap: finding ? null : () => _edit(context),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(ZirenTokens.radius12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(ZirenTokens.space12),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                alignment: Alignment.center,
+                child: Icon(LucideIcons.landmark, size: 17, color: accent),
+              ),
+              const SizedBox(width: ZirenTokens.space10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.3,
+                        color:
+                            finding
+                                ? ZirenTokens.textSecondary
+                                : ZirenTokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      caption,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: ZirenTokens.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: ZirenTokens.space8),
+              if (finding)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Icon(
+                  typed == null && found == null
+                      ? LucideIcons.plus
+                      : LucideIcons.pencil,
+                  size: 18,
+                  color: ZirenTokens.textMuted,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The text field in the landmark dialog. It owns its controller so the
+/// controller outlives the dialog's closing animation: disposing it as soon
+/// as the dialog's future resolved crashed the field mid-fade ("used after
+/// being disposed").
+class _LandmarkField extends StatefulWidget {
+  const _LandmarkField({
+    required this.initial,
+    required this.hint,
+    required this.onChanged,
+    required this.onSubmitted,
+  });
+
+  final String initial;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onSubmitted;
+
+  @override
+  State<_LandmarkField> createState() => _LandmarkFieldState();
+}
+
+class _LandmarkFieldState extends State<_LandmarkField> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      key: const Key('sos-landmark-field'),
+      controller: _controller,
+      autofocus: true,
+      textCapitalization: TextCapitalization.sentences,
+      textInputAction: TextInputAction.done,
+      onChanged: widget.onChanged,
+      onSubmitted: (_) => widget.onSubmitted(),
+      decoration: InputDecoration(
+        hintText: widget.hint,
+        prefixIcon: const Icon(LucideIcons.landmark, size: 20),
       ),
     );
   }

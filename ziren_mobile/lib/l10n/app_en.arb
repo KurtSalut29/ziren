@@ -1801,13 +1801,13 @@
   "settingsSectionAbout": "About",
   "settingsHelpFaq": "Help & FAQ",
   "settingsFaqReportQ": "How do I report an emergency?",
-  "settingsFaqReportA": "Tap the SOS button on Home, or fill out a report from the Report tab. Both reach the nearest responding agency.",
+  "settingsFaqReportA": "On Home, tap the kind of emergency (Fire, Medical, Accident, Crime, Calamity or Other). Check the landmark, say or type what happened, review it, then send. Ziren sends it to the nearest station that handles it.",
   "settingsFaqOfflineQ": "What happens with no internet?",
-  "settingsFaqOfflineA": "Ziren needs an internet connection to send a report. If you have no signal or data, call 911 or your local emergency number directly instead.",
+  "settingsFaqOfflineA": "A report needs internet to send. With no data, tap the kind of emergency on Home anyway: Ziren shows the official station hotlines for it, and a normal call only needs a phone signal. You can also call 911.",
   "settingsFaqAgencyQ": "Which agency responds to my report?",
-  "settingsFaqAgencyA": "Ziren routes your report to BFP, PNP, or MDRRMO based on what you reported and how severe it is.",
+  "settingsFaqAgencyA": "It depends on the emergency: BFP for fire, PNP for crime, MDRRMO for medical cases, accidents and calamities. The station in the town where the incident is receives it.",
   "settingsFaqAccountQ": "How do I update my emergency contact?",
-  "settingsFaqAccountA": "Go to Settings & Profile → Edit personal information to update your emergency contact anytime.",
+  "settingsFaqAccountA": "In Settings, open \"Edit personal information\", change the contact name or number, and tap \"Save changes\".",
   "settingsAboutZiren": "About Ziren",
   "settingsAboutTagline": "Emergency Response, Simplified. Built for the residents of Biliran.",
   "settingsAboutVersion": "Version {version}",
@@ -2504,5 +2504,231 @@
   "respCardReporter": "Who reported",
   "respCardStation": "Your station",
   "respClosedBanner": "This incident is closed. Nothing else to do here.",
-  "respEmergencyContactShort": "Emergency contact"
+  "respEmergencyContactShort": "Emergency contact",
+  "profileChipVerified": "Verified",
+  "@profileChipVerified": {
+    "description": "Profile header chip: the resident's identity is verified."
+  },
+  "profileChipInReview": "In review",
+  "@profileChipInReview": {
+    "description": "Profile header chip: verification submitted, being reviewed."
+  },
+  "profileChipNotVerified": "Not verified",
+  "@profileChipNotVerified": {
+    "description": "Profile header chip: verification not started."
+  },
+  "profileSafetyHelp": "Safety & help",
+  "@profileSafetyHelp": {
+    "description": "Profile section: hotlines, help guide, safety guide, announcements."
+  },
+  "profileStationContact": "Station contact",
+  "@profileStationContact": {
+    "description": "Responder profile row: the station's own phone number."
+  },
+  "profileStationSection": "Station",
+  "@profileStationSection": {
+    "description": "Responder profile section: agency, municipality, station contact."
+  },
+  "profileSettings": "Settings",
+  "@profileSettings": {
+    "description": "Profile row that opens Settings."
+  },
+  "profileCallStation": "Call the station",
+  "@profileCallStation": {
+    "description": "Sheet title: pick which of the station's numbers to call."
+  },
+  "settingsAccountCardHint": "View and edit your details",
+  "@settingsAccountCardHint": {
+    "description": "Settings: line under the name on the account card."
+  },
+  "settingsNotifDesc": "Updates on your reports and alerts",
+  "settingsLocationDesc": "Sends your location with a report",
+  "settingsReduceMotionDesc": "Fewer moving animations",
+  "settingsHighContrastDesc": "Stronger text and borders",
+  "settingsSaveChanges": "Save changes",
+  "settingsDiscardTitle": "Discard your changes?",
+  "settingsDiscardBody": "You have edits that are not saved yet.",
+  "settingsDiscard": "Discard",
+  "settingsKeepEditing": "Keep editing",
+  "settingsEditorIntro": "Stations see these details when you send a report.",
+  "cpIntro": "Enter your current password, then choose a new one.",
+  "cpCurrent": "Current password",
+  "cpNew": "New password",
+  "cpConfirm": "Confirm new password",
+  "cpEnterCurrent": "Enter your current password.",
+  "cpMismatch": "The two new passwords do not match.",
+  "cpSameAsOld": "Your new password must be different from your current one.",
+  "cpWrongCurrent": "Your current password is not correct.",
+  "cpFailed": "Could not change your password. Check your connection and try again.",
+  "cpDone": "Your password was changed.",
+  "cpForgot": "Forgot your current password?",
+  "faqIntro": "Quick answers to common questions.",
+  "faqStillNeedHelp": "Still need help?",
+  "settingsFaqLandmarkQ": "Why is a landmark required?",
+  "settingsFaqLandmarkA": "GPS can be off by tens of metres. A landmark (a store, a chapel, a court) lets the responder find the place fast. Ziren fills in the nearest one for you; correct it if it is wrong.",
+  "settingsFaqElsewhereQ": "The emergency is not where I am. What do I do?",
+  "settingsFaqElsewhereA": "In the report, choose \"Somewhere else\" and move the map pin to where the incident is. Responders go to the pin, not to you, and the station is told you are reporting from elsewhere.",
+  "settingsFaqTrackQ": "How do I know help is coming?",
+  "settingsFaqTrackA": "Open My Reports. Each report shows how far it has gone — received, dispatched, on the way, on scene, resolved — and you get a notification each time it changes.",
+  "settingsFaqVerifyQ": "Do I have to verify my account?",
+  "settingsFaqVerifyA": "No, it is optional. A verified account (a photo of a valid ID) helps stations trust your reports faster.",
+  "safetyGuideIntro": "What to do before help arrives. Works without internet.",
+  "safetyGuideSteps": "{count} steps",
+  "@safetyGuideSteps": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "safetyGuideCallHotline": "Call a hotline",
+  "aboutAgencies": "Connects residents with the BFP, PNP and MDRRMO stations of Biliran.",
+  "sosWhereSection": "Where you are (auto-detected)",
+  "sosLandmarkFinding": "Finding the nearest landmark…",
+  "sosLandmarkNear": "Near {landmark}",
+  "@sosLandmarkNear": {
+    "placeholders": {
+      "landmark": {
+        "type": "String"
+      }
+    }
+  },
+  "sosLandmarkAuto": "Nearest landmark on the map · tap to change",
+  "sosLandmarkTyped": "Landmark you added · tap to change",
+  "sosLandmarkNone": "No landmark found nearby",
+  "sosLandmarkNoneHint": "Tap to add one — optional",
+  "sosLandmarkEditTitle": "Landmark near you",
+  "sosLandmarkEditBody": "What can the responders look for? Leave it empty to use the one found on the map.",
+  "sosLandmarkEditHint": "e.g. beside the barangay hall",
+  "sosLandmarkEditSave": "Use this",
+  "sosLandmarkEditCancel": "Cancel",
+  "mapStationsOnMap": "Stations on the map: {count}",
+  "@mapStationsOnMap": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mapRecenter": "Go to my location",
+  "mapNearestStation": "Nearest station",
+  "mapSelectedStation": "Selected station",
+  "mapOtherStations": "Other stations ({count})",
+  "@mapOtherStations": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "stageShortReceived": "Received",
+  "stageShortChecking": "Checking",
+  "stageShortOnTheWay": "On the way",
+  "stageShortResolved": "Resolved",
+  "reportSentAt": "Sent {when}",
+  "@reportSentAt": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "reportSectionYourReport": "What you reported",
+  "reportSectionProgress": "Progress",
+  "reportSectionLocation": "Location",
+  "reportSectionDetails": "Details",
+  "reportFactId": "Report number",
+  "reportFactVia": "Sent through",
+  "reportFactAddress": "Address",
+  "reportFactDistance": "From where you are now",
+  "reportDistanceKm": "{km} km away",
+  "@reportDistanceKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "reportViaApp": "Ziren app",
+  "reportViaSos": "Emergency SOS",
+  "reportViaSms": "Text message (SMS)",
+  "reportNextStep": "Next: {step}",
+  "@reportNextStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "mapYourReportLabel": "Your report",
+  "onbStep": "Step {step} of {total}",
+  "@onbStep": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "onbLangGreeting": "Hi, I'm Ziren! Which language would you like me to use?",
+  "onbLangTitle": "Choose your language",
+  "onbLangSubtitle": "The whole app will use it. You can change it any time in Settings.",
+  "onbLangMoreSoon": "Waray and Bisaya are coming once a native speaker has reviewed them.",
+  "onbLangContinue": "Continue",
+  "onbLangSelected": "Selected",
+  "consentAgreedCount": "{done} of 2 agreed",
+  "@consentAgreedCount": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      }
+    }
+  },
+  "consentNeedsReading": "Open to read",
+  "consentAgreed": "Agreed",
+  "welcomeHeadline": "Help, one tap away.",
+  "welcomeFeatureReport": "Report a fire, accident or medical emergency in seconds",
+  "welcomeFeatureStation": "Your report goes straight to the nearest BFP, PNP or MDRRMO station",
+  "welcomeFeatureTrack": "See when a responder is on the way",
+  "welcomeNewHere": "New to Ziren?",
+  "legalMeta": "{sections} sections · about {minutes} min read",
+  "@legalMeta": {
+    "placeholders": {
+      "sections": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "legalProgress": "{percent}% read",
+  "@legalProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "legalReachedEnd": "You've reached the end",
+  "legalBackToTop": "Back to top",
+  "welcomeMascotLine": "You're all set! Create an account, or sign in if you already have one.",
+  "categoryMissingPerson": "Missing person",
+  "categoryEmergency": "Emergency",
+  "respStatusDispatchedRespond": "Dispatched — Respond Now",
+  "respNextEnRoute": "On my way (En Route)",
+  "respNextOnScene": "Arrived (On Scene)",
+  "respNextResolved": "Done (Resolved)",
+  "respNoAddress": "No address recorded",
+  "respAlertOverdueNote": "The dispatcher now sees this as unanswered. You can still accept it.",
+  "respAlertTimeoutNote": "If nobody answers, it goes back to the dispatcher so they can send someone else.",
+  "respNoMapApp": "No map app could be opened on this phone.",
+  "respJustNow": "just now",
+  "wizardSpeakDetails": "Speak the details",
+  "wizardListening": "Listening… (tap to stop)",
+  "wizardNext": "Next →",
+  "respNavByRoad": "by road",
+  "respNavRoadNote": "The route follows the roads on the map. Watch for closed or flooded roads."
 }

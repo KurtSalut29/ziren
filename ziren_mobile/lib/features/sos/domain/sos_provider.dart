@@ -23,10 +23,17 @@ enum SosStatus { idle, locating, submitting, success, error }
 /// - Resolved station display on the confirmation screen
 /// - Follow-up description attachment after dispatch
 class SosProvider extends ChangeNotifier {
-  SosProvider({SosRepository? repository})
-    : _repo = repository ?? SosRepository();
+  SosProvider({
+    SosRepository? repository,
+    Future<LandmarkIndex> Function()? landmarks,
+  }) : _repo = repository ?? SosRepository(),
+       _landmarks = landmarks ?? LandmarkIndex.load;
 
   final SosRepository _repo;
+
+  /// Where the nearest landmark is looked up. Injected by tests; the app
+  /// reads the map data bundled in assets/map.
+  final Future<LandmarkIndex> Function() _landmarks;
 
   // ── Status ────────────────────────────────────────────────
   SosStatus _status = SosStatus.idle;
@@ -61,6 +68,63 @@ class SosProvider extends ChangeNotifier {
   /// before the first fix arrives.
   String? get locationAddress => _locationAddress;
   bool get geocoding => _geocoding;
+
+  // ── Landmark ──────────────────────────────────────────────
+  // Stations asked for a landmark on every report: GPS inside a barangay is
+  // not an address a crew can drive to. SOS stays typing-free, so the
+  // landmark nearest the fix is found from the map bundled in the app (no
+  // network) the moment the fix arrives and shown on the confirm screen. The
+  // resident can correct it there, but never has to.
+  String? _detectedLandmark;
+  String? _typedLandmark;
+  bool _findingLandmark = false;
+
+  /// The landmark nearest the GPS fix, from the bundled map; null when none
+  /// is within [LandmarkIndex.maxLandmarkMetres].
+  String? get detectedLandmark => _detectedLandmark;
+
+  /// What the resident typed over the detected one, if anything.
+  String? get typedLandmark => _typedLandmark;
+
+  /// True while the bundled map is being searched for the fix.
+  bool get findingLandmark => _findingLandmark;
+
+  /// The note the station receives: the resident's own words when they gave
+  /// some, else "Near" and the detected landmark, else nothing.
+  String? get landmarkNote {
+    final typed = _typedLandmark;
+    if (typed != null) return typed;
+    final found = _detectedLandmark;
+    return found == null ? null : 'Near $found';
+  }
+
+  /// Override the detected landmark. Empty text goes back to the detected one.
+  void setTypedLandmark(String? text) {
+    final trimmed = text?.trim() ?? '';
+    _typedLandmark = trimmed.isEmpty ? null : trimmed;
+    notifyListeners();
+  }
+
+  /// Look up the landmark nearest the current fix. Runs by itself after
+  /// every fix; public so a test can drive it without the GPS plugin.
+  Future<void> detectLandmark() async {
+    final pos = _position;
+    if (pos == null) return;
+    _findingLandmark = true;
+    notifyListeners();
+    String? found;
+    try {
+      final index = await _landmarks();
+      found = index.nearestLandmark(pos.latitude, pos.longitude)?.name;
+    } catch (_) {
+      found = null;
+    }
+    // A newer fix may have arrived while the index loaded.
+    if (_position != pos) return;
+    _detectedLandmark = found;
+    _findingLandmark = false;
+    notifyListeners();
+  }
 
   // ── Category (optional) ──────────────────────────────────
   // Unset by default — an SOS with no category behaves exactly as it always
@@ -156,7 +220,10 @@ class SosProvider extends ChangeNotifier {
     _status = SosStatus.idle;
     notifyListeners();
 
-    if (_position != null) unawaited(_resolveAddress(_position!));
+    if (_position != null) {
+      unawaited(_resolveAddress(_position!));
+      unawaited(detectLandmark());
+    }
   }
 
   /// Names the fix — instantly from the on-device table, then again once
@@ -194,18 +261,13 @@ class SosProvider extends ChangeNotifier {
     _failedOffline = false;
     notifyListeners();
 
-    // The landmark nearest the fix, from the map data bundled in the app — no
-    // typing and no network, so it costs the SOS nothing. Stations asked for
-    // a landmark on every report; this is how SOS carries one.
-    String? landmark;
-    final pos = _position;
-    if (pos != null) {
-      try {
-        final index = await LandmarkIndex.load();
-        landmark = index.nearestLandmark(pos.latitude, pos.longitude)?.name;
-      } catch (_) {
-        landmark = null;
-      }
+    // Normally found already, while the resident read the screen. A send
+    // that beat the lookup still waits for it: it is local and quick, and a
+    // report without a landmark is what the stations asked us to stop.
+    if (_position != null &&
+        _typedLandmark == null &&
+        _detectedLandmark == null) {
+      await detectLandmark();
     }
 
     try {
@@ -215,7 +277,7 @@ class SosProvider extends ChangeNotifier {
         description: description,
         incidentCategory: _category?.value,
         locationAddress: _locationAddress,
-        landmarkNote: landmark == null ? null : 'Near $landmark',
+        landmarkNote: landmarkNote,
       );
 
       _lastSubmittedAt = DateTime.now();
@@ -250,6 +312,9 @@ class SosProvider extends ChangeNotifier {
     _category = null;
     _locationAddress = null;
     _geocoding = false;
+    _detectedLandmark = null;
+    _typedLandmark = null;
+    _findingLandmark = false;
     notifyListeners();
   }
 }

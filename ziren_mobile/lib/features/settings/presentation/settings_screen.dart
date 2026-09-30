@@ -1,37 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/config/accessibility_provider.dart';
 import '../../../core/config/locale_provider.dart';
+import '../../../core/utils/validators.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/loading_indicator.dart';
-import '../../../shared/widgets/ziren_card.dart';
+import '../../../shared/widgets/profile_kit.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
+import '../../../shared/widgets/ziren_text_field.dart';
 import '../../../shared/widgets/ziren_toast.dart';
+import '../../auth/domain/auth_provider.dart';
 import '../../onboarding/domain/legal_documents.dart';
 import '../../onboarding/presentation/legal_reader_screen.dart';
+import '../domain/profile_model.dart';
 import '../domain/profile_provider.dart';
 import 'about_ziren_dialog.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
+import 'change_password_screen.dart';
+import 'help_faq_screen.dart';
+import 'widgets/settings_form_kit.dart';
 
-/// Phase 10.5 — Resident settings & profile screen.
+/// Settings & Profile - a navigation hub, not a form.
 ///
-/// A navigation hub, not a form. The actual profile fields (name, phone,
-/// barangay, municipality, emergency contact) live one level deeper, behind
-/// "Edit personal information" — see [_PersonalInfoEditorScreen] below. This
-/// screen only ever shows three grouped-row sections:
+/// An account card at the top (who is signed in; opens the editor), then
+/// titled groups in the Profile screens' card language:
 ///
-///   1. Profile      — edit personal info, change password, language,
-///                      notification preferences
-///   2. App Settings  — dark mode, location services, offline maps
-///   3. Support       — help & FAQ, about Ziren, log out
+///   Account        edit personal information, change password
+///   Notifications  push on/off
+///   Location       the real OS permission
+///   Accessibility  appearance, text size, reduce motion, high contrast
+///   Language
+///   Help & support how to use Ziren, Help & FAQ, hotlines, voice check
+///   About          about Ziren, terms of use, data privacy notice
 ///
 /// Reachable at both `/profile/settings` (nested under the Profile tab) and
-/// the flat `/settings` — this widget makes no assumption about which parent
-/// route got it here.
+/// the flat `/settings` (the responder's) - this widget makes no assumption
+/// about which parent route got it here.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -40,30 +48,17 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _barangayCtrl = TextEditingController();
-  final _municipalityCtrl = TextEditingController();
-  final _ecNameCtrl = TextEditingController();
-  final _ecNumberCtrl = TextEditingController();
-
   String _language = 'Filipino';
   bool _pushEnabled = true;
   bool _initialised = false;
 
-  // ── App Settings (Phase 10.5 restyle additions) ──────────────
-  //
-  // Location services is wired to the real OS permission via
-  // permission_handler — the same package (and the same Permission.location
-  // call) that SosProvider already uses to get a fix for an SOS report.
+  /// Wired to the real OS permission via permission_handler - the same
+  /// package (and the same Permission.location call) SosProvider uses.
   bool _locationEnabled = true;
 
   /// What the app can actually render. Sourced from LocaleProvider rather
   /// than repeated here, so the picker cannot offer a language the app has no
-  /// strings for — which is exactly what it used to do: all four options were
-  /// saved to the backend and none of them changed a single word on screen.
+  /// strings for.
   static const _languages = LocaleProvider.supportedLanguageNames;
 
   @override
@@ -83,99 +78,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _populate() {
     final p = context.read<ProfileProvider>().profile;
     if (p == null || !mounted) return;
-    _nameCtrl.text = p.fullName;
-    _phoneCtrl.text = p.phoneNumber ?? '';
-    _barangayCtrl.text = p.barangay ?? '';
-    _municipalityCtrl.text = p.municipalityAddress ?? '';
-    _ecNameCtrl.text = p.emergencyContactName ?? '';
-    _ecNumberCtrl.text = p.emergencyContactNumber ?? '';
-    // Does the profile actually record a language this build can render?
+    // The picker shows the language the app is ACTUALLY using — the one this
+    // person chose on this phone (at onboarding, or here) — never the one
+    // written on the profile.
     //
-    // A profile saved before the picker was narrowed may still hold 'Bisaya'
-    // or 'Waray'; those are not renderable yet. And an account created through
-    // the new registration flow has no language on file at all.
-    final stored = p.preferredLanguage;
-    final hasUsablePreference = _languages.contains(stored);
-
+    // It used to prefer the profile's `preferred_language` and push it into
+    // LocaleProvider. That profile value is only written from this screen, so
+    // an account that had once picked English here kept "English" on file
+    // forever: a resident who then chose Filipino on the first screen, signed
+    // in, and opened Settings saw "English" — and simply opening Settings
+    // switched the whole app to English, undoing the choice they had just
+    // made. Every phone asks for the language before sign-in, so the phone's
+    // choice is always the newest explicit one; the profile only records it.
     final locale = context.read<LocaleProvider>();
-
-    // NULL means "nobody has recorded a preference", NOT "Filipino". Treating
-    // the two as the same is what silently undid the language chosen during
-    // onboarding: preferred_language is never written at registration, so
-    // simply opening this screen resolved NULL to Filipino and pushed it into
-    // LocaleProvider, overwriting English on the device and persisting it.
-    // With no preference on file the picker shows what the app is actually
-    // using, and nothing is pushed anywhere.
-    final resolved = hasUsablePreference ? stored! : locale.languageName;
+    final current = locale.languageName;
 
     setState(() {
-      _language = resolved;
+      _language = current;
       _pushEnabled = p.pushNotificationsEnabled;
       _initialised = true;
     });
 
-    // Only a real, renderable preference may override the device. The profile
-    // is still the source of truth across devices — it just has to have
-    // something to say first.
-    if (hasUsablePreference) {
-      locale.syncFromProfile(resolved);
+    // Bring the profile into line when it disagrees (or has nothing), so
+    // whatever reads it server-side speaks the same language as the phone.
+    // Best effort and silent: the app already shows the right language, and
+    // a failed write only means the profile lags until the next save.
+    if (p.preferredLanguage != current) {
+      _recordLanguageOnProfile();
     }
   }
 
+  Future<void> _recordLanguageOnProfile() async {
+    final provider = context.read<ProfileProvider>();
+    final p = provider.profile;
+    if (p == null) return;
+    await provider.saveProfile(
+      fullName: p.fullName,
+      phoneNumber: p.phoneNumber,
+      barangay: p.barangay,
+      municipalityAddress: p.municipalityAddress,
+      preferredLanguage: _language,
+      pushNotificationsEnabled: p.pushNotificationsEnabled,
+      emergencyContactName: p.emergencyContactName,
+      emergencyContactNumber: p.emergencyContactNumber,
+    );
+  }
+
   Future<void> _loadAppSettings() async {
-    // Real permission check — mirrors the granted/denied state Android or
+    // Real permission check - mirrors the granted/denied state Android or
     // iOS actually holds, not a locally-invented flag.
     bool locationGranted = true;
     try {
       final status = await Permission.location.status;
       locationGranted = status.isGranted;
     } catch (_) {
-      // Platform channel unavailable (e.g. desktop test runner) — leave the
+      // Platform channel unavailable (e.g. desktop test runner) - leave the
       // default of "on" rather than showing a misleading "off".
     }
 
     if (!mounted) return;
-    setState(() {
-      _locationEnabled = locationGranted;
-    });
+    setState(() => _locationEnabled = locationGranted);
   }
 
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _phoneCtrl.dispose();
-    _barangayCtrl.dispose();
-    _municipalityCtrl.dispose();
-    _ecNameCtrl.dispose();
-    _ecNumberCtrl.dispose();
-    super.dispose();
-  }
-
-  /// Persists the whole profile bundle, including whatever the "Edit
-  /// personal information" sub-screen currently holds in the shared
-  /// controllers. Used both for that screen's explicit Save button
-  /// (validated, with a confirmation snackbar) and for the hub's own
-  /// immediately-applied toggles like language and notifications (silent,
-  /// unvalidated — name is already known-good because it came from a loaded
-  /// profile).
-  Future<bool> _persistProfile({bool validate = false, bool silent = false}) async {
-    if (validate && !(_formKey.currentState?.validate() ?? false)) return false;
-    final ok = await context.read<ProfileProvider>().saveProfile(
-      fullName: _nameCtrl.text,
-      phoneNumber: _phoneCtrl.text,
-      barangay: _barangayCtrl.text,
-      municipalityAddress: _municipalityCtrl.text,
+  /// Saves the hub's own settings (language, notifications) on top of the
+  /// profile AS IT IS SAVED - never on top of half-typed edits.
+  ///
+  /// The editor used to share its text controllers with this screen, so
+  /// editing a name, backing out without saving, and then flipping the
+  /// notifications switch quietly saved the abandoned edit.
+  Future<bool> _saveHubSettings() async {
+    final provider = context.read<ProfileProvider>();
+    final p = provider.profile;
+    if (p == null) return false;
+    final ok = await provider.saveProfile(
+      fullName: p.fullName,
+      phoneNumber: p.phoneNumber,
+      barangay: p.barangay,
+      municipalityAddress: p.municipalityAddress,
       preferredLanguage: _language,
       pushNotificationsEnabled: _pushEnabled,
-      emergencyContactName: _ecNameCtrl.text,
-      emergencyContactNumber: _ecNumberCtrl.text,
+      emergencyContactName: p.emergencyContactName,
+      emergencyContactNumber: p.emergencyContactNumber,
     );
-    if (!mounted) return ok;
-    if (ok && !silent) {
-      ZirenToast.success(
-        ScaffoldMessenger.of(context),
-        AppLocalizations.of(context).settingsProfileSaved,
-      );
+    if (!ok && mounted && provider.errorMessage != null) {
+      ZirenToast.error(ScaffoldMessenger.of(context), provider.errorMessage!);
     }
     return ok;
   }
@@ -187,17 +173,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() => _locationEnabled = result.isGranted);
       if (!result.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.settingsLocationDenied)),
-        );
+        ZirenToast.notice(ScaffoldMessenger.of(context), t.settingsLocationDenied);
       }
       return;
     }
 
-    // Neither Android nor iOS lets an app revoke its own permission grant —
+    // Neither Android nor iOS lets an app revoke its own permission grant -
     // only the system Settings app can do that. Rather than flip the switch
-    // to a state the OS disagrees with, send the resident to where the
-    // change actually happens, then re-read the real status.
+    // to a state the OS disagrees with, send the person to where the change
+    // actually happens, then re-read the real status.
     final goToSettings = await showZirenDialog<bool>(
       context,
       icon: LucideIcons.map_pin_off,
@@ -229,8 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       icon: LucideIcons.languages,
       tone: ZirenTone.info,
       title: t.preferredLanguage,
-      // Each language is a row you press, and the current one says so. A bare
-      // radio circle beside a word is easy to read as decoration.
+      // Each language is a row you press, and the current one says so.
       body: Builder(
         builder:
             (dialogContext) => Column(
@@ -253,108 +236,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (choice == null || choice.isEmpty || choice == _language) return;
     setState(() => _language = choice);
     // Applied straight away. A language picker that only takes effect after
-    // a separate Save reads as broken, and the resident cannot tell whether
-    // it worked.
+    // a separate Save reads as broken.
     if (!mounted) return;
     await context.read<LocaleProvider>().setLanguageName(choice);
-    await _persistProfile(silent: true);
+    await _saveHubSettings();
   }
 
   Future<void> _togglePush(bool value) async {
     setState(() => _pushEnabled = value);
-    await _persistProfile(silent: true);
+    final ok = await _saveHubSettings();
+    // A switch that stays on after the save failed says something untrue.
+    if (!ok && mounted) setState(() => _pushEnabled = !value);
   }
 
   void _openPersonalInfoEditor() {
+    final p = context.read<ProfileProvider>().profile;
+    if (p == null) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
-            (_) => _PersonalInfoEditorScreen(
-              formKey: _formKey,
-              nameCtrl: _nameCtrl,
-              phoneCtrl: _phoneCtrl,
-              barangayCtrl: _barangayCtrl,
-              municipalityCtrl: _municipalityCtrl,
-              ecNameCtrl: _ecNameCtrl,
-              ecNumberCtrl: _ecNumberCtrl,
-              onSave: () => _persistProfile(validate: true),
+            (_) => PersonalInfoEditorScreen(
+              profile: p,
+              preferredLanguage: _language,
+              pushNotificationsEnabled: _pushEnabled,
             ),
       ),
     );
   }
 
-  void _showHelpFaq() {
-    final t = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: ZirenTokens.surfaceOverlay,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(ZirenTokens.radius20),
-        ),
+  void _openChangePassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+    );
+  }
+
+  bool get _isResponder =>
+      context.read<AuthProvider>().userRole == 'responder';
+
+  void _openHelpFaq() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HelpFaqScreen(forResponder: _isResponder),
       ),
-      builder: (sheetContext) {
-        final entries = <(String, String)>[
-          (t.settingsFaqReportQ, t.settingsFaqReportA),
-          (t.settingsFaqOfflineQ, t.settingsFaqOfflineA),
-          (t.settingsFaqAgencyQ, t.settingsFaqAgencyA),
-          (t.settingsFaqAccountQ, t.settingsFaqAccountA),
-        ];
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(ZirenTokens.space20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.settingsHelpFaq,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: ZirenTokens.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: ZirenTokens.space16),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: entries.length,
-                    separatorBuilder:
-                        (_, __) =>
-                            const SizedBox(height: ZirenTokens.space16),
-                    itemBuilder: (_, i) {
-                      final (q, a) = entries[i];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            q,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: ZirenTokens.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: ZirenTokens.space4),
-                          Text(
-                            a,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: ZirenTokens.textSecondary,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -377,10 +300,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showAboutZirenDialog(
       context,
       onOpenTerms: () => _openLegalDoc(LegalDoc.terms, t.settingsAboutTerms),
-      onOpenPrivacy: () => _openLegalDoc(LegalDoc.privacy, t.settingsAboutPrivacy),
+      onOpenPrivacy:
+          () => _openLegalDoc(LegalDoc.privacy, t.settingsAboutPrivacy),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -389,9 +312,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
-      appBar: AppBar(title: Text(t.settingsScreenTitle)),
+      appBar: AppBar(
+        backgroundColor: ZirenTokens.surfaceBase,
+        title: Text(t.settingsScreenTitle),
+      ),
       body:
-          provider.isLoading
+          provider.isLoading && !_initialised
               ? const LoadingIndicator()
               : provider.errorMessage != null && !_initialised
               ? _buildErrorRetry(provider)
@@ -402,100 +328,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildErrorRetry(ProfileProvider provider) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(ZirenTokens.space32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              LucideIcons.cloud_off,
-              size: 48,
-              color: ZirenTokens.textMuted,
-            ),
-            const SizedBox(height: ZirenTokens.space16),
-            Text(
-              provider.errorMessage ?? 'Could not load profile.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: ZirenTokens.textMuted),
-            ),
-            const SizedBox(height: ZirenTokens.space16),
-            ElevatedButton.icon(
-              icon: const Icon(LucideIcons.refresh_cw, size: 18),
-              label: const Text('Retry'),
-              onPressed: () async {
-                provider.clearError();
-                await provider.loadProfile();
-                _populate();
-              },
-            ),
-
-            // Reachable even here on purpose. The speech check needs nothing
-            // but the microphone, and being unable to run it because the
-            // backend is unreachable would make it useless in exactly the
-            // situation where someone is trying to work out what is broken.
-            const SizedBox(height: ZirenTokens.space24),
-            TextButton.icon(
-              icon: const Icon(LucideIcons.mic, size: 18),
-              label: const Text('Speech check'),
-              onPressed: () => context.push('/speech-diagnostic'),
-            ),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(ZirenTokens.space16),
+      children: [
+        ProfileLoadError(
+          message: provider.errorMessage ?? 'Could not load profile.',
+          onRetry: () async {
+            provider.clearError();
+            await provider.loadProfile(force: true);
+            _populate();
+          },
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildHub(ProfileProvider provider) {
     final t = AppLocalizations.of(context);
+    final auth = context.watch<AuthProvider>();
+    final p = provider.profile;
+    final email = p?.email ?? auth.user?.email ?? '';
+    final name =
+        p?.fullName.isNotEmpty == true ? p!.fullName : email.split('@').first;
+
     return ListView(
-      padding: const EdgeInsets.all(ZirenTokens.space16),
+      padding: const EdgeInsets.fromLTRB(
+        ZirenTokens.space16,
+        ZirenTokens.space4,
+        ZirenTokens.space16,
+        ZirenTokens.space32,
+      ),
       children: [
         if (provider.errorMessage != null) ...[
-          _ErrorBanner(message: provider.errorMessage!),
-          const SizedBox(height: ZirenTokens.space12),
+          ProfileLoadError(
+            message: provider.errorMessage!,
+            onRetry: () {
+              provider.clearError();
+              provider.loadProfile(force: true);
+            },
+          ),
+          const SizedBox(height: ZirenTokens.space16),
         ],
 
+        _AccountCard(
+          name: name,
+          email: email,
+          avatarUrl: p?.avatarUrl,
+          hint: t.settingsAccountCardHint,
+          onTap: _openPersonalInfoEditor,
+        ),
+        const SizedBox(height: ZirenTokens.space24),
+
         // ── Account ──────────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionAccount),
-        ZirenGroupedRows(
+        ProfileGroup(
+          title: t.settingsSectionAccount,
           children: [
-            _SettingsRow(
-              icon: LucideIcons.user,
+            ProfileTile(
+              icon: LucideIcons.user_pen,
               label: t.settingsEditPersonalInfo,
               onTap: _openPersonalInfoEditor,
             ),
-            _SettingsRow(
-              icon: LucideIcons.lock,
+            ProfileTile(
+              icon: LucideIcons.lock_keyhole,
               label: t.settingsChangePassword,
-              onTap: () => context.push('/forgot-password'),
+              onTap: _openChangePassword,
             ),
           ],
         ),
-
         const SizedBox(height: ZirenTokens.space24),
 
-        // ── Notifications ────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionNotifications),
-        ZirenGroupedRows(
+        // ── Notifications + location ─────────────────────────
+        ProfileGroup(
+          title: t.settingsSectionNotifications,
           children: [
-            _SettingsRow(
+            ProfileTile(
               icon: LucideIcons.bell,
               label: t.settingsNotificationPreferences,
-              trailing: Switch(value: _pushEnabled, onChanged: _togglePush),
+              subtitle: t.settingsNotifDesc,
+              trailing: Switch(
+                value: _pushEnabled,
+                onChanged: provider.isSaving ? null : _togglePush,
+              ),
             ),
-          ],
-        ),
-
-        const SizedBox(height: ZirenTokens.space24),
-
-        // ── Location ─────────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionLocation),
-        ZirenGroupedRows(
-          children: [
-            _SettingsRow(
+            ProfileTile(
               icon: LucideIcons.map_pin,
               label: t.settingsLocationServices,
+              subtitle: t.settingsLocationDesc,
               trailing: Switch(
                 value: _locationEnabled,
                 onChanged: _toggleLocationServices,
@@ -503,50 +421,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-
         const SizedBox(height: ZirenTokens.space24),
 
-        // ── Accessibility ─────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionAccessibility),
-        const SizedBox(height: ZirenTokens.space8),
-        const _AppearanceCard(),
-        const SizedBox(height: ZirenTokens.space12),
-        const _TextSizeCard(),
-        const SizedBox(height: ZirenTokens.space12),
-        ZirenGroupedRows(
-          children: [
-            _SettingsRow(
-              icon: LucideIcons.wind,
-              label: t.settingsReduceMotion,
-              trailing: Consumer<AccessibilityProvider>(
-                builder:
-                    (_, a11y, __) => Switch(
-                      value: a11y.reduceMotion,
-                      onChanged: a11y.setReduceMotion,
-                    ),
-              ),
-            ),
-            _SettingsRow(
-              icon: LucideIcons.contrast,
-              label: t.settingsHighContrast,
-              trailing: Consumer<AccessibilityProvider>(
-                builder:
-                    (_, a11y, __) => Switch(
-                      value: a11y.highContrast,
-                      onChanged: a11y.setHighContrast,
-                    ),
-              ),
-            ),
-          ],
-        ),
-
+        // ── Accessibility ────────────────────────────────────
+        _SectionTitle(t.settingsSectionAccessibility),
+        const _AccessibilityCard(),
         const SizedBox(height: ZirenTokens.space24),
 
         // ── Language ─────────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionLanguage),
-        ZirenGroupedRows(
+        ProfileGroup(
+          title: t.settingsSectionLanguage,
           children: [
-            _SettingsRow(
+            ProfileTile(
               icon: LucideIcons.languages,
               label: t.preferredLanguage,
               value: _language,
@@ -554,105 +440,168 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-
         const SizedBox(height: ZirenTokens.space24),
 
-        // ── Help & Support ───────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionHelpSupport),
-        ZirenGroupedRows(
+        // ── Help & support ───────────────────────────────────
+        ProfileGroup(
+          title: t.settingsSectionHelpSupport,
           children: [
-            _SettingsRow(
+            ProfileTile(
+              icon: LucideIcons.life_buoy,
+              tone: ZirenTokens.systemInfo,
+              label: t.helpTitle,
+              onTap:
+                  () => context.push(
+                    _isResponder ? '/help?role=responder' : '/help',
+                  ),
+            ),
+            ProfileTile(
               icon: LucideIcons.circle_question_mark,
               label: t.settingsHelpFaq,
-              onTap: _showHelpFaq,
+              onTap: _openHelpFaq,
+            ),
+            ProfileTile(
+              icon: LucideIcons.phone_call,
+              tone: ZirenTokens.systemSuccess,
+              label: t.hotlinesTitle,
+              onTap: () => context.push('/hotlines'),
             ),
           ],
         ),
-
         const SizedBox(height: ZirenTokens.space24),
 
         // ── About ────────────────────────────────────────────
-        ZirenSectionLabel(t.settingsSectionAbout),
-        ZirenGroupedRows(
+        ProfileGroup(
+          title: t.settingsSectionAbout,
           children: [
-            _SettingsRow(
+            ProfileTile(
               icon: LucideIcons.info,
               label: t.settingsAboutZiren,
               onTap: _showAboutZiren,
             ),
+            ProfileTile(
+              icon: LucideIcons.file_text,
+              label: t.settingsAboutTerms,
+              onTap: () => _openLegalDoc(LegalDoc.terms, t.settingsAboutTerms),
+            ),
+            ProfileTile(
+              icon: LucideIcons.shield_check,
+              label: t.settingsAboutPrivacy,
+              onTap:
+                  () =>
+                      _openLegalDoc(LegalDoc.privacy, t.settingsAboutPrivacy),
+            ),
           ],
         ),
-
-        const SizedBox(height: ZirenTokens.space32),
+        const SizedBox(height: ZirenTokens.space20),
+        Center(
+          child: Text(
+            'Ziren · ${t.settingsAboutVersion(kAppVersionLabel)}',
+            style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
+          ),
+        ),
       ],
     );
   }
 }
 
-// ── Settings row ──────────────────────────────────────────────
+// ── Account card ─────────────────────────────────────────────────
 
-/// One row inside a [ZirenGroupedRows] section: leading icon, label, and
-/// either a trailing value preview + chevron (navigable row) or a supplied
-/// trailing widget such as a [Switch] (inline-toggle row).
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({
-    required this.icon,
-    required this.label,
-    this.value,
-    this.trailing,
-    this.onTap,
+/// Who is signed in, at the top of Settings. Pressing it opens the editor -
+/// the most common reason anyone opens Settings at all.
+class _AccountCard extends StatelessWidget {
+  const _AccountCard({
+    required this.name,
+    required this.email,
+    required this.avatarUrl,
+    required this.hint,
+    required this.onTap,
   });
 
-  final IconData icon;
-  final String label;
-  final String? value;
-  final Widget? trailing;
-  final VoidCallback? onTap;
+  final String name;
+  final String email;
+  final String? avatarUrl;
+  final String hint;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          minHeight: ZirenTokens.minTouchTarget,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ZirenTokens.space16,
-            vertical: ZirenTokens.space8,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: ZirenTokens.textMuted),
-              const SizedBox(width: ZirenTokens.space12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: ZirenTokens.textPrimary,
+    final url = avatarUrl;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: profileCardDecoration(radius: ZirenTokens.radius20),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(ZirenTokens.space16),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: ZirenTokens.brandGradient,
+                  ),
+                  alignment: Alignment.center,
+                  child:
+                      url != null
+                          ? Image.network(
+                            url,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _Initials(name),
+                          )
+                          : _Initials(name),
+                ),
+                const SizedBox(width: ZirenTokens.space12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w800,
+                          color: ZirenTokens.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: ZirenTokens.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: ZirenTokens.space4),
+                      Text(
+                        hint,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: ZirenTokens.brandOrange,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              if (trailing != null)
-                trailing!
-              else ...[
-                if (value != null) ...[
-                  Text(
-                    value!,
-                    style: TextStyle(fontSize: 13, color: ZirenTokens.textMuted),
-                  ),
-                  const SizedBox(width: ZirenTokens.space4),
-                ],
                 Icon(
                   LucideIcons.chevron_right,
                   size: 20,
                   color: ZirenTokens.textMuted,
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -660,51 +609,151 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
-// ── Error banner ──────────────────────────────────────────────
+class _Initials extends StatelessWidget {
+  const _Initials(this.name);
 
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-  final String message;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    initialsOf(name),
+    style: const TextStyle(
+      fontSize: 19,
+      fontWeight: FontWeight.w800,
+      color: Colors.white,
+    ),
+  );
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(
+      left: ZirenTokens.space4,
+      bottom: ZirenTokens.space8,
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11.5,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.0,
+        color: ZirenTokens.textSecondary,
+      ),
+    ),
+  );
+}
+
+// ── Accessibility card ───────────────────────────────────────────
+
+/// Appearance, text size and the two switches in one card, so everything
+/// about how the app LOOKS sits together.
+class _AccessibilityCard extends StatelessWidget {
+  const _AccessibilityCard();
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final a11y = context.watch<AccessibilityProvider>();
+    Widget rule() => Divider(
+      height: 1,
+      thickness: 1,
+      indent: ZirenTokens.space16,
+      endIndent: ZirenTokens.space16,
+      color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(ZirenTokens.space12),
-      decoration: BoxDecoration(
-        color: ZirenTokens.systemErrorBg,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius8),
-        border: Border.all(
-          color: ZirenTokens.systemError.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            LucideIcons.circle_alert,
-            size: 16,
-            color: ZirenTokens.systemError,
-          ),
-          const SizedBox(width: ZirenTokens.space8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(fontSize: 13, color: ZirenTokens.systemError),
+      clipBehavior: Clip.antiAlias,
+      decoration: profileCardDecoration(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _AppearanceBlock(),
+            rule(),
+            const _TextSizeBlock(),
+            rule(),
+            ProfileTile(
+              icon: LucideIcons.wind,
+              label: t.settingsReduceMotion,
+              subtitle: t.settingsReduceMotionDesc,
+              trailing: Switch(
+                value: a11y.reduceMotion,
+                onChanged: a11y.setReduceMotion,
+              ),
             ),
-          ),
-        ],
+            Divider(
+              height: 1,
+              thickness: 1,
+              indent: 62,
+              color: ZirenTokens.surfaceBorder.withValues(alpha: 0.7),
+            ),
+            ProfileTile(
+              icon: LucideIcons.contrast,
+              label: t.settingsHighContrast,
+              subtitle: t.settingsHighContrastDesc,
+              trailing: Switch(
+                value: a11y.highContrast,
+                onChanged: a11y.setHighContrast,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Appearance card ──────────────────────────────────────────────
+class _BlockHeader extends StatelessWidget {
+  const _BlockHeader({required this.icon, required this.label, this.trailing});
+
+  final IconData icon;
+  final String label;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: ZirenTokens.surfaceRaised,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 18, color: ZirenTokens.textSecondary),
+        ),
+        const SizedBox(width: ZirenTokens.space12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: ZirenTokens.textPrimary,
+            ),
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+}
 
 /// A 3-way segmented control (System / Light / Dark), not a single "Dark
-/// mode" switch — a resident whose phone already follows sunrise/sunset
+/// mode" switch - a resident whose phone already follows sunrise/sunset
 /// should be able to say so, rather than picking one of the other two and
 /// fighting it twice a day.
-class _AppearanceCard extends StatelessWidget {
-  const _AppearanceCard();
+class _AppearanceBlock extends StatelessWidget {
+  const _AppearanceBlock();
 
   @override
   Widget build(BuildContext context) {
@@ -717,28 +766,14 @@ class _AppearanceCard extends StatelessWidget {
       (ThemeMode.dark, LucideIcons.moon, t.appearanceDark),
     ];
 
-    return ZirenCard(
-      padding: const EdgeInsets.all(ZirenTokens.space16),
+    return Padding(
+      padding: const EdgeInsets.all(ZirenTokens.space12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(
-                LucideIcons.palette,
-                size: 18,
-                color: ZirenTokens.textMuted,
-              ),
-              const SizedBox(width: ZirenTokens.space8),
-              Flexible(child: Text(
-                t.settingsAccessibilityAppearance,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: ZirenTokens.textPrimary,
-                ),
-              )),
-            ],
+          _BlockHeader(
+            icon: LucideIcons.palette,
+            label: t.settingsAccessibilityAppearance,
           ),
           const SizedBox(height: ZirenTokens.space12),
           Container(
@@ -782,53 +817,64 @@ class _AppearanceSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(ZirenTokens.radius8),
-      child: AnimatedContainer(
-        duration: ZirenTokens.motionQuick,
-        padding: const EdgeInsets.symmetric(vertical: ZirenTokens.space10),
-        decoration: BoxDecoration(
-          color: selected ? ZirenTokens.brandOrange : Colors.transparent,
-          borderRadius: BorderRadius.circular(ZirenTokens.radius8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? ZirenTokens.textInverse : ZirenTokens.textMuted,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+        child: AnimatedContainer(
+          duration: ZirenTokens.motionQuick,
+          padding: const EdgeInsets.symmetric(vertical: ZirenTokens.space10),
+          decoration: BoxDecoration(
+            color: selected ? ZirenTokens.surfaceCard : Colors.transparent,
+            borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+            border:
+                selected
+                    ? Border.all(
+                      color: ZirenTokens.brandOrange.withValues(alpha: 0.6),
+                      width: 1.4,
+                    )
+                    : null,
+            boxShadow: selected ? ZirenTokens.shadowSm : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
                 color:
-                    selected ? ZirenTokens.textInverse : ZirenTokens.textMuted,
+                    selected ? ZirenTokens.brandOrange : ZirenTokens.textMuted,
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      selected
+                          ? ZirenTokens.textPrimary
+                          : ZirenTokens.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Text size card ───────────────────────────────────────────────
-
-/// Four named steps plus a live preview sentence — the preview is an
+/// Four named steps plus a live preview sentence - the preview is an
 /// ordinary Text with no manual size math, so it grows through exactly the
 /// same ambient TextScaler every other screen picks up (see main.dart's
 /// MaterialApp.builder). The "Aa" glyphs on the step buttons are the one
 /// deliberate exception: they are a fixed size chart ("this is what Large
-/// looks like"), so they opt out of that same ambient scaling — letting it
-/// apply there would make all four buttons grow together and erase the very
-/// size difference they exist to show.
-class _TextSizeCard extends StatelessWidget {
-  const _TextSizeCard();
+/// looks like"), so they opt out of that same ambient scaling.
+class _TextSizeBlock extends StatelessWidget {
+  const _TextSizeBlock();
 
   String _label(AppLocalizations t, TextScaleStep step) => switch (step) {
     TextScaleStep.small => t.textSizeSmall,
@@ -842,37 +888,22 @@ class _TextSizeCard extends StatelessWidget {
     final t = AppLocalizations.of(context);
     final a11y = context.watch<AccessibilityProvider>();
 
-    return ZirenCard(
-      padding: const EdgeInsets.all(ZirenTokens.space16),
+    return Padding(
+      padding: const EdgeInsets.all(ZirenTokens.space12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(
-                LucideIcons.case_sensitive,
-                size: 18,
-                color: ZirenTokens.textMuted,
+          _BlockHeader(
+            icon: LucideIcons.case_sensitive,
+            label: t.settingsAccessibilityTextSize,
+            trailing: Text(
+              _label(t, a11y.textScaleStep),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: ZirenTokens.brandOrange,
               ),
-              const SizedBox(width: ZirenTokens.space8),
-              Text(
-                t.settingsAccessibilityTextSize,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: ZirenTokens.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                _label(t, a11y.textScaleStep),
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: ZirenTokens.brandOrange,
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: ZirenTokens.space12),
           Row(
@@ -890,13 +921,12 @@ class _TextSizeCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: ZirenTokens.space12),
+          const SizedBox(height: ZirenTokens.space10),
           Container(
-            width: double.infinity,
             padding: const EdgeInsets.all(ZirenTokens.space12),
             decoration: BoxDecoration(
               color: ZirenTokens.surfaceRaised,
-              borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+              borderRadius: BorderRadius.circular(ZirenTokens.radius12),
             ),
             child: Text(
               t.textSizePreview,
@@ -935,13 +965,13 @@ class _TextSizeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+      borderRadius: BorderRadius.circular(ZirenTokens.radius12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: ZirenTokens.space10),
+        height: 48,
         decoration: BoxDecoration(
           color:
               selected ? ZirenTokens.brandContainer : ZirenTokens.surfaceRaised,
-          borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+          borderRadius: BorderRadius.circular(ZirenTokens.radius12),
           border: Border.all(
             color:
                 selected ? ZirenTokens.brandOrange : ZirenTokens.surfaceBorder,
@@ -949,8 +979,7 @@ class _TextSizeButton extends StatelessWidget {
           ),
         ),
         alignment: Alignment.center,
-        // Fixed reference size — see the class doc comment above for why
-        // this one Text deliberately ignores the ambient TextScaler.
+        // Fixed reference size - see the class doc comment above.
         child: MediaQuery(
           data: MediaQuery.of(
             context,
@@ -961,7 +990,9 @@ class _TextSizeButton extends StatelessWidget {
               fontSize: _glyphSize[step],
               fontWeight: FontWeight.w800,
               color:
-                  selected ? ZirenTokens.brandOrange : ZirenTokens.textSecondary,
+                  selected
+                      ? ZirenTokens.brandOrange
+                      : ZirenTokens.textSecondary,
             ),
           ),
         ),
@@ -970,211 +1001,328 @@ class _TextSizeButton extends StatelessWidget {
   }
 }
 
-// ── Personal info editor (pushed from "Edit personal information") ────
+// ── Personal info editor ─────────────────────────────────────────
 
-/// The original inline form, relocated one level deep behind a chevron so
-/// the hub screen above can read as a navigation menu rather than a giant
-/// form. Controllers and the form key are owned by [_SettingsScreenState]
-/// and passed in, so name/phone/address/emergency-contact edits still save
-/// through the exact same [ProfileProvider.saveProfile] call the hub's
-/// quiet language/notification saves use.
-class _PersonalInfoEditorScreen extends StatelessWidget {
-  const _PersonalInfoEditorScreen({
-    required this.formKey,
-    required this.nameCtrl,
-    required this.phoneCtrl,
-    required this.barangayCtrl,
-    required this.municipalityCtrl,
-    required this.ecNameCtrl,
-    required this.ecNumberCtrl,
-    required this.onSave,
+/// "Edit personal information": name and phone, address, emergency contact.
+///
+/// Owns its own controllers, filled from the saved profile. It used to borrow
+/// the hub's, which is how an abandoned edit got saved by the next switch
+/// flipped on the hub. Leaving with unsaved changes asks first; a successful
+/// save returns to Settings.
+///
+/// The Save button used to sit in the app bar as white text on the light app
+/// bar - there, but invisible. It is now the pinned bar at the bottom.
+class PersonalInfoEditorScreen extends StatefulWidget {
+  const PersonalInfoEditorScreen({
+    super.key,
+    required this.profile,
+    required this.preferredLanguage,
+    required this.pushNotificationsEnabled,
+    this.onSave,
   });
 
-  final GlobalKey<FormState> formKey;
-  final TextEditingController nameCtrl;
-  final TextEditingController phoneCtrl;
-  final TextEditingController barangayCtrl;
-  final TextEditingController municipalityCtrl;
-  final TextEditingController ecNameCtrl;
-  final TextEditingController ecNumberCtrl;
-  final Future<bool> Function() onSave;
+  final ProfileModel profile;
+  final String preferredLanguage;
+  final bool pushNotificationsEnabled;
+
+  /// Injected by tests; defaults to [ProfileProvider.saveProfile]. Returns
+  /// whether the save worked.
+  final Future<bool> Function(Map<String, String> fields)? onSave;
 
   @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<ProfileProvider>();
-    final t = AppLocalizations.of(context);
-
-    return Scaffold(
-      backgroundColor: ZirenTokens.surfaceBase,
-      appBar: AppBar(
-        title: Text(t.settingsEditPersonalInfo),
-        actions: [
-          if (provider.isSaving)
-            const Padding(
-              padding: EdgeInsets.only(right: ZirenTokens.space16),
-              child: LoadingIndicator(size: 20),
-            )
-          else
-            TextButton(
-              onPressed: onSave,
-              child: const Text(
-                'Save',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: Form(
-        key: formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(ZirenTokens.space16),
-          children: [
-            // ── Section: Profile ──────────────────────────────
-            _SectionHeader(label: t.settingsProfile, icon: LucideIcons.user),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: nameCtrl,
-              label: t.fieldFullName,
-              icon: LucideIcons.badge,
-              validator:
-                  (v) =>
-                      (v == null || v.trim().isEmpty)
-                          ? 'Name is required.'
-                          : null,
-            ),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: phoneCtrl,
-              label: t.fieldMobileNumber,
-              icon: LucideIcons.phone,
-              keyboardType: TextInputType.phone,
-              hint: t.hintMobileShort,
-            ),
-
-            const SizedBox(height: ZirenTokens.space24),
-
-            // ── Section: Address ──────────────────────────────
-            _SectionHeader(
-              label: t.settingsAddress,
-              icon: LucideIcons.map_pin,
-            ),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: barangayCtrl,
-              label: t.fieldBarangaySettings,
-              icon: LucideIcons.house,
-              hint: t.hintBarangayExample,
-            ),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: municipalityCtrl,
-              label: t.fieldMunicipalitySettings,
-              icon: LucideIcons.map,
-              hint: t.hintMunicipalityExample,
-            ),
-
-            const SizedBox(height: ZirenTokens.space24),
-
-            // ── Section: Emergency Contact ────────────────────
-            _SectionHeader(
-              label: t.settingsEmergencyContact,
-              icon: LucideIcons.siren,
-            ),
-            const SizedBox(height: ZirenTokens.space4),
-            Text(
-              t.emergencyWhoShort,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.45,
-                color: ZirenTokens.textSecondary,
-              ),
-            ),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: ecNameCtrl,
-              label: t.fieldContactName,
-              icon: LucideIcons.user,
-              hint: t.hintContactName,
-            ),
-            const SizedBox(height: ZirenTokens.space12),
-            _field(
-              controller: ecNumberCtrl,
-              label: t.fieldContactNumber,
-              icon: LucideIcons.phone,
-              hint: t.hintMobileShort,
-              keyboardType: TextInputType.phone,
-            ),
-
-            const SizedBox(height: ZirenTokens.space32),
-
-            ElevatedButton.icon(
-              icon: const Icon(LucideIcons.save, size: 18),
-              label: const Text('Save Profile'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-              ),
-              onPressed: provider.isSaving ? null : onSave,
-            ),
-
-            const SizedBox(height: ZirenTokens.space32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? hint,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: TextStyle(fontSize: 15, color: ZirenTokens.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, size: 18, color: ZirenTokens.textMuted),
-        filled: true,
-        fillColor: ZirenTokens.surfaceCard,
-        border: const OutlineInputBorder(),
-      ),
-    );
-  }
+  State<PersonalInfoEditorScreen> createState() =>
+      _PersonalInfoEditorScreenState();
 }
 
-// ── Section header (editor sub-screen only) ─────────────────────
+class _PersonalInfoEditorScreenState extends State<PersonalInfoEditorScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late final _name = TextEditingController(text: widget.profile.fullName);
+  late final _phone = TextEditingController(
+    text: widget.profile.phoneNumber ?? '',
+  );
+  late final _barangay = TextEditingController(
+    text: widget.profile.barangay ?? '',
+  );
+  late final _municipality = TextEditingController(
+    text: widget.profile.municipalityAddress ?? '',
+  );
+  late final _ecName = TextEditingController(
+    text: widget.profile.emergencyContactName ?? '',
+  );
+  late final _ecNumber = TextEditingController(
+    text: widget.profile.emergencyContactNumber ?? '',
+  );
+  late final Map<TextEditingController, String> _initial = {
+    for (final c in [_name, _phone, _barangay, _municipality, _ecName, _ecNumber])
+      c: c.text,
+  };
+  bool _saving = false;
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label, required this.icon});
-  final String label;
-  final IconData icon;
+  /// Whether anything differs from what was loaded - held in state (not only
+  /// computed) because PopScope reads it at build time: typing does not
+  /// rebuild the screen, so a computed-only value left "leave without
+  /// asking" in force after the first keystroke.
+  bool _dirty = false;
+
+  bool get _hasEdits => _initial.entries.any((e) => e.key.text != e.value);
+
+  void _onEdited() {
+    final now = _hasEdits;
+    if (now != _dirty) setState(() => _dirty = now);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in _initial.keys) {
+      c.addListener(_onEdited);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _initial.keys) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final fields = {
+      'full_name': _name.text,
+      'phone_number': _phone.text,
+      'barangay': _barangay.text,
+      'municipality_address': _municipality.text,
+      'emergency_contact_name': _ecName.text,
+      'emergency_contact_number': _ecNumber.text,
+    };
+    setState(() => _saving = true);
+    final bool ok;
+    if (widget.onSave != null) {
+      ok = await widget.onSave!(fields);
+    } else {
+      final provider = context.read<ProfileProvider>();
+      ok = await provider.saveProfile(
+        fullName: _name.text,
+        phoneNumber: _phone.text,
+        barangay: _barangay.text,
+        municipalityAddress: _municipality.text,
+        preferredLanguage: widget.preferredLanguage,
+        pushNotificationsEnabled: widget.pushNotificationsEnabled,
+        emergencyContactName: _ecName.text,
+        emergencyContactNumber: _ecNumber.text,
+      );
+      if (!ok && mounted && provider.errorMessage != null) {
+        ZirenToast.error(messenger, provider.errorMessage!);
+      }
+    }
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (ok) {
+      for (final c in _initial.keys) {
+        _initial[c] = c.text;
+      }
+      _dirty = false;
+      ZirenToast.success(messenger, t.settingsProfileSaved);
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _confirmLeave() async {
+    final t = AppLocalizations.of(context);
+    final discard = await showZirenDialog<bool>(
+      context,
+      icon: LucideIcons.pencil_off,
+      tone: ZirenTone.warning,
+      title: t.settingsDiscardTitle,
+      message: t.settingsDiscardBody,
+      horizontalActions: true,
+      actions: [
+        ZirenDialogAction(label: t.settingsKeepEditing, value: false),
+        ZirenDialogAction(
+          label: t.settingsDiscard,
+          value: true,
+          kind: ZirenActionKind.danger,
+        ),
+      ],
+    );
+    if (discard == true && mounted) Navigator.of(context).pop(false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: ZirenTokens.brandOrange),
-        const SizedBox(width: ZirenTokens.space8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: ZirenTokens.brandOrange,
+    final t = AppLocalizations.of(context);
+
+    return PopScope(
+      canPop: !_dirty || _saving,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
+        backgroundColor: ZirenTokens.surfaceBase,
+        appBar: AppBar(
+          backgroundColor: ZirenTokens.surfaceBase,
+          title: Text(t.settingsEditPersonalInfo),
+        ),
+        bottomNavigationBar: SettingsSaveBar(
+          label: t.settingsSaveChanges,
+          icon: LucideIcons.check,
+          busy: _saving,
+          onPressed: _save,
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              ZirenTokens.space16,
+              ZirenTokens.space4,
+              ZirenTokens.space16,
+              ZirenTokens.space24,
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: ZirenTokens.space4,
+                  bottom: ZirenTokens.space16,
+                ),
+                child: Text(
+                  t.settingsEditorIntro,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    height: 1.4,
+                    color: ZirenTokens.textSecondary,
+                  ),
+                ),
+              ),
+              SettingsFormSection(
+                title: t.settingsProfile,
+                children: [
+                  SettingsField(
+                    label: t.fieldFullName,
+                    child: ZirenTextField(
+                      key: const Key('edit-name'),
+                      label: '',
+                      controller: _name,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      prefixIcon: const Icon(LucideIcons.user),
+                      validator:
+                          (v) =>
+                              (v == null || v.trim().isEmpty)
+                                  ? t.respProfileNameRequired
+                                  : null,
+                    ),
+                  ),
+                  SettingsField(
+                    label: t.fieldMobileNumber,
+                    child: ZirenTextField(
+                      key: const Key('edit-phone'),
+                      label: '',
+                      hint: t.hintMobileShort,
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      prefixIcon: const Icon(LucideIcons.phone),
+                      // Optional here, but if given it has to be dialable -
+                      // it is the number a station calls back.
+                      validator:
+                          (v) =>
+                              (v ?? '').trim().isEmpty
+                                  ? null
+                                  : Validators.phoneNumber(v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZirenTokens.space24),
+              SettingsFormSection(
+                title: t.settingsAddress,
+                children: [
+                  SettingsField(
+                    label: t.fieldBarangaySettings,
+                    child: ZirenTextField(
+                      label: '',
+                      hint: t.hintBarangayExample,
+                      controller: _barangay,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      prefixIcon: const Icon(LucideIcons.house),
+                    ),
+                  ),
+                  SettingsField(
+                    label: t.fieldMunicipalitySettings,
+                    child: ZirenTextField(
+                      label: '',
+                      hint: t.hintMunicipalityExample,
+                      controller: _municipality,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      prefixIcon: const Icon(LucideIcons.map),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ZirenTokens.space24),
+              SettingsFormSection(
+                title: t.settingsEmergencyContact,
+                caption: t.emergencyWhoShort,
+                children: [
+                  SettingsField(
+                    label: t.fieldContactName,
+                    child: ZirenTextField(
+                      key: const Key('edit-ec-name'),
+                      label: '',
+                      hint: t.hintContactName,
+                      controller: _ecName,
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
+                      prefixIcon: const Icon(LucideIcons.contact),
+                      validator:
+                          (v) =>
+                              ((v ?? '').trim().isEmpty &&
+                                      _ecNumber.text.trim().isNotEmpty)
+                                  ? t.regEmergencyNeedsName
+                                  : null,
+                    ),
+                  ),
+                  SettingsField(
+                    label: t.fieldContactNumber,
+                    child: ZirenTextField(
+                      key: const Key('edit-ec-number'),
+                      label: '',
+                      hint: t.hintMobileShort,
+                      controller: _ecNumber,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _save(),
+                      prefixIcon: const Icon(LucideIcons.phone),
+                      validator: (v) {
+                        final number = (v ?? '').trim();
+                        if (number.isEmpty) {
+                          return _ecName.text.trim().isEmpty
+                              ? null
+                              : t.regEmergencyNeedsNumber;
+                        }
+                        final invalid = Validators.phoneNumber(number);
+                        if (invalid != null) return invalid;
+                        // The commonest mix-up: typing their OWN number here.
+                        if (Validators.sameMobile(number, _phone.text)) {
+                          return t.regEmergencySameAsYours;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: ZirenTokens.space8),
-        const Expanded(child: Divider()),
-      ],
+      ),
     );
   }
 }
