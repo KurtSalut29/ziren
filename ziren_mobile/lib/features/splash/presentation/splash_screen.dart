@@ -7,52 +7,68 @@ import 'package:provider/provider.dart';
 import '../../../features/auth/domain/auth_provider.dart';
 import '../../../features/onboarding/data/onboarding_repository.dart';
 import '../../../shared/theme/app_tokens.dart';
-import '../../../shared/widgets/ziren_logo.dart';
 
-/// The routing gate that runs while the app decides where to send you.
+/// The routing gate that runs while the app decides where to send you, and
+/// the logo animation (branding/ZIREN_Logo_Splash_Transparent.webm) played
+/// while it does.
 ///
-/// WHY THERE IS NO ANIMATION HERE ANY MORE
+/// THE TWO LAUNCH SCREENS
 ///
-/// There are two launch screens on Android and only one of them is ours to
-/// remove. The first is the system's, drawn before Flutter exists — it cannot
-/// be skipped, and on Android 12+ the platform draws it from
-/// values-v31/styles.xml. The second was this screen, which used to spend 1.9
-/// seconds fading in a mark, drawing "ZIREN" left to right and revealing a
-/// tagline.
+/// Android draws its own launch screen before Flutter exists; it cannot be
+/// skipped. It used to show the finished mark, which this screen then held
+/// still. With an animation here, a finished logo before it would vanish and
+/// draw itself again — so the native one is now a plain #FAFAFA screen
+/// (values-v31/styles.xml, drawable/launch_background.xml) and the logo
+/// appears once, here, drawing itself in.
 ///
-/// Two different-looking splashes in a row read as two splashes, because they
-/// were. So this one now paints exactly what the native one paints — the mark,
-/// centred, on the same #FAFAFA — and hands over as soon as its checks finish.
-/// The seam between them is invisible: one logo that does not move, then the
-/// app.
+/// The clip is an animated WebP with transparency, made from the video (and a
+/// copy with the ink near-white for the dark theme), played once and held on
+/// its last frame. In the dark theme the background eases from the native
+/// screen's light grey to the dark surface as the first strokes appear,
+/// rather than cutting.
 ///
-/// It still has to exist. The onboarding gate and the session restore below
+/// It is still the gate: the onboarding check and the session restore below
 /// decide between four destinations, and neither answer is available
-/// synchronously; something has to be on screen while they resolve. What it
-/// must not do is take longer than they do.
+/// synchronously. It leaves when both they and the animation are done; a tap
+/// skips the rest of the animation.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  /// The logo animation's length (the video is 3.5 s), at full speed.
+  static const clipLength = Duration(milliseconds: 3500);
+
+  /// Frames in the clip (30 fps; identical frames merged). The splash moves
+  /// on when the last one is on screen, not after a fixed time: a slow phone
+  /// decodes it slower than real time, and a fixed timer cut the finished
+  /// logo short there.
+  static const clipFrames = 99;
+
+  /// How long the finished logo stays before the app opens.
+  static const finishedHold = Duration(milliseconds: 400);
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+/// The colour Android paints its launch screen (res/values/colors.xml
+/// zirenBackground), which this screen starts from.
+const Color kNativeLaunchColor = Color(0xFFFAFAFA);
+
 class _SplashScreenState extends State<SplashScreen> {
-  /// Guards against navigating twice — a tap-to-skip landing in the same frame
-  /// the checks complete would otherwise fire `_navigate` from both.
+  /// Guards against navigating twice.
   bool _navigated = false;
 
   final _onboarding = OnboardingRepository();
 
-  /// A floor on how briefly this can flash past, not a delay added to it.
-  ///
-  /// The checks below usually settle in a few tens of milliseconds, and
-  /// swapping the screen out that fast reads as a flicker rather than a
-  /// handover. Half a second is also what the reset gesture needs to be
-  /// pressable at all. Because this screen is pixel-identical to the native
-  /// one, the wait is not a second splash — it is the same image holding a
-  /// moment longer.
-  static const _minimumHold = Duration(milliseconds: 500);
+  /// With "Remove animations" on there is no animation to wait for: the
+  /// finished logo holds this long, so the screen does not flicker past (and
+  /// the reset gesture stays pressable).
+  static const _stillHold = Duration(milliseconds: 500);
+
+  /// Completes once the animation's last frame has been on screen for
+  /// [SplashScreen.finishedHold], or at once when skipped.
+  final _played = Completer<void>();
+  Timer? _clipTimer;
 
   @override
   void initState() {
@@ -65,15 +81,42 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
+  bool get _still => MediaQuery.disableAnimationsOf(context);
+
   Future<void> _start() async {
-    // The hold and the checks run TOGETHER rather than one after the other, so
-    // the slower of the two sets the pace instead of their sum.
-    await Future.wait([
-      Future<void>.delayed(_minimumHold),
-      Future<void>(() async {
-        if (mounted) await _navigate();
-      }),
-    ]);
+    if (_still) {
+      _clipTimer = Timer(_stillHold, _finishClip);
+    } else {
+      // Should the clip never draw (a decode failure) or crawl, the gate must
+      // not wait on it for ever.
+      Timer(SplashScreen.clipLength * 2, _finishClip);
+    }
+    // The animation and the checks run TOGETHER: the slower of the two sets
+    // the pace, not their sum.
+    await _navigate();
+  }
+
+  /// A frame of the clip is on screen; the last one ends it.
+  void _clipFrame(int frame) {
+    if (frame < SplashScreen.clipFrames - 1) return;
+    if (_clipTimer != null || _played.isCompleted) return;
+    _clipTimer = Timer(SplashScreen.finishedHold, _finishClip);
+  }
+
+  void _finishClip() {
+    if (!_played.isCompleted) _played.complete();
+  }
+
+  /// Tapping skips the rest of the animation. Deliberately no visible "Skip".
+  void _skip() {
+    _clipTimer?.cancel();
+    _finishClip();
+  }
+
+  @override
+  void dispose() {
+    _clipTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _navigate() async {
@@ -89,6 +132,15 @@ class _SplashScreenState extends State<SplashScreen> {
     final onboarded = await _onboarding.isDeviceOnboarded();
     if (!mounted) return;
 
+    // A signed-in session is restored while the logo still draws. Role is not
+    // recoverable synchronously, and navigateAfterAuth() routes on it: without
+    // waiting for this a restored responder session is routed as a resident.
+    final restoring =
+        onboarded && auth.isAuthenticated ? auth.restoreSession() : null;
+    await _played.future;
+    if (restoring != null) await restoring;
+    if (!mounted) return;
+
     if (!onboarded) {
       // Also the path an existing user takes after an app update that bumps
       // a document version: they pass through the same screens, and the
@@ -99,11 +151,6 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (auth.isAuthenticated) {
-      // Role is not recoverable synchronously, and navigateAfterAuth() routes
-      // on it. Without this await a restored responder session is routed as a
-      // resident.
-      await auth.restoreSession();
-      if (!mounted) return;
       auth.navigateAfterAuth();
     } else {
       auth.navigateToLogin();
@@ -130,21 +177,47 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ZirenTokens.surfaceBase,
-      body: GestureDetector(
+    final theme = ZirenTokens.isDark ? 'dark' : 'light';
+    final clip =
+        _still
+            ? 'assets/images/splash/splash_${theme}_still.webp'
+            : 'assets/images/splash/splash_$theme.webp';
+    return TweenAnimationBuilder<Color?>(
+      // From the native launch screen's colour to the theme's surface (the
+      // same colour in the light theme, so nothing moves there).
+      tween: ColorTween(
+        begin: kNativeLaunchColor,
+        end: ZirenTokens.surfaceBase,
+      ),
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOut,
+      builder:
+          (context, color, child) =>
+              Scaffold(backgroundColor: color, body: child),
+      child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        // Tapping skips the remaining hold. Deliberately no visible "Skip" —
-        // it would draw attention to a wait of half a second.
-        onTap: _navigate,
+        onTap: _skip,
         onLongPress: _resetOnboarding,
         child: Semantics(
           label: 'Ziren. Starting.',
           child: ExcludeSemantics(
-            // Sized to sit close to what the platform draws on Android 12+,
-            // where the splash icon occupies roughly 192dp. Matching it is the
-            // whole point: the two screens must look like one.
-            child: Center(child: ZirenLogo.mark(size: 200, onDark: ZirenTokens.isDark)),
+            child: Center(
+              child: Image.asset(
+                clip,
+                width: 260,
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+                filterQuality: FilterQuality.medium,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (frame != null && !_still) {
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => _clipFrame(frame),
+                    );
+                  }
+                  return child;
+                },
+              ),
+            ),
           ),
         ),
       ),

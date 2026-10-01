@@ -161,75 +161,39 @@ void main() {
     });
   });
 
-  group('Ziren on Home (Wave_Mascot / No_Internet_Mascot frames)', () {
-    Widget loop(ZirenMascotMood mood) => MaterialApp(
-      home: Center(
-        child: SizedBox.fromSize(size: ZirenMascot.canvas, child: ZirenFrameLoop(mood: mood)),
-      ),
-    );
+  group('Ziren on Home (wave / no-internet clips)', () {
+    String shownClip(WidgetTester tester) => tester
+        .widgetList<Image>(find.descendant(of: find.byType(ZirenMascotClip), matching: find.byType(Image)))
+        .map((i) => (i.image as AssetImage).assetName)
+        .single;
 
-    /// The frames on screen now, by number, with their opacity.
-    Map<int, double> shown(WidgetTester tester) => {
-      for (final img in tester.widgetList<Image>(find.byType(Image)))
-        int.parse(RegExp(r'_(\d\d)\.webp').firstMatch((img.image as AssetImage).assetName)!.group(1)!):
-            img.opacity!.value,
-    };
-
-    testWidgets('the wave plays Start to End, each frame fading into the next, and End goes straight back to Start',
-        (tester) async {
-      await tester.pumpWidget(loop(ZirenMascotMood.wave));
-      expect(shown(tester), {1: 1.0}); // Start
-
-      // 280 ms a frame: held for 140 ms, then 140 ms fading into the next.
-      await tester.pump(const Duration(milliseconds: 100)); // held
-      expect(shown(tester), {1: 1.0});
-
-      await tester.pump(const Duration(milliseconds: 110)); // 210 ms: fading into Move 1
-      final mid = shown(tester);
-      expect(mid.keys, [1, 2]);
-      expect(mid[2], inExclusiveRange(0, 1));
-
-      await tester.pump(const Duration(milliseconds: 90)); // 300 ms: Move 1
-      expect(shown(tester).keys.first, 2);
-
-      // 9 frames x 280 ms in, the End fades into Start — no pause, no jump.
-      await tester.pump(const Duration(milliseconds: 2480)); // 2780 ms
-      expect(shown(tester).keys, [10, 1]);
-      await tester.pump(const Duration(milliseconds: 30)); // 2810 ms: Start again
-      expect(shown(tester), {1: 1.0});
-    });
-
-    testWidgets('mid-fade the figure never goes see-through', (tester) async {
-      await tester.pumpWidget(loop(ZirenMascotMood.wave));
-      for (var ms = 0; ms < 280; ms += 5) {
-        final now = shown(tester);
-        final cover = 1 - now.values.fold<double>(1, (left, o) => left * (1 - o));
-        expect(cover, greaterThan(0.93), reason: '$ms ms: $now');
-        await tester.pump(const Duration(milliseconds: 5));
+    testWidgets('plays the clip for its mood', (tester) async {
+      for (final mood in ZirenMascotMood.values) {
+        await tester.pumpWidget(MaterialApp(home: ZirenMascotClip(key: ValueKey(mood), mood: mood)));
+        expect(shownClip(tester), 'assets/images/mascot/${mood.name}.webp');
       }
     });
 
-    testWidgets('the no-internet loop holds each pose long enough to read', (tester) async {
-      await tester.pumpWidget(loop(ZirenMascotMood.offline));
-      expect(shown(tester), {1: 1.0}); // Not connected
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(shown(tester), {1: 1.0});
-      await tester.pump(const Duration(milliseconds: 600)); // 900 ms: Look around
-      expect(shown(tester).keys.first, 2);
-      await tester.pump(const Duration(milliseconds: 4700)); // 5.6 s: round again
-      expect(shown(tester).keys.first, 1);
+    testWidgets('a clip fading in holds its first frame, then plays from it', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: ZirenMascotClip(mood: ZirenMascotMood.offline, startDelay: Duration(milliseconds: 520)),
+      ));
+      expect(shownClip(tester), 'assets/images/mascot/offline_still.webp');
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(shownClip(tester), 'assets/images/mascot/offline_still.webp');
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(shownClip(tester), 'assets/images/mascot/offline.webp');
     });
 
-    testWidgets('with "Remove animations" on, Ziren stands still on the first frame', (tester) async {
+    testWidgets('with "Remove animations" on, Ziren stands still on a single frame', (tester) async {
       tester.platformDispatcher.accessibilityFeaturesTestValue =
           const FakeAccessibilityFeatures(disableAnimations: true);
       addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-      await tester.pumpWidget(loop(ZirenMascotMood.wave));
-      await tester.pump(const Duration(seconds: 2));
-      expect(shown(tester), {1: 1.0});
+      await tester.pumpWidget(const MaterialApp(home: ZirenMascotClip(mood: ZirenMascotMood.offline)));
+      expect(shownClip(tester), 'assets/images/mascot/offline_still.webp');
     });
 
-    testWidgets('losing the internet swaps the wave for the no-internet loop with a fade-through, and back',
+    testWidgets('losing the internet swaps the wave for the no-internet clip with a fade-through, and back',
         (tester) async {
       var offline = false;
       late StateSetter set;
@@ -239,59 +203,72 @@ void main() {
           return Center(child: SizedBox(width: 136, height: 158, child: ZirenMascot(offline: offline)));
         }),
       ));
-      // All 20 frames are decoded before Ziren appears.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(seconds: 2)));
+      // Both clips have their first frame decoded before Ziren appears.
+      await tester.runAsync(() => Future<void>.delayed(const Duration(seconds: 3)));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byType(ZirenFrameLoop), findsOneWidget);
-      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.wave);
+      expect(tester.widget<ZirenMascotClip>(find.byType(ZirenMascotClip)).mood, ZirenMascotMood.wave);
 
       set(() => offline = true);
       await tester.pump();
-      // A fade-through: never both showing at once (two sets drawn over each
-      // other showed two pins).
+      // A fade-through: never both showing at once (two figures drawn over
+      // each other showed two pins).
       double opacityOf(ZirenMascotMood mood) => tester
           .widget<FadeTransition>(find.ancestor(
-            of: find.byWidgetPredicate((w) => w is ZirenFrameLoop && w.mood == mood),
+            of: find.byWidgetPredicate((w) => w is ZirenMascotClip && w.mood == mood),
             matching: find.byType(FadeTransition),
           ).first)
           .opacity
           .value;
       for (var ms = 0; ms <= 520; ms += 40) {
-        final loops = tester.widgetList<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).map((w) => w.mood).toList();
-        if (loops.length == 2) {
+        final clips = tester.widgetList<ZirenMascotClip>(find.byType(ZirenMascotClip)).map((w) => w.mood).toList();
+        if (clips.length == 2) {
           final both = opacityOf(ZirenMascotMood.wave) > 0 && opacityOf(ZirenMascotMood.offline) > 0;
-          expect(both, isFalse, reason: 'at $ms ms both loops were showing');
+          expect(both, isFalse, reason: 'at $ms ms both clips were showing');
         }
-        if (ms == 120) expect(loops.length, 2, reason: 'the wave is still fading out');
+        if (ms == 120) expect(clips.length, 2, reason: 'the wave is still fading out');
         await tester.pump(const Duration(milliseconds: 40));
       }
-      // The new loop held its first pose while it faded in, so no change of
-      // pose was half-seen through the fade.
-      final faded = tester.widgetList<Image>(find.descendant(
-        of: find.byType(ZirenFrameLoop), matching: find.byType(Image),
-      )).map((i) => (i.image as AssetImage).assetName);
-      expect(faded, ['assets/images/mascot/offline_01.webp']);
       await tester.pump(const Duration(milliseconds: 100));
-      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.offline);
+      expect(tester.widget<ZirenMascotClip>(find.byType(ZirenMascotClip)).mood, ZirenMascotMood.offline);
 
       set(() => offline = false);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
-      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.wave);
+      expect(tester.widget<ZirenMascotClip>(find.byType(ZirenMascotClip)).mood, ZirenMascotMood.wave);
     });
   });
 
-  test('all 20 frames share one transparent canvas, so they cross-fade in place', () {
+  test('both clips are looping animated WebP with transparency, on one canvas', () {
+    (int, int) canvasOf(String path) {
+      final b = File(path).readAsBytesSync();
+      return switch (String.fromCharCodes(b.sublist(12, 16))) {
+              'VP8X' => ((b[24] | b[25] << 8 | b[26] << 16) + 1, (b[27] | b[28] << 8 | b[29] << 16) + 1),
+              // Lossless still: 14-bit width-1, 14-bit height-1 after the 0x2f signature.
+              'VP8L' => (
+                  ((b[21] | b[22] << 8) & 0x3fff) + 1,
+                  (((b[22] >> 6) | b[23] << 2 | b[24] << 10) & 0x3fff) + 1,
+                ),
+              final kind => throw StateError('$path: $kind'),
+            };
+    }
+
     for (final mood in ZirenMascotMood.values) {
-      for (final path in mood.frames) {
-        final b = File(path).readAsBytesSync();
-        expect(String.fromCharCodes(b.sublist(8, 16)), 'WEBPVP8X', reason: path);
-        expect(b[20] & 0x10, 0x10, reason: '$path has an alpha channel');
-        final w = (b[24] | b[25] << 8 | b[26] << 16) + 1;
-        final h = (b[27] | b[28] << 8 | b[29] << 16) + 1;
-        expect((w, h), (ZirenMascot.canvas.width.toInt(), ZirenMascot.canvas.height.toInt()), reason: path);
-      }
+      final clip = File(mood.clip).readAsBytesSync();
+      expect(String.fromCharCodes(clip.sublist(8, 16)), 'WEBPVP8X', reason: mood.clip);
+      expect(clip[20] & 0x10, 0x10, reason: '${mood.clip} has an alpha channel');
+      expect(clip[20] & 0x02, 0x02, reason: '${mood.clip} is animated');
+      // ANIM chunk: loop count 0 = forever.
+      final anim = String.fromCharCodes(clip).indexOf('ANIM');
+      expect(clip[anim + 12] | clip[anim + 13] << 8, 0, reason: '${mood.clip} loops forever');
+
+      final still = File(mood.still).readAsBytesSync();
+      expect(String.fromCharCodes(still.sublist(8, 16)), 'WEBPVP8L', reason: '${mood.still} is one lossless frame');
+      expect(still[24] & 0x10, 0x10, reason: '${mood.still} has transparency');
+
+      final size = (ZirenMascot.canvas.width.toInt(), ZirenMascot.canvas.height.toInt());
+      expect(canvasOf(mood.clip), size, reason: mood.clip);
+      expect(canvasOf(mood.still), size, reason: mood.still);
     }
   });
 

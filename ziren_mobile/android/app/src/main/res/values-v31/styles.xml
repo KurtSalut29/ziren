@@ -21,11 +21,15 @@
     which also handles the sizing rule — the platform masks the icon to a
     circle and only guarantees the inner two thirds, so the mark is padded to
     sit inside that.
+
+    Since 2026-10-02 the icon is splash_blank (nothing): the Flutter splash
+    plays the logo drawing itself in, and a finished mark shown first would
+    vanish and draw again. The launch screen is the plain background.
 -->
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowSplashScreenBackground">@color/zirenBackground</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ziren_splash_mark</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
         <!-- Kept for the window itself once the splash hands over. -->
         <item name="android:windowBackground">@color/zirenBackground</item>
         <item name="android:windowFullscreen">true</item>

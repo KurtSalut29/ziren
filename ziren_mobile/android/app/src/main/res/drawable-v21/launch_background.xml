@@ -3,10 +3,6 @@
     <!-- Light background matching ZirenTokens.surfaceBase (#FAFAFA) -->
     <item android:drawable="@color/zirenBackground" />
 
-    <!-- Centered Ziren logo -->
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/ziren_logo" />
-    </item>
+    <!-- No logo: it draws itself in on the Flutter splash (splash_screen.dart);
+         a finished mark here would show, vanish, and draw again. -->
 </layer-list>

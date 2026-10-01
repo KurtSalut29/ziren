@@ -15,7 +15,7 @@
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowSplashScreenBackground">@color/zirenBackground</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ziren_splash_mark</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_blank</item>
         <item name="android:windowBackground">@color/zirenBackground</item>
         <item name="android:windowFullscreen">true</item>
     </style>

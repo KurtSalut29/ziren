@@ -2,63 +2,41 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-/// The two loops Ziren plays on Home, both cut from the branding sheets
-/// (Wave_Mascot.png, No_Internet_Mascot.png) into ten frames each, on one
-/// canvas registered by the feet: every frame of both sets stands on the same
-/// spot at the same size, so frames cross-fade in place and the two sets swap
-/// without the figure jumping.
+/// The two clips Ziren plays on Home, made from the branding videos
+/// (ZIREN_Mascot_Wave_Transparent.webm, ZIREN_Mascot_No_Internet.webm) as
+/// animated WebP with transparency — Flutter plays and loops those itself, no
+/// video player needed. Both are on one canvas, registered by the feet, so
+/// they stand on the same spot at the same size and swap without a jump
+/// (scratchpad anim/videos.py).
 enum ZirenMascotMood {
-  /// Waving hello: Start, Move 1-8, End, and straight back to Start.
-  // 280 ms a frame, about 2.8 s a wave: 150 ms felt too quick (user, 2026-10-01).
-  wave(prefix: 'wave', frameTime: Duration(milliseconds: 280), blend: 0.5),
+  /// Waving hello, 10 s at 30 fps, looping.
+  wave,
 
-  /// No internet: not connected, looks around, thinks, ... turns away (End),
-  /// then from the top again. Each pose is a feeling, so each is held long
-  /// enough to read.
-  offline(
-    prefix: 'offline',
-    frameTime: Duration(milliseconds: 560),
-    // Short: these poses differ a lot (the badge and head move), and a long
-    // overlap showed both for a moment.
-    blend: 0.28,
-  );
+  /// No internet: not connected, looks around, thinks, ... turns away, and
+  /// round again, 10 s at 30 fps.
+  offline;
 
-  const ZirenMascotMood({
-    required this.prefix,
-    required this.frameTime,
-    required this.blend,
-  });
+  /// The clip.
+  String get clip => 'assets/images/mascot/$name.webp';
 
-  final String prefix;
-
-  /// How long each frame lasts, cross-fade included.
-  final Duration frameTime;
-
-  /// The share of [frameTime] spent fading into the next frame.
-  final double blend;
-
-  static const int frameCount = 10;
-
-  List<String> get frames => [
-    for (var i = 1; i <= frameCount; i++)
-      'assets/images/mascot/${prefix}_${i.toString().padLeft(2, '0')}.webp',
-  ];
+  /// The clip's first frame: shown while it fades in, and for "Remove
+  /// animations".
+  String get still => 'assets/images/mascot/${name}_still.webp';
 }
 
-/// Ziren on Home: waving, or — while [offline] — the no-internet loop. The
+/// Ziren on Home: waving, or — while [offline] — the no-internet clip. The
 /// change between the two fades through, with a small grow, never a cut.
 ///
-/// Nothing is shown until all 20 frames are decoded (it then fades in), so no
-/// frame ever flashes in blank. With "Remove animations" on in the phone's
-/// settings, Ziren stands still on the first frame of the loop.
+/// Nothing is shown until both clips have their first frame decoded (it then
+/// fades in), so Ziren never flashes in blank. With "Remove animations" on in
+/// the phone's settings, Ziren stands still on the clip's first frame.
 class ZirenMascot extends StatefulWidget {
   const ZirenMascot({super.key, required this.offline});
 
   final bool offline;
 
-  /// The canvas every frame is drawn on, in pixels, and the feet's place on
-  /// it (see scratchpad anim/register.py).
-  static const Size canvas = Size(345, 398);
+  /// The canvas both clips are drawn on, in pixels.
+  static const Size canvas = Size(408, 464);
 
   @override
   State<ZirenMascot> createState() => _ZirenMascotState();
@@ -74,9 +52,10 @@ class _ZirenMascotState extends State<ZirenMascot> {
     if (_loading) return;
     _loading = true;
     final all = [
-      for (final mood in ZirenMascotMood.values)
-        for (final path in mood.frames)
-          precacheImage(AssetImage(path), context),
+      for (final mood in ZirenMascotMood.values) ...[
+        precacheImage(AssetImage(mood.clip), context),
+        precacheImage(AssetImage(mood.still), context),
+      ],
     ];
     Future.wait(all).whenComplete(() {
       if (mounted) setState(() => _ready = true);
@@ -103,14 +82,11 @@ class _ZirenMascotState extends State<ZirenMascot> {
                     ? null
                     : AnimatedSwitcher(
                       duration: const Duration(milliseconds: 520),
-                      // Each side fades over 60% of the change, overlapping in
-                      // the middle: the figure never goes see-through, which
-                      // two plain 50/50 fades of the same body would do.
-                      // Fade-through: the old loop fades and settles out in
+                      // Fade-through: the old clip fades and settles out in
                       // the first half, the new one grows in during the
-                      // second. Never both at once — the two sets hold their
-                      // heads in different places, and overlapping them
-                      // showed two pins for a moment.
+                      // second. Never both at once — the two hold their heads
+                      // in different places, and overlapping them showed two
+                      // pins for a moment.
                       transitionBuilder: (child, animation) {
                         final fade = CurvedAnimation(
                           parent: animation,
@@ -143,7 +119,7 @@ class _ZirenMascotState extends State<ZirenMascot> {
                               if (current != null) current,
                             ],
                           ),
-                      child: ZirenFrameLoop(
+                      child: ZirenMascotClip(
                         key: ValueKey(mood),
                         mood: mood,
                         // Until the fade-through has brought it in.
@@ -157,99 +133,54 @@ class _ZirenMascotState extends State<ZirenMascot> {
   }
 }
 
-/// One mood's ten frames, played Start to End and round again, each frame
-/// cross-fading into the next. Draw it at [ZirenMascot.canvas] size.
-class ZirenFrameLoop extends StatefulWidget {
-  const ZirenFrameLoop({
+/// One mood's clip, playing and looping. Draw it at [ZirenMascot.canvas]
+/// size. An offstage tab pauses it: [Image] stops an animation while its
+/// TickerMode is off.
+///
+/// For [startDelay] it shows the clip's first frame ([ZirenMascotMood.still]
+/// is that frame) and only then starts playing: a clip fading in would
+/// otherwise run on unseen and appear mid-move.
+class ZirenMascotClip extends StatefulWidget {
+  const ZirenMascotClip({
     super.key,
     required this.mood,
     this.startDelay = Duration.zero,
   });
 
   final ZirenMascotMood mood;
-
-  /// How long the first frame waits before the loop starts: a loop that is
-  /// fading in holds still until it is showing, so its first change of pose
-  /// is not half-seen through the fade.
   final Duration startDelay;
 
   @override
-  State<ZirenFrameLoop> createState() => _ZirenFrameLoopState();
+  State<ZirenMascotClip> createState() => _ZirenMascotClipState();
 }
 
-class _ZirenFrameLoopState extends State<ZirenFrameLoop>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _loop = AnimationController(
-    vsync: this,
-    duration: widget.mood.frameTime * ZirenMascotMood.frameCount,
-  );
-
+class _ZirenMascotClipState extends State<ZirenMascotClip> {
+  late bool _playing = widget.startDelay == Duration.zero;
   Timer? _start;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _start?.cancel();
-      _loop
-        ..stop()
-        ..value = 0;
-    } else if (!_loop.isAnimating && !(_start?.isActive ?? false)) {
-      if (widget.startDelay == Duration.zero) {
-        _loop.repeat();
-      } else {
-        _start = Timer(widget.startDelay, () {
-          if (mounted) _loop.repeat();
-        });
-      }
+  void initState() {
+    super.initState();
+    if (!_playing) {
+      _start = Timer(widget.startDelay, () {
+        if (mounted) setState(() => _playing = true);
+      });
     }
   }
 
   @override
   void dispose() {
     _start?.cancel();
-    _loop.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final frames = widget.mood.frames;
-    const n = ZirenMascotMood.frameCount;
-    final blend = widget.mood.blend;
-    return AnimatedBuilder(
-      animation: _loop,
-      builder: (context, _) {
-        final pos = _loop.value * n;
-        final i = pos.floor() % n;
-        final next = (i + 1) % n;
-        // Held for the first part of the frame, then faded into the next.
-        final b = Curves.easeInOut.transform(
-          ((pos - pos.floor() - (1 - blend)) / blend).clamp(0.0, 1.0),
-        );
-        // The next frame comes in a little ahead of this one going out, so
-        // where the two overlap (the body) it stays solid all the way.
-        final over = (b / 0.6).clamp(0.0, 1.0);
-        final under = 1 - ((b - 0.4) / 0.6).clamp(0.0, 1.0);
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            _frame(frames[i], under, i),
-            if (b > 0) _frame(frames[next], over, next),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Keyed by frame, so a frame moving from "next" to "current" keeps its
-  /// element (and its decoded image) instead of being rebuilt.
-  Widget _frame(String path, double opacity, int index) {
+    final play = _playing && !MediaQuery.disableAnimationsOf(context);
     return Image.asset(
-      path,
-      key: ValueKey(index),
-      opacity: AlwaysStoppedAnimation(opacity),
+      play ? widget.mood.clip : widget.mood.still,
       fit: BoxFit.contain,
+      // The clip's first frame replaces the identical still: no blank, no jump.
       gaplessPlayback: true,
       filterQuality: FilterQuality.medium,
       excludeFromSemantics: true,
