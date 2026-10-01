@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 /// without the figure jumping.
 enum ZirenMascotMood {
   /// Waving hello: Start, Move 1-8, End, and straight back to Start.
-  wave(prefix: 'wave', frameTime: Duration(milliseconds: 150), blend: 0.6),
+  // 280 ms a frame, about 2.8 s a wave: 150 ms felt too quick (user, 2026-10-01).
+  wave(prefix: 'wave', frameTime: Duration(milliseconds: 280), blend: 0.5),
 
   /// No internet: not connected, looks around, thinks, ... turns away (End),
   /// then from the top again. Each pose is a feeling, so each is held long

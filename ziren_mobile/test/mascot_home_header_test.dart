@@ -180,27 +180,28 @@ void main() {
       await tester.pumpWidget(loop(ZirenMascotMood.wave));
       expect(shown(tester), {1: 1.0}); // Start
 
-      await tester.pump(const Duration(milliseconds: 50)); // held
+      // 280 ms a frame: held for 140 ms, then 140 ms fading into the next.
+      await tester.pump(const Duration(milliseconds: 100)); // held
       expect(shown(tester), {1: 1.0});
 
-      await tester.pump(const Duration(milliseconds: 60)); // 110 ms: fading into Move 1
+      await tester.pump(const Duration(milliseconds: 110)); // 210 ms: fading into Move 1
       final mid = shown(tester);
       expect(mid.keys, [1, 2]);
       expect(mid[2], inExclusiveRange(0, 1));
 
-      await tester.pump(const Duration(milliseconds: 60)); // 170 ms: Move 1
+      await tester.pump(const Duration(milliseconds: 90)); // 300 ms: Move 1
       expect(shown(tester).keys.first, 2);
 
-      // 9 frames x 150 ms in, the End fades into Start — no pause, no jump.
-      await tester.pump(const Duration(milliseconds: 1320)); // 1490 ms
+      // 9 frames x 280 ms in, the End fades into Start — no pause, no jump.
+      await tester.pump(const Duration(milliseconds: 2480)); // 2780 ms
       expect(shown(tester).keys, [10, 1]);
-      await tester.pump(const Duration(milliseconds: 30)); // 1520 ms: Start again
+      await tester.pump(const Duration(milliseconds: 30)); // 2810 ms: Start again
       expect(shown(tester), {1: 1.0});
     });
 
     testWidgets('mid-fade the figure never goes see-through', (tester) async {
       await tester.pumpWidget(loop(ZirenMascotMood.wave));
-      for (var ms = 0; ms < 150; ms += 5) {
+      for (var ms = 0; ms < 280; ms += 5) {
         final now = shown(tester);
         final cover = 1 - now.values.fold<double>(1, (left, o) => left * (1 - o));
         expect(cover, greaterThan(0.93), reason: '$ms ms: $now');
