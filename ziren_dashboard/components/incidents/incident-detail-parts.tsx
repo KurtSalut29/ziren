@@ -37,6 +37,7 @@ export function Section({
   tone,
   aside,
   className,
+  demo,
   children,
 }: {
   title: string;
@@ -48,11 +49,14 @@ export function Section({
   /** Something for the right of the heading, in place of the facet tag. */
   aside?: React.ReactNode;
   className?: string;
+  /** A part a Ziren demo points at (its `data-demo`). */
+  demo?: string;
   children: React.ReactNode;
 }) {
   const color = tone ?? 'var(--color-text-secondary)';
   return (
     <section
+      data-demo={demo}
       className={cn(
         'flex min-w-0 flex-col gap-3 rounded-[14px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-4',
         className,

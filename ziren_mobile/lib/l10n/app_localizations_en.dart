@@ -2412,6 +2412,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get respEscalateSent => 'Sent. The Agency Admin knows.';
 
   @override
+  String get respEscalateAction => 'Escalate incident';
+
+  @override
+  String get respEscalateBody => 'Tell the Agency Admin what changed. This notifies them to reassess — it does not change the official severity yourself.';
+
+  @override
+  String get respEscalateWhat => 'What changed?';
+
+  @override
+  String get respEscalateHint => 'e.g. Fire spreading rapidly, multiple casualties, additional agency required…';
+
+  @override
+  String get respEscalateSubmit => 'Send escalation';
+
+  @override
   String get respDistressSentLive => 'SENT. The dispatcher can see you now.';
 
   @override
@@ -4490,5 +4505,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String annHelpAckBody(String station) {
     return '$station has your request and is responding. Stay where it is safest.';
+  }
+
+  @override
+  String welcomeDemoTitle(String name) {
+    return 'Hi, $name!';
+  }
+
+  @override
+  String get welcomeDemoTitleNoName => 'Hi there!';
+
+  @override
+  String get welcomeDemoBodyResident => 'Welcome to Ziren! Want me to show you around the app first? It takes a minute, and nothing is sent while I show you.';
+
+  @override
+  String get welcomeDemoBodyResponder => 'Welcome to the team! Want me to show you around your screens first? It takes a minute, and nothing is changed while I show you.';
+
+  @override
+  String get welcomeDemoStart => 'Yes, show me';
+
+  @override
+  String get welcomeDemoLater => 'Maybe later';
+
+  @override
+  String welcomeDemoHint(String button) {
+    return 'You can watch it anytime: tap \"$button\" on Home, then Demo.';
   }
 }

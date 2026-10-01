@@ -70,6 +70,7 @@ import { IncidentDetailModal } from '@/components/incidents/incident-detail-moda
 import { CATEGORY_LABELS, REAL_CATEGORIES } from '@/lib/charts/queue-series';
 
 
+import { DemoTarget } from '@/components/help/demo-target';
 const STATUSES = [
   'received', 'processing', 'dispatched', 'en_route', 'arrived',
   'resolved', 'cancelled',
@@ -312,7 +313,7 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
       {/* ── Filters ─────────────────────────────────────────── */}
       {/* top-0, not top-11: this is its own sidebar route now (Incident
           History), not a tab under a shell that reserved the first 44px. */}
-      <div className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3.5 backdrop-blur md:px-7">
+      <div data-demo="records:filters" className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3.5 backdrop-blur md:px-7">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3.5">
           {/* Captioned fields that fill the row, the same pattern as Operational
               Area's own filter tier — each control says what it is before it is
@@ -322,9 +323,9 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
               free-text search below already reaches every loaded row, and a
               second, server-side way to find one record added a control this
               bar did not need. */}
-          <FilterField className="max-sm:w-full sm:flex-[2.2_1_400px]" label="Period">
+          <DemoTarget id="records:period"><FilterField className="max-sm:w-full sm:flex-[2.2_1_400px]" label="Period">
             <PeriodPicker days={days} onDays={setDays} onRange={setRange} range={range} size="sm" today={today} />
-          </FilterField>
+          </FilterField></DemoTarget>
 
           <FilterField className="max-sm:w-[calc(50%-10px)] sm:flex-[1_1_150px]" label="Status">
             <OptionPicker
@@ -425,7 +426,7 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
             bar: it searches the rows this line describes, so it reads best
             beside them. It wraps under the summary on a narrow screen rather
             than squeezing it. */}
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div data-demo="records:summary" className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
             {summary.map((part, i) => (
               <span className="flex items-baseline gap-2" key={i}>
@@ -441,14 +442,14 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
             {/* Takes the room the summary leaves (at least 240px, at most 460px)
                 instead of a fixed width, so it is as wide as the row allows and
                 still ends at the right edge of the table. */}
-            <SearchInput
+            <DemoTarget id="records:search"><SearchInput
               className="min-w-[240px] max-w-[460px] flex-1"
               label="Search these records"
               onValueChange={setQ}
               placeholder="Search records…"
               title="Searches every column of the records loaded on this page"
               value={q}
-            />
+            /></DemoTarget>
           </div>
         </div>
 
@@ -467,7 +468,7 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
         ) : shown.length === 0 ? (
           <_NoMatches onClear={() => setQ('')} pageSize={PAGE_SIZE} />
         ) : (
-          <IncidentRecordTable
+          <DemoTarget id="records:table"><IncidentRecordTable
             display={display}
             isProvincialAdmin={isProvincialAdmin}
             onNarrative={id => router.push(`/narrative-reports/${id}`)}
@@ -476,7 +477,7 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
             // there is more than one page of records.
             reserveBottom={pages > 1 ? 84 : 32}
             rows={shown}
-          />
+          /></DemoTarget>
         )}
 
         {pages > 1 && (

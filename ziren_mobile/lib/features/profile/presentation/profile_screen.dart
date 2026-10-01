@@ -11,6 +11,7 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/profile_kit.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Profile screen - a header card (avatar, name, email, verification and
 /// address chips), the verification card while it still matters, and titled
@@ -133,44 +134,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ProfileHeroCard(
-            avatar: EditableAvatar(
-              displayName: displayName,
-              avatarUrl: profile?.avatarUrl,
-              busy: _uploadingAvatar,
-              onTap: _changeAvatar,
-              size: 92,
-            ),
-            displayName: displayName,
-            subtitle: email,
-            chips: [
-              // Info-blue, never green: verification is an identity nudge,
-              // not a severity or a completed action (see _VerificationCard).
-              ProfileChip(
-                label:
-                    verified
-                        ? t.profileChipVerified
-                        : submitted
-                        ? t.profileChipInReview
-                        : t.profileChipNotVerified,
-                color:
-                    verified || submitted
-                        ? ZirenTokens.systemInfo
-                        : ZirenTokens.textMuted,
-                icon:
-                    verified
-                        ? LucideIcons.badge_check
-                        : submitted
-                        ? LucideIcons.hourglass
-                        : LucideIcons.shield,
+          DemoAnchor(
+            id: 'profile.hero',
+            child: ProfileHeroCard(
+              avatar: EditableAvatar(
+                displayName: displayName,
+                avatarUrl: profile?.avatarUrl,
+                busy: _uploadingAvatar,
+                onTap: _changeAvatar,
+                size: 92,
               ),
-              if (address != null)
+              displayName: displayName,
+              subtitle: email,
+              chips: [
+                // Info-blue, never green: verification is an identity nudge,
+                // not a severity or a completed action (see _VerificationCard).
                 ProfileChip(
-                  label: address,
-                  color: ZirenTokens.textSecondary,
-                  icon: LucideIcons.map_pin,
+                  label:
+                      verified
+                          ? t.profileChipVerified
+                          : submitted
+                          ? t.profileChipInReview
+                          : t.profileChipNotVerified,
+                  color:
+                      verified || submitted
+                          ? ZirenTokens.systemInfo
+                          : ZirenTokens.textMuted,
+                  icon:
+                      verified
+                          ? LucideIcons.badge_check
+                          : submitted
+                          ? LucideIcons.hourglass
+                          : LucideIcons.shield,
                 ),
-            ],
+                if (address != null)
+                  ProfileChip(
+                    label: address,
+                    color: ZirenTokens.textSecondary,
+                    icon: LucideIcons.map_pin,
+                  ),
+              ],
+            ),
           ),
 
           // ── Verification ──────────────────────────────────────
@@ -179,7 +183,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // resident's own details below the fold.
           if (!verified) ...[
             const SizedBox(height: ZirenTokens.space16),
-            _VerificationCard(profile: profile),
+            DemoAnchor(
+              id: 'profile.verify',
+              child: _VerificationCard(profile: profile),
+            ),
           ],
 
           if (provider.status == ProfileStatus.error) ...[
@@ -192,67 +199,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: ZirenTokens.space24),
 
           // ── Personal information ──────────────────────────────
-          ProfileGroup(
-            title: t.profilePersonalInfo,
-            children: [
-              ProfileTile(
-                icon: LucideIcons.user,
-                label: t.labelNameProfile,
-                value:
-                    profile?.fullName.isNotEmpty == true
-                        ? profile!.fullName
-                        : t.profileNotSet,
-                onTap: edit,
-              ),
-              ProfileTile(
-                icon: LucideIcons.mail,
-                label: t.labelEmailProfile,
-                value: email.isNotEmpty ? email : t.profileNotSet,
-                onTap: edit,
-              ),
-              ProfileTile(
-                icon: LucideIcons.phone,
-                label: t.labelPhone,
-                value:
-                    profile?.phoneNumber?.isNotEmpty == true
-                        ? profile!.phoneNumber!
-                        : t.profileNotSet,
-                onTap: edit,
-              ),
-              ProfileTile(
-                icon: LucideIcons.map_pin,
-                label: t.profileAddress,
-                value: address ?? t.profileNotSet,
-                onTap: edit,
-              ),
-            ],
+          DemoAnchor(
+            id: 'profile.info',
+            child: ProfileGroup(
+              title: t.profilePersonalInfo,
+              children: [
+                ProfileTile(
+                  icon: LucideIcons.user,
+                  label: t.labelNameProfile,
+                  value:
+                      profile?.fullName.isNotEmpty == true
+                          ? profile!.fullName
+                          : t.profileNotSet,
+                  onTap: edit,
+                ),
+                ProfileTile(
+                  icon: LucideIcons.mail,
+                  label: t.labelEmailProfile,
+                  value: email.isNotEmpty ? email : t.profileNotSet,
+                  onTap: edit,
+                ),
+                ProfileTile(
+                  icon: LucideIcons.phone,
+                  label: t.labelPhone,
+                  value:
+                      profile?.phoneNumber?.isNotEmpty == true
+                          ? profile!.phoneNumber!
+                          : t.profileNotSet,
+                  onTap: edit,
+                ),
+                ProfileTile(
+                  icon: LucideIcons.map_pin,
+                  label: t.profileAddress,
+                  value: address ?? t.profileNotSet,
+                  onTap: edit,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: ZirenTokens.space24),
 
           // ── Emergency contact ─────────────────────────────────
-          ProfileGroup(
-            title: t.profileEmergencyContact,
-            caption: t.emergencyWhoShort,
-            children: [
-              ProfileTile(
-                icon: LucideIcons.contact,
-                label: t.labelEmergencyContactName,
-                value:
-                    profile?.emergencyContactName?.isNotEmpty == true
-                        ? profile!.emergencyContactName!
-                        : t.profileNotSet,
-                onTap: edit,
-              ),
-              ProfileTile(
-                icon: LucideIcons.phone,
-                label: t.labelEmergencyContactNumber,
-                value:
-                    profile?.emergencyContactNumber?.isNotEmpty == true
-                        ? profile!.emergencyContactNumber!
-                        : t.profileNotSet,
-                onTap: edit,
-              ),
-            ],
+          DemoAnchor(
+            id: 'profile.emergency',
+            child: ProfileGroup(
+              title: t.profileEmergencyContact,
+              caption: t.emergencyWhoShort,
+              children: [
+                ProfileTile(
+                  icon: LucideIcons.contact,
+                  label: t.labelEmergencyContactName,
+                  value:
+                      profile?.emergencyContactName?.isNotEmpty == true
+                          ? profile!.emergencyContactName!
+                          : t.profileNotSet,
+                  onTap: edit,
+                ),
+                ProfileTile(
+                  icon: LucideIcons.phone,
+                  label: t.labelEmergencyContactNumber,
+                  value:
+                      profile?.emergencyContactNumber?.isNotEmpty == true
+                          ? profile!.emergencyContactNumber!
+                          : t.profileNotSet,
+                  onTap: edit,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: ZirenTokens.space24),
 
@@ -263,51 +276,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // resident should be able to find a hotline number, a first-aid
           // step, or an official notice without needing anything from Ziren
           // to be working first.
-          ProfileGroup(
-            title: t.profileSafetyHelp,
-            children: [
-              ProfileTile(
-                icon: LucideIcons.phone_call,
-                label: t.hotlinesTitle,
-                tone: ZirenTokens.systemSuccess,
-                onTap: () => context.push('/hotlines'),
-              ),
-              ProfileTile(
-                icon: LucideIcons.life_buoy,
-                label: t.helpTitle,
-                tone: ZirenTokens.systemInfo,
-                onTap: () => context.push('/help'),
-              ),
-              ProfileTile(
-                icon: LucideIcons.shield_plus,
-                label: t.safetyGuideTitle,
-                onTap: () => context.push('/safety-guide'),
-              ),
-              ProfileTile(
-                icon: LucideIcons.megaphone,
-                label: t.announcementsTitle,
-                onTap: () => context.push('/announcements'),
-              ),
-            ],
+          DemoAnchor(
+            id: 'profile.help',
+            child: ProfileGroup(
+              title: t.profileSafetyHelp,
+              children: [
+                ProfileTile(
+                  icon: LucideIcons.phone_call,
+                  label: t.hotlinesTitle,
+                  tone: ZirenTokens.systemSuccess,
+                  onTap: () => context.push('/hotlines'),
+                ),
+                ProfileTile(
+                  icon: LucideIcons.life_buoy,
+                  label: t.helpTitle,
+                  tone: ZirenTokens.systemInfo,
+                  onTap: () => context.push('/help'),
+                ),
+                ProfileTile(
+                  icon: LucideIcons.shield_plus,
+                  label: t.safetyGuideTitle,
+                  onTap: () => context.push('/safety-guide'),
+                ),
+                ProfileTile(
+                  icon: LucideIcons.megaphone,
+                  label: t.announcementsTitle,
+                  onTap: () => context.push('/announcements'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: ZirenTokens.space24),
 
           // ── Account ───────────────────────────────────────────
-          ProfileGroup(
-            title: t.profileAccount,
-            children: [
-              ProfileTile(
-                icon: LucideIcons.settings,
-                label: t.profileSettings,
-                onTap: edit,
-              ),
-              ProfileTile(
-                icon: LucideIcons.log_out,
-                label: t.settingsLogOut,
-                danger: true,
-                onTap: () => _confirmLogout(context, auth),
-              ),
-            ],
+          DemoAnchor(
+            id: 'profile.account',
+            child: ProfileGroup(
+              title: t.profileAccount,
+              children: [
+                ProfileTile(
+                  icon: LucideIcons.settings,
+                  label: t.profileSettings,
+                  onTap: edit,
+                ),
+                ProfileTile(
+                  icon: LucideIcons.log_out,
+                  label: t.settingsLogOut,
+                  danger: true,
+                  onTap: () => _confirmLogout(context, auth),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -356,7 +375,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 }
-
 
 // =============================================================================
 // Verification card

@@ -14,6 +14,7 @@ import 'widgets/report_stage_track.dart';
 import 'widgets/review_notice.dart';
 import 'widgets/transcript_prompt.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// My Reports — a card per report, newest first, grouped by filter.
 ///
@@ -70,7 +71,8 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
     // from Trash, the same way a deleted file is not also still in the folder.
     ReportFilter.lahat => all.where((i) => !_isTrashed(i)).toList(),
     ReportFilter.bukas => all.where(_isOpen).toList(),
-    ReportFilter.tapos => all.where((i) => !_isOpen(i) && !_isTrashed(i)).toList(),
+    ReportFilter.tapos =>
+      all.where((i) => !_isOpen(i) && !_isTrashed(i)).toList(),
     ReportFilter.basura => all.where(_isTrashed).toList(),
   };
 
@@ -122,54 +124,60 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                     ZirenTokens.space20,
                     ZirenTokens.space16,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context).myReportsTitle,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.6,
-                          height: 1.15,
-                          color: ZirenTokens.textPrimary,
+                  child: DemoAnchor(
+                    id: 'reports.title',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context).myReportsTitle,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.6,
+                            height: 1.15,
+                            color: ZirenTokens.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        counted == 0
-                            ? AppLocalizations.of(context).noReportsYetBody
-                            : openCount > 0
-                            ? AppLocalizations.of(
-                              context,
-                            ).reportsOpenCount(openCount, counted)
-                            : AppLocalizations.of(
-                              context,
-                            ).reportsAllDone(counted),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: ZirenTokens.textSecondary,
+                        const SizedBox(height: 4),
+                        Text(
+                          counted == 0
+                              ? AppLocalizations.of(context).noReportsYetBody
+                              : openCount > 0
+                              ? AppLocalizations.of(
+                                context,
+                              ).reportsOpenCount(openCount, counted)
+                              : AppLocalizations.of(
+                                context,
+                              ).reportsAllDone(counted),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: ZirenTokens.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
 
               if (all.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: ReportFilterRow(
-                    active: _filter,
-                    onChanged: (f) => setState(() => _filter = f),
-                    counts: {
-                      ReportFilter.lahat: counted,
-                      ReportFilter.bukas: openCount,
-                      ReportFilter.tapos:
-                          all
-                              .where((i) => !_isOpen(i) && !_isTrashed(i))
-                              .length,
-                      ReportFilter.basura: all.where(_isTrashed).length,
-                    },
+                  child: DemoAnchor(
+                    id: 'reports.filters',
+                    child: ReportFilterRow(
+                      active: _filter,
+                      onChanged: (f) => setState(() => _filter = f),
+                      counts: {
+                        ReportFilter.lahat: counted,
+                        ReportFilter.bukas: openCount,
+                        ReportFilter.tapos:
+                            all
+                                .where((i) => !_isOpen(i) && !_isTrashed(i))
+                                .length,
+                        ReportFilter.basura: all.where(_isTrashed).length,
+                      },
+                    ),
                   ),
                 ),
 
@@ -210,8 +218,7 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                       final l10n = AppLocalizations.of(context);
                       final showBucket =
                           index == 0 ||
-                          _bucket(l10n, visible[index - 1].createdAt) !=
-                              bucket;
+                          _bucket(l10n, visible[index - 1].createdAt) != bucket;
                       final bucketSize =
                           showBucket
                               ? visible
@@ -234,19 +241,25 @@ class _MyReportsScreenState extends State<MyReportsScreen> {
                             padding: const EdgeInsets.only(
                               bottom: ZirenTokens.space12,
                             ),
-                            child: _ReportCard(
-                              incident: incident,
-                              clock: _clock(incident.createdAt),
-                              fromPosition: provider.currentPosition,
-                              onTap:
-                                  () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (_) => ReportDetailScreen(
-                                            incident: incident,
-                                          ),
+                            child: DemoAnchor(
+                              id:
+                                  index == 0
+                                      ? 'reports.card'
+                                      : 'reports.card.$index',
+                              child: _ReportCard(
+                                incident: incident,
+                                clock: _clock(incident.createdAt),
+                                fromPosition: provider.currentPosition,
+                                onTap:
+                                    () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) => ReportDetailScreen(
+                                              incident: incident,
+                                            ),
+                                      ),
                                     ),
-                                  ),
+                              ),
                             ),
                           ),
                         ],
@@ -318,7 +331,9 @@ class ReportFilterRow extends StatelessWidget {
               // surfaceBase is that same pair's opposite extreme in both themes,
               // so it stays readable whichever theme flipped textPrimary.
               final fg =
-                  selected ? ZirenTokens.surfaceBase : ZirenTokens.textSecondary;
+                  selected
+                      ? ZirenTokens.surfaceBase
+                      : ZirenTokens.textSecondary;
               // Open reports still need someone: their count is drawn in the
               // "in progress" orange so it is noticed from across the list.
               final attention =
@@ -482,7 +497,8 @@ class _ReportCard extends StatelessWidget {
     // Still being handled: drawn in full colour with its progress. Finished
     // and withdrawn reports go quiet, so a history of closed reports does
     // not read as a list of emergencies.
-    final live = incident.status != 'resolved' && incident.status != 'cancelled';
+    final live =
+        incident.status != 'resolved' && incident.status != 'cancelled';
     final body =
         incident.reportText.isEmpty
             ? (incident.locationAddress ?? t.noDetails)
@@ -507,229 +523,233 @@ class _ReportCard extends StatelessWidget {
           // A Stack, not an IntrinsicHeight row: the notices and transcript
           // prompt below cannot be measured intrinsically.
           child: Stack(
-              children: [
-                Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      ZirenTokens.space16 + 1,
-                      ZirenTokens.space12 + 2,
-                      ZirenTokens.space12,
-                      ZirenTokens.space12 + 2,
-                    ),
-                    child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  ZirenTokens.space16 + 1,
+                  ZirenTokens.space12 + 2,
+                  ZirenTokens.space12,
+                  ZirenTokens.space12 + 2,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: categoryColor.withValues(
-                                  alpha: live ? 0.14 : 0.08,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              alignment: Alignment.center,
-                              child: Icon(
-                                categoryIcon,
-                                size: 21,
-                                color:
-                                    live
-                                        ? categoryColor
-                                        : categoryColor.withValues(alpha: 0.7),
-                              ),
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: categoryColor.withValues(
+                              alpha: live ? 0.14 : 0.08,
                             ),
-                            const SizedBox(width: ZirenTokens.space10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            categoryIcon,
+                            size: 21,
+                            color:
+                                live
+                                    ? categoryColor
+                                    : categoryColor.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(width: ZirenTokens.space10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: ZirenTokens.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
                                 children: [
-                                  Text(
-                                    title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: ZirenTokens.textPrimary,
-                                    ),
+                                  Icon(
+                                    LucideIcons.clock,
+                                    size: 12,
+                                    color: ZirenTokens.textMuted,
                                   ),
-                                  const SizedBox(height: 3),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        LucideIcons.clock,
-                                        size: 12,
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      clock,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
                                         color: ZirenTokens.textMuted,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          clock,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: ZirenTokens.textMuted,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: ZirenTokens.space8),
+                        _StatusPill(
+                          label: IncidentLabels.reportStatus(t, incident),
+                          color: _badgeColor,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: ZirenTokens.space10),
+                    Text(
+                      body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        height: 1.45,
+                        color: ZirenTokens.textSecondary,
+                      ),
+                    ),
+                    if (incident.locationAddress != null) ...[
+                      const SizedBox(height: ZirenTokens.space10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ZirenTokens.space10,
+                          vertical: ZirenTokens.space6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ZirenTokens.surfaceRaised,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.map_pin,
+                              size: 13,
+                              color: ZirenTokens.textMuted,
                             ),
-                            const SizedBox(width: ZirenTokens.space8),
-                            _StatusPill(
-                              label: IncidentLabels.reportStatus(t, incident),
-                              color: _badgeColor,
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _distanceKm != null
+                                    ? t.reportsLocationDistance(
+                                      incident.locationAddress!,
+                                      _distanceKm!.toStringAsFixed(1),
+                                    )
+                                    : incident.locationAddress!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: ZirenTokens.textSecondary,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: ZirenTokens.space10),
-                        Text(
-                          body,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            height: 1.45,
-                            color: ZirenTokens.textSecondary,
-                          ),
-                        ),
-                        if (incident.locationAddress != null) ...[
-                          const SizedBox(height: ZirenTokens.space10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: ZirenTokens.space10,
-                              vertical: ZirenTokens.space6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ZirenTokens.surfaceRaised,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.map_pin,
-                                  size: 13,
-                                  color: ZirenTokens.textMuted,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    _distanceKm != null
-                                        ? t.reportsLocationDistance(
-                                          incident.locationAddress!,
-                                          _distanceKm!.toStringAsFixed(1),
-                                        )
-                                        : incident.locationAddress!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: ZirenTokens.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        if (live) ...[
-                          const SizedBox(height: ZirenTokens.space12),
-                          ReportStageTrack(status: incident.status, compact: true),
-                        ],
-
-              // What the agency decided, said on the card itself. A rejection
-              // with no reason, or a question nobody sees, is the whole
-              // problem this replaces.
-              if (incident.isRejected) ...[
-                const SizedBox(height: ZirenTokens.space12),
-                ReviewNotice(
-                  icon: LucideIcons.circle_x,
-                  title: t.reportRejectedTitle,
-                  body:
-                      (incident.rejectionReason ?? '').trim().isEmpty
-                          ? null
-                          : t.reportRejectedReason(incident.rejectionReason!),
-                ),
-              ] else if (incident.isCancelledByAgency) ...[
-                const SizedBox(height: ZirenTokens.space12),
-                ReviewNotice(
-                  icon: LucideIcons.circle_x,
-                  title: t.notifCancelledTitle,
-                  body: t.notifCancelledBody,
-                  cue: t.notifOpenChat,
-                ),
-              ] else if (incident.needsClarification) ...[
-                const SizedBox(height: ZirenTokens.space12),
-                ReviewNotice(
-                  icon: LucideIcons.message_circle_question_mark,
-                  title: t.clarificationTitle,
-                  body: incident.clarificationNote,
-                  cue: t.clarificationReply,
-                ),
-              ],
-
-              // A second chance to check the transcript.
-              //
-              // The confirm screen right after sending is one
-              // chance, and it lands on someone who is standing in
-              // front of the emergency. The reports whose
-              // transcripts are worst come from people who were
-              // panicking, and they are exactly the people who will
-              // skip it. This is the same question asked again from
-              // somewhere safe.
-              if (incident.heardText != null &&
-                  !incident.transcriptSettled) ...[
-                const SizedBox(height: ZirenTokens.space12),
-                TranscriptPrompt(incident: incident),
-              ],
-
-              // In Trash: how long until this is gone for good.
-              if (incident.status == 'cancelled' && daysLeft != null) ...[
-                const SizedBox(height: ZirenTokens.space8),
-                Row(
-                  children: [
-                    Icon(
-                      LucideIcons.trash,
-                      size: 13,
-                      color: ZirenTokens.textMuted,
-                    ),
-                    const SizedBox(width: ZirenTokens.space4),
-                    Flexible(child: Text(
-                      t.trashDeletesInDays(daysLeft),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: ZirenTokens.textMuted,
                       ),
-                    )),
+                    ],
+                    if (live) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      ReportStageTrack(status: incident.status, compact: true),
+                    ],
+
+                    // What the agency decided, said on the card itself. A rejection
+                    // with no reason, or a question nobody sees, is the whole
+                    // problem this replaces.
+                    if (incident.isRejected) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      ReviewNotice(
+                        icon: LucideIcons.circle_x,
+                        title: t.reportRejectedTitle,
+                        body:
+                            (incident.rejectionReason ?? '').trim().isEmpty
+                                ? null
+                                : t.reportRejectedReason(
+                                  incident.rejectionReason!,
+                                ),
+                      ),
+                    ] else if (incident.isCancelledByAgency) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      ReviewNotice(
+                        icon: LucideIcons.circle_x,
+                        title: t.notifCancelledTitle,
+                        body: t.notifCancelledBody,
+                        cue: t.notifOpenChat,
+                      ),
+                    ] else if (incident.needsClarification) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      ReviewNotice(
+                        icon: LucideIcons.message_circle_question_mark,
+                        title: t.clarificationTitle,
+                        body: incident.clarificationNote,
+                        cue: t.clarificationReply,
+                      ),
+                    ],
+
+                    // A second chance to check the transcript.
+                    //
+                    // The confirm screen right after sending is one
+                    // chance, and it lands on someone who is standing in
+                    // front of the emergency. The reports whose
+                    // transcripts are worst come from people who were
+                    // panicking, and they are exactly the people who will
+                    // skip it. This is the same question asked again from
+                    // somewhere safe.
+                    if (incident.heardText != null &&
+                        !incident.transcriptSettled) ...[
+                      const SizedBox(height: ZirenTokens.space12),
+                      TranscriptPrompt(incident: incident),
+                    ],
+
+                    // In Trash: how long until this is gone for good.
+                    if (incident.status == 'cancelled' && daysLeft != null) ...[
+                      const SizedBox(height: ZirenTokens.space8),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.trash,
+                            size: 13,
+                            color: ZirenTokens.textMuted,
+                          ),
+                          const SizedBox(width: ZirenTokens.space4),
+                          Flexible(
+                            child: Text(
+                              t.trashDeletesInDays(daysLeft),
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: ZirenTokens.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
-              ],
-                      ],
-                    ),
+              ),
+              // The category's colour down the leading edge — the fastest
+              // way to tell a fire from a flood while scrolling.
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 5,
+                  color:
+                      live
+                          ? categoryColor
+                          : categoryColor.withValues(alpha: 0.25),
                 ),
-                // The category's colour down the leading edge — the fastest
-                // way to tell a fire from a flood while scrolling.
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 5,
-                    color:
-                        live
-                            ? categoryColor
-                            : categoryColor.withValues(alpha: 0.25),
-                  ),
-                ),
-              ],
+              ),
+            ],
           ),
         ),
       ),
@@ -828,9 +848,7 @@ class _BucketHeading extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            child: Divider(height: 1, color: ZirenTokens.surfaceBorder),
-          ),
+          Expanded(child: Divider(height: 1, color: ZirenTokens.surfaceBorder)),
         ],
       ),
     );
@@ -854,8 +872,14 @@ class _EmptyState extends StatelessWidget {
     };
 
     final (icon, accent) = switch (filter) {
-      ReportFilter.bukas => (LucideIcons.activity, ZirenTokens.statusDispatched),
-      ReportFilter.tapos => (LucideIcons.circle_check, ZirenTokens.statusResolved),
+      ReportFilter.bukas => (
+        LucideIcons.activity,
+        ZirenTokens.statusDispatched,
+      ),
+      ReportFilter.tapos => (
+        LucideIcons.circle_check,
+        ZirenTokens.statusResolved,
+      ),
       ReportFilter.basura => (LucideIcons.trash, ZirenTokens.textMuted),
       ReportFilter.lahat => (LucideIcons.file_text, ZirenTokens.brandOrange),
     };
@@ -942,11 +966,7 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            LucideIcons.cloud_off,
-            size: 40,
-            color: ZirenTokens.textMuted,
-          ),
+          Icon(LucideIcons.cloud_off, size: 40, color: ZirenTokens.textMuted),
           const SizedBox(height: ZirenTokens.space12),
           Text(
             message,

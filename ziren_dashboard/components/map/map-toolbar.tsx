@@ -45,6 +45,7 @@ import {
 } from './map-legend';
 import { AGENCY_MARKER } from './map-markers';
 
+import { DemoTarget } from '@/components/help/demo-target';
 /**
  * What each layer actually IS, not an abstract shape standing in for it.
  * A hollow circle and a hollow triangle told a dispatcher two layers were
@@ -186,7 +187,7 @@ export function MapToolbar({
       data-testid="map-toolbar"
     >
       {/* ── Layers ───────────────────────────────────────── */}
-      <Group label="Show on the map">
+      <DemoTarget id="map:layers"><Group label="Show on the map">
         <ToggleGroup
           aria-label="Map layers"
           className="flex-wrap"
@@ -223,13 +224,13 @@ export function MapToolbar({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </Group>
+      </Group></DemoTarget>
 
       {/* ── Severity ─────────────────────────────────────────
           Disabled rather than hidden when the incidents layer is off. Hiding
           it would make the row jump width every time the layer is toggled,
           and the operator would lose the filter they had set. */}
-      <Group label="Incident severity">
+      <DemoTarget id="map:severity"><Group label="Incident severity">
         <ToggleGroup
           aria-label="Incident severity"
           className="flex-wrap"
@@ -255,12 +256,12 @@ export function MapToolbar({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </Group>
+      </Group></DemoTarget>
 
       {/* ── Agency ───────────────────────────────────────────
           Scopes stations and responders, never incidents — see the note on
           AgencyFilter. */}
-      <Group label="Stations & responders of">
+      <DemoTarget id="map:agencies"><Group label="Stations & responders of">
         <ToggleGroup
           aria-label="Agencies"
           className="flex-wrap"
@@ -290,7 +291,7 @@ export function MapToolbar({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </Group>
+      </Group></DemoTarget>
 
       {/* ── Staleness, and ONLY staleness ──────────────────
           No clock, no refresh button. The map polls every 30 seconds, so a

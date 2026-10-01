@@ -43,6 +43,7 @@ import { displayPrefs } from '@/lib/prefs/definitions';
 import { useNotice } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type Approval = 'pending' | 'approved' | 'rejected' | 'not_required';
 
 interface ResponderUser {
@@ -180,7 +181,7 @@ export default function RespondersPage() {
   return (
     <div className="min-h-full">
       <div className="space-y-4 px-6 py-5 md:px-7">
-        <StatStrip>
+        <DemoTarget id="resp:stats"><StatStrip>
           <StatCell
             icon={<Users size={12} strokeWidth={2} />}
             label="Roster"
@@ -215,7 +216,7 @@ export default function RespondersPage() {
             color="var(--color-status-processing)"
             bg="var(--color-status-processing-bg)"
           />
-        </StatStrip>
+        </StatStrip></DemoTarget>
 
         {error && <Alert variant="error" message={error} />}
 
@@ -224,7 +225,7 @@ export default function RespondersPage() {
           data-testid="responder-roster"
         >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b border-[var(--color-surface-border)] px-4 py-3">
-            <div aria-label="Which responders to show" className="flex flex-wrap gap-1.5" role="group">
+            <div data-demo="resp:filters" aria-label="Which responders to show" className="flex flex-wrap gap-1.5" role="group">
               {VIEWS.map(v => {
                 const on = view === v.key;
                 const n = counts[v.key];
@@ -259,13 +260,13 @@ export default function RespondersPage() {
                 );
               })}
             </div>
-            <SearchInput
+            <DemoTarget id="resp:search"><SearchInput
               className="ml-auto min-w-[220px] max-w-[340px] flex-1"
               label="Search responders"
               onValueChange={setQ}
               placeholder="Name, email or badge…"
               value={q}
-            />
+            /></DemoTarget>
           </div>
 
           {loading && total === 0 ? (
@@ -283,7 +284,7 @@ export default function RespondersPage() {
               title={q.trim() ? 'No responder matches that search' : `No responders ${view === 'pending' ? 'awaiting approval' : view}`}
             />
           ) : (
-            <DataTableFrame className="rounded-none border-0" minWidth={isProvincialAdmin ? 1120 : 960}>
+            <DemoTarget id="resp:table"><DataTableFrame className="rounded-none border-0" minWidth={isProvincialAdmin ? 1120 : 960}>
               <DataHead>
                 <DataTh>Responder</DataTh>
                 {isProvincialAdmin && <DataTh width="200px">Station</DataTh>}
@@ -305,7 +306,7 @@ export default function RespondersPage() {
                   />
                 ))}
               </tbody>
-            </DataTableFrame>
+            </DataTableFrame></DemoTarget>
           )}
         </div>
       </div>

@@ -75,6 +75,7 @@ import { CategoryMixChart } from '@/components/charts/category-mix-chart';
 import { DispatchLatencyChart } from '@/components/charts/dispatch-latency-chart';
 import { WeekPatternCard } from '@/components/charts/week-pattern-card';
 
+import { DemoTarget } from '@/components/help/demo-target';
 const REFRESH_MS = 30_000;
 
 /**
@@ -391,7 +392,7 @@ export default function OverviewPage() {
 
   return (
     <div className="min-h-full">
-      <GreetingHeader />
+      <DemoTarget id="overview:greeting"><GreetingHeader /></DemoTarget>
 
       <div className="space-y-4 px-6 pb-5 pt-3 md:px-7">
         {error && (
@@ -407,7 +408,7 @@ export default function OverviewPage() {
         {isEmpty ? (
           <Skeleton className="h-[157px]" />
         ) : (
-          <StatStrip>
+          <DemoTarget id="overview:live"><StatStrip>
             {/* Window sum, not the live queue — see the comment on
                 windowTotal above for why this can differ from Active. The
                 trend line is arrivals per day across the same window, the
@@ -461,7 +462,7 @@ export default function OverviewPage() {
               spark={sparkOf(awaitingSeriesRows)}
               delta={deltaOf(awaitingSeriesRows)}
             />
-          </StatStrip>
+          </StatStrip></DemoTarget>
         )}
 
         {/* ── The agency's roster — Agency Admin only ────────
@@ -475,7 +476,7 @@ export default function OverviewPage() {
             can answer — and labelling it "station" would invent a grouping
             that does not exist. */}
         {isAgencyAdmin && roster && (
-          <StatStrip>
+          <DemoTarget id="overview:roster"><StatStrip>
             {/* All time, where "Total incidents" above is the last 14 days.
                 Sits with the roster strip purely to keep both strips at four
                 cards apiece. No trend line: the tile has no day-by-day series
@@ -559,7 +560,7 @@ export default function OverviewPage() {
               whole={roster.total}
               wholeLabel="on the roster"
             />
-          </StatStrip>
+          </StatStrip></DemoTarget>
         )}
 
         {/* ── Standing totals — Provincial Admin only ────────
@@ -575,7 +576,7 @@ export default function OverviewPage() {
             number and every gauge would sit at 100%. The sub-counts go on the
             context line, which is what it is for. */}
         {isProvincialAdmin && platform && (
-          <StatStrip>
+          <DemoTarget id="overview:platform"><StatStrip>
             {/* Where the reports are landing. Counts the stations that took at
                 least one report in the same window as the tiles above, and names
                 the busiest, so a province of twenty-odd stations is readable at
@@ -661,7 +662,7 @@ export default function OverviewPage() {
               spark={sparkOf(stationsSeriesRows)}
               delta={deltaOf(stationsSeriesRows)}
             />
-          </StatStrip>
+          </StatStrip></DemoTarget>
         )}
 
         {/* The chart deck, on the @efferd/dashboard-3 grid: a wide primary
@@ -676,34 +677,34 @@ export default function OverviewPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <IncidentVolumeChart data={volumeRows} />
-            <AgencyShareChart
+            <DemoTarget id="overview:volume"><IncidentVolumeChart data={volumeRows} /></DemoTarget>
+            <DemoTarget id="overview:agencies"><AgencyShareChart
               data={AGENCIES.map(ag => ({
                 agency: ag,
                 active: agencyMap[ag]?.active ?? 0,
               }))}
-            />
+            /></DemoTarget>
             {/* Half-width pairs, side by side: Time to dispatch + What kind of
                 emergency, then Severity mix + Week pattern. Severity is placed
                 with the Week pattern, not ahead of Dispatch, so the pair that
                 waits on the 90-day fetch is always the LAST one — when it
                 arrives nothing above it moves. */}
-            <DispatchLatencyChart data={latencyRows} days={TREND_DAYS} />
-            <CategoryMixChart
+            <DemoTarget id="overview:latency"><DispatchLatencyChart data={latencyRows} days={TREND_DAYS} /></DemoTarget>
+            <DemoTarget id="overview:categories"><CategoryMixChart
               days={TREND_DAYS}
               ranked={categories.ranked}
               total={categories.total}
               unclassified={categories.unclassified}
-            />
-            <SeverityTrendChart data={severityRows} />
+            /></DemoTarget>
+            <DemoTarget id="overview:severity"><SeverityTrendChart data={severityRows} /></DemoTarget>
             {/* Needs the long window, so it waits for it rather than drawing
                 from the fourteen days above and quietly meaning something less. */}
             {longActivity && (
-              <WeekPatternCard
+              <DemoTarget id="overview:week"><WeekPatternCard
                 days={PATTERN_DAYS}
                 isAgencyAdmin={isAgencyAdmin}
                 patterns={timePatterns(longActivity)}
-              />
+              /></DemoTarget>
             )}
           </div>
         )}
@@ -722,7 +723,7 @@ export default function OverviewPage() {
             gone — its four severity counts already sit in the stat strip and
             the severity chart below. */}
         {(
-          <Card className="overflow-hidden">
+          <DemoTarget id="overview:list"><Card className="overflow-hidden">
             <CardHeader className="flex flex-col gap-3 border-b sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'var(--color-surface-border)' }}>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -766,7 +767,7 @@ export default function OverviewPage() {
               </ul>
             )}
             </CardContent>
-          </Card>
+          </Card></DemoTarget>
         )}
       </div>
     </div>

@@ -46,6 +46,7 @@ import { QuickSend, WaitingForHelp } from '@/components/announcements/help-rail'
 import { ResponsesDialog } from '@/components/announcements/responses-dialog';
 import { isSafety, KINDS, kindOf } from '@/components/announcements/kinds';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type Filter = 'active' | 'safety' | 'ended' | 'all';
 
 const DAY = 86_400_000;
@@ -200,7 +201,7 @@ export default function AnnouncementsPage() {
   return (
     <div className="flex flex-col gap-5 px-6 py-5 md:px-7">
       {/* ── Overview ───────────────────────────────────────────── */}
-      <StatStrip>
+      <DemoTarget id="ann:stats"><StatStrip>
         <StatCell
           bg="var(--color-system-info-bg)" color="var(--color-system-info)" icon={<Radio />}
           label="Live safety alerts"
@@ -229,12 +230,12 @@ export default function AnnouncementsPage() {
           trend={`${stats.weekSafety} of them safety alerts`}
           value={items === null ? '–' : stats.week}
         />
-      </StatStrip>
+      </StatStrip></DemoTarget>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* ── The feed ─────────────────────────────────────────── */}
-        <section className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-2.5 shadow-[var(--shadow-card)]">
+        <section data-demo="ann:feed" className="flex min-w-0 flex-col gap-4">
+          <div data-demo="ann:filters" className="flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-2.5 shadow-[var(--shadow-card)]">
             <div className="flex flex-wrap gap-1 rounded-[10px] bg-[var(--color-surface-raised)] p-1" role="tablist">
               {([
                 ['active', 'Active'],
@@ -338,10 +339,10 @@ export default function AnnouncementsPage() {
             urgent thing on the page. */}
         <aside className="order-first flex flex-col gap-4 xl:sticky xl:top-5 xl:order-none">
           {token && (
-            <WaitingForHelp alerts={list} now={now} onChanged={() => load(true)} onOpenBoard={setBoard} token={token} />
+            <DemoTarget id="ann:waiting"><WaitingForHelp alerts={list} now={now} onChanged={() => load(true)} onOpenBoard={setBoard} token={token} /></DemoTarget>
           )}
           {isProvincialAdmin && (
-            <QuickSend agencyType={agencyType} onNew={() => setComposer({ kind: 'new' })} onPick={category => setComposer({ kind: 'new', category })} />
+            <DemoTarget id="ann:send"><QuickSend agencyType={agencyType} onNew={() => setComposer({ kind: 'new' })} onPick={category => setComposer({ kind: 'new', category })} /></DemoTarget>
           )}
         </aside>
       </div>

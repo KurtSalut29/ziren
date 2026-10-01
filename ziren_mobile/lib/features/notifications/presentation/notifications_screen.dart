@@ -15,6 +15,7 @@ import '../domain/notification_provider.dart';
 import 'notice_view.dart';
 import 'open_report.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Full notifications list - opened from the bell icon in the AppBar.
 ///
@@ -61,7 +62,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  void _handleClearAll(NotificationProvider provider, ResponderNotificationProvider crew) {
+  void _handleClearAll(
+    NotificationProvider provider,
+    ResponderNotificationProvider crew,
+  ) {
     provider.markAllRead();
     crew.markAllRead();
     setState(() {
@@ -101,24 +105,41 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: Text(t.homeBellLabel),
         actions: [
           if (entries.isNotEmpty)
-            PopupMenuButton<String>(
-              tooltip: t.notifMoreOptions,
-              icon: const Icon(LucideIcons.ellipsis_vertical),
-              onSelected: (_) => _handleClearAll(provider, crew),
-              itemBuilder:
-                  (context) => [
-                    PopupMenuItem(value: 'clear', child: Text(t.notifClearAll)),
-                  ],
+            DemoAnchor(
+              id: 'notif.menu',
+              child: PopupMenuButton<String>(
+                tooltip: t.notifMoreOptions,
+                icon: const Icon(LucideIcons.ellipsis_vertical),
+                onSelected: (_) => _handleClearAll(provider, crew),
+                itemBuilder:
+                    (context) => [
+                      PopupMenuItem(
+                        value: 'clear',
+                        child: Text(t.notifClearAll),
+                      ),
+                    ],
+              ),
             ),
         ],
       ),
-      body:
-          entries.isEmpty
-              ? const _EmptyState()
-              : ListView(
-                padding: const EdgeInsets.all(ZirenTokens.space16),
-                children: [for (final e in entries) e.child],
-              ),
+      body: DemoAnchor(
+        id: 'notif.screen',
+        child:
+            entries.isEmpty
+                ? const _EmptyState()
+                : ListView(
+                  padding: const EdgeInsets.all(ZirenTokens.space16),
+                  children: [
+                    for (var i = 0; i < entries.length; i++)
+                      i == 0
+                          ? DemoAnchor(
+                            id: 'notif.first',
+                            child: entries[i].child,
+                          )
+                          : entries[i].child,
+                  ],
+                ),
+      ),
     );
   }
 
@@ -144,9 +165,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final view = noticeView(t, n);
     // What the resident sees first: the agency's own words when it has any, else
     // the plain sentence.
-    final body = (view.quote != null && view.quote!.isNotEmpty)
-        ? view.quote!
-        : view.body;
+    final body =
+        (view.quote != null && view.quote!.isNotEmpty)
+            ? view.quote!
+            : view.body;
     return _FeedEntry(
       time: n.receivedAt,
       child: _NotificationTile(
@@ -155,9 +177,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         color: view.color,
         title: view.title,
         body: body,
-        meta: n.reportText.trim().isEmpty
-            ? _timeAgo(t, n.receivedAt)
-            : '${IncidentLabels.reportText(t, n.reportText.trim())} · ${_timeAgo(t, n.receivedAt)}',
+        meta:
+            n.reportText.trim().isEmpty
+                ? _timeAgo(t, n.receivedAt)
+                : '${IncidentLabels.reportText(t, n.reportText.trim())} · ${_timeAgo(t, n.receivedAt)}',
         onDismiss: () => provider.dismiss(index),
         // Anything that has a report to go to opens it - a message opens the
         // chat, where it is answered.
@@ -214,7 +237,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         color: color,
         title: n.label,
         body: n.detail,
-        meta: '${t.notifReportPrefix}${n.shortId}… · ${_timeAgo(t, n.receivedAt)}',
+        meta:
+            '${t.notifReportPrefix}${n.shortId}… · ${_timeAgo(t, n.receivedAt)}',
         onDismiss: () => provider.dismiss(index),
         // A cancelled incident is no longer in the crew's queue; the detail
         // screen says so plainly rather than the tap doing nothing.
@@ -244,8 +268,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         title: a.categoryLabel(t),
         body: a.title,
         meta: '${a.placeLine(t)} · ${_timeAgo(t, a.createdAt)}',
-        onDismiss:
-            () => setState(() => _dismissedAnnouncementIds.add(a.id)),
+        onDismiss: () => setState(() => _dismissedAnnouncementIds.add(a.id)),
         onTap: () => context.push('/announcements/${a.id}'),
       ),
     );
@@ -303,72 +326,69 @@ class _NotificationTile extends StatelessWidget {
           color: ZirenTokens.systemErrorBg,
           borderRadius: BorderRadius.circular(ZirenTokens.radius16),
         ),
-        child: Icon(
-          LucideIcons.trash,
-          color: ZirenTokens.systemError,
-        ),
+        child: Icon(LucideIcons.trash, color: ZirenTokens.systemError),
       ),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
-        margin: const EdgeInsets.only(bottom: ZirenTokens.space10),
-        padding: const EdgeInsets.all(ZirenTokens.space16),
-        decoration: BoxDecoration(
-          color: ZirenTokens.surfaceCard,
-          borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-          border: Border.all(color: ZirenTokens.surfaceBorder),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+          margin: const EdgeInsets.only(bottom: ZirenTokens.space10),
+          padding: const EdgeInsets.all(ZirenTokens.space16),
+          decoration: BoxDecoration(
+            color: ZirenTokens.surfaceCard,
+            borderRadius: BorderRadius.circular(ZirenTokens.radius16),
+            border: Border.all(color: ZirenTokens.surfaceBorder),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 20, color: color),
               ),
-              child: Icon(icon, size: 20, color: color),
-            ),
-            const SizedBox(width: ZirenTokens.space12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: ZirenTokens.textPrimary,
+              const SizedBox(width: ZirenTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: ZirenTokens.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: ZirenTokens.space4),
-                  Text(
-                    body,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: ZirenTokens.textSecondary,
+                    const SizedBox(height: ZirenTokens.space4),
+                    Text(
+                      body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: ZirenTokens.textSecondary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: ZirenTokens.space4),
-                  Text(
-                    meta,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: ZirenTokens.textMuted,
+                    const SizedBox(height: ZirenTokens.space4),
+                    Text(
+                      meta,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: ZirenTokens.textMuted,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

@@ -30,6 +30,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Search } from 'lucide-react';
 import { helpFor, type HelpTopic } from '@/lib/help/help-content';
 import { HelpTopicItem, filterHelp } from '@/components/help/help-topic';
+import { DemoList, HelpModeSwitch, type HelpMode } from '@/components/help/demo-list';
+import { useDemo } from '@/components/help/demo-tour';
+import { demoForPage, demosFor } from '@/lib/help/demo-content';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +81,7 @@ export function ZirenHelp({
   hidden?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const demo = useDemo();
 
   // The Help page is the same guide at full size; a button to a smaller copy
   // of the page you are on would be noise.
@@ -86,7 +90,7 @@ export function ZirenHelp({
   return (
     <>
       <AnimatePresence>
-        {!hidden && !open && (
+        {!hidden && !open && !demo.active && (
           <motion.div
             animate={{ opacity: 1, y: 0 }}
             className="pointer-events-none fixed bottom-4 right-4 z-[60] flex items-center print:hidden md:bottom-6 md:right-6"
@@ -249,6 +253,10 @@ function HelpDialog({
     [groups, pathname],
   );
   const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<HelpMode>('steps');
+  const demo = useDemo();
+  const demos = useMemo(() => demosFor(isProvincialAdmin), [isProvincialAdmin]);
+  const demoHere = demoForPage(isProvincialAdmin, pathname);
   // Opens on the first topic about this page, when there is one.
   const [openId, setOpenId] = useState<string | null>(here[0]?.id ?? null);
 
@@ -300,11 +308,31 @@ function HelpDialog({
             Hi! I&apos;m Ziren. What do you need help with?
           </DialogTitle>
           <DialogDescription className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
-            Open a topic to see its steps, or search below.
+            {mode === 'steps'
+              ? 'Read the steps for a topic, or let me show you a page.'
+              : 'Pick a page and I will walk you through it.'}
           </DialogDescription>
         </div>
       </div>
 
+      {/* Two ways in: the written steps (unchanged), or a demo on the page itself. */}
+      <div className="shrink-0 border-b border-[var(--color-surface-border)] px-4 py-3 sm:px-5">
+        <HelpModeSwitch mode={mode} onChange={setMode} />
+      </div>
+
+      {mode === 'demo' ? (
+        <div className="scroll-ziren min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <DemoList
+            demos={demos}
+            here={demoHere}
+            onStart={d => {
+              onNavigate();
+              demo.start(d);
+            }}
+          />
+        </div>
+      ) : (
+      <>
       <div className="shrink-0 border-b border-[var(--color-surface-border)] px-4 py-3 sm:px-5">
         <label className="relative block">
           <span className="sr-only">Search help</span>
@@ -347,6 +375,8 @@ function HelpDialog({
           );
         })}
       </div>
+      </>
+      )}
 
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--color-surface-border)] px-4 py-3 text-[12.5px] text-[var(--color-text-secondary)] sm:px-5">
         <span>

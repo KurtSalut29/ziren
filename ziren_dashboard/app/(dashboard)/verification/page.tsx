@@ -71,6 +71,7 @@ import {
 } from '@/components/ui/data-table';
 import { useNotice } from '@/lib/toast';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type VerificationTab = 'residents' | 'accounts' | 'agency_admins' | 'responders';
 
 /**
@@ -108,13 +109,13 @@ export default function VerificationPage() {
     <div className="min-h-full">
       {tabs.length > 1 && (
         <div className="sticky top-0 z-30 bg-[var(--color-surface-card)]">
-          <NavTabs
+          <DemoTarget id="verify:tabs"><NavTabs
             activeKey={tab}
             ariaLabel="Verification views"
             idPrefix="verification-tab"
             onSelect={key => setTab(key as VerificationTab)}
             tabs={tabs}
-          />
+          /></DemoTarget>
         </div>
       )}
 
@@ -124,7 +125,7 @@ export default function VerificationPage() {
           the answers to "who can do this" and "what happens next" differ for
           each. Stating them here beats making a reviewer learn them by error. */}
       <div className="px-6 pt-5 md:px-7">
-        <PurposeStrip tab={tab} />
+        <DemoTarget id="verify:purpose"><PurposeStrip tab={tab} /></DemoTarget>
       </div>
 
       {tab === 'residents' && <ResidentVerificationTab onSeeAccounts={() => setTab('accounts')} />}
@@ -433,7 +434,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
       {/* The four things a reviewer needs before opening anything: how much
           there is, whether anyone has been left too long, how much of it will
           also settle an address, and how much of it cannot be reviewed at all. */}
-      <StatStrip>
+      <DemoTarget id="verify:stats"><StatStrip>
         <StatCell
           bg="var(--color-brand-subtle)"
           color="var(--color-brand)"
@@ -479,13 +480,13 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
           whole={queue.length}
           wholeLabel="waiting"
         />
-      </StatStrip>
+      </StatStrip></DemoTarget>
 
       <Card className="gap-0 py-0">
         {/* The queue's own scale control, in the same tab style as every other
             switcher. Reviewing everyone does not scale and mostly changes
             nothing; reviewing the flagged ones is the work that does. */}
-        <NavTabs
+        <DemoTarget id="verify:priority"><NavTabs
           activeKey={priorityOnly ? 'priority' : 'all'}
           ariaLabel="Which submissions to show"
           idPrefix="verification-scope"
@@ -494,7 +495,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
             { key: 'priority', label: 'Needs a look', icon: ShieldAlert, hint: 'Submissions carrying a signal' },
             { key: 'all', label: 'Everyone waiting', icon: Users, hint: 'Every submission, oldest first' },
           ]}
-        />
+        /></DemoTarget>
 
         <div className="flex flex-col gap-3 px-5 py-4">
           <p className="text-[13px] leading-relaxed text-muted-foreground">
@@ -502,12 +503,12 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
               ? 'Submissions carrying a signal — the face check disagreed, the ID photo is unclear, the ID number is shared with another account, a report has already been filed, or there is an SOS warning. Oldest first.'
               : 'Everyone who has submitted an ID and is waiting. Oldest first — nobody should wait behind a newer submission.'}
           </p>
-          <SearchInput
+          <DemoTarget id="verify:search"><SearchInput
             label="Search the waiting list"
             onValueChange={setQ}
             placeholder="Name, email, phone, ID number or barangay…"
             value={q}
-          />
+          /></DemoTarget>
         </div>
 
         <div className="border-t border-[var(--color-surface-border)]">
@@ -554,7 +555,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
                 No submission matches “{q.trim()}”. {queue.length} are waiting.
               </p>
             ) : (
-              <DataTableFrame minWidth={1120}>
+              <DemoTarget id="verify:table"><DataTableFrame minWidth={1120}>
                 <DataHead>
                   <DataTh width="48px">
                     <input
@@ -585,7 +586,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
                     />
                   ))}
                 </tbody>
-              </DataTableFrame>
+              </DataTableFrame></DemoTarget>
             )}
           </div>
         )}

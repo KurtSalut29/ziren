@@ -42,6 +42,7 @@ import { AG_COLOR } from '@/components/incidents/incident-vocabulary';
 import { TableEmptyState } from '@/components/ui/table';
 import { useNotice } from '@/lib/toast';
 
+import { DemoTarget } from '@/components/help/demo-target';
 // ── Types ─────────────────────────────────────────────────────
 
 interface AgencyInfo { name: string; agency_type: string; municipality: string; }
@@ -167,17 +168,17 @@ export default function AccountsPage() {
           "Access requests" is the only status this bar needs: it used to be
           repeated in a sentence beside the tabs, saying the same thing twice. */}
       <div className="sticky top-0 z-30 bg-[var(--color-surface-card)]">
-        <NavTabs
+        <DemoTarget id="acc:tabs"><NavTabs
           activeKey={tab}
           ariaLabel="Account views"
           idPrefix="accounts-tab"
           onSelect={key => setTab(key as Tab)}
           tabs={tabs}
-        />
+        /></DemoTarget>
       </div>
 
       {/* ── Tab content ────────────────────────────────────── */}
-      <div className="px-6 py-5 md:px-7">
+      <div data-demo="acc:content" className="px-6 py-5 md:px-7">
         {tab === 'access_requests' ? (
           <AccessRequestsTab token={token!} onCountChange={setPendingCount} />
         ) : tab === 'agency_admins' ? (

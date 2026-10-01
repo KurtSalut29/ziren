@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
+import '../../demo/presentation/demo_anchor.dart';
 import '../../../shared/widgets/ziren_toast.dart';
 import '../data/incident_alarm.dart';
 import '../domain/responder_incident_model.dart';
@@ -352,11 +353,20 @@ class _ResponderShellState extends State<ResponderShell>
                   // most common phone size in the field, and it would not have
                   // shown up on a tablet or a wide emulator.
                   return Expanded(
-                    child: _NavItem(
-                      tab: tabs[i],
-                      isActive: isActive,
-                      badgeCount: showBadge ? provider.activeCount : null,
-                      onTap: () => _onTap(i),
+                    child: DemoAnchor(
+                      id:
+                          const [
+                            'rnav.home',
+                            'rnav.reports',
+                            'rnav.map',
+                            'rnav.profile',
+                          ][i],
+                      child: _NavItem(
+                        tab: tabs[i],
+                        isActive: isActive,
+                        badgeCount: showBadge ? provider.activeCount : null,
+                        onTap: () => _onTap(i),
+                      ),
                     ),
                   );
                 }),

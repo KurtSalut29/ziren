@@ -20,6 +20,7 @@ import 'widgets/review_notice.dart';
 import '../../notifications/presentation/notice_view.dart' show noticeStage;
 import 'widgets/transcript_prompt.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Everything about one report, on its own screen.
 ///
@@ -119,7 +120,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   /// enforces (only while still `received`, before anyone has acted) — the
   /// button is hidden past that point, and the server's own refusal text is
   /// shown verbatim on the rare race where it changed between render and tap.
-  Future<void> _confirmTrash(BuildContext context, IncidentModel incident) async {
+  Future<void> _confirmTrash(
+    BuildContext context,
+    IncidentModel incident,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final provider = context.read<IncidentProvider>();
     final messenger = ScaffoldMessenger.of(context);
@@ -172,7 +176,8 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     final isOpen = _isOpen(incident);
     final distanceKm = _distanceKm(incident, provider.currentPosition);
     final daysLeft = incident.daysUntilPurge;
-    final canViewOnMap = incident.latitude != null && incident.longitude != null;
+    final canViewOnMap =
+        incident.latitude != null && incident.longitude != null;
 
     final actions = _ActionBar.forIncident(
       incident: incident,
@@ -187,7 +192,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         backgroundColor: ZirenTokens.surfaceBase,
         title: Text(t.reportDetailsTitle),
       ),
-      bottomNavigationBar: actions,
+      bottomNavigationBar:
+          actions == null
+              ? null
+              : DemoAnchor(id: 'detail.actions', child: actions),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           ZirenTokens.space16,
@@ -197,14 +205,17 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         ),
         children: [
           // ── Header: what is happening with it now ─────────
-          _HeroCard(
-            incident: incident,
-            category: category,
-            statusLabel: IncidentLabels.reportStatus(t, incident),
-            statusColor: _badgeColor(incident),
-            sentAt: t.reportSentAt(_fullTimestamp(incident.createdAt)),
-            stage: stage,
-            live: isOpen,
+          DemoAnchor(
+            id: 'detail.hero',
+            child: _HeroCard(
+              incident: incident,
+              category: category,
+              statusLabel: IncidentLabels.reportStatus(t, incident),
+              statusColor: _badgeColor(incident),
+              sentAt: t.reportSentAt(_fullTimestamp(incident.createdAt)),
+              stage: stage,
+              live: isOpen,
+            ),
           ),
 
           // ── The agency's decision, in words ───────────────
@@ -336,33 +347,36 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
 
           // ── What you reported ──────────────────────────────
           const SizedBox(height: ZirenTokens.space24),
-          _Section(
-            title: t.reportSectionYourReport,
-            child: Container(
-              decoration: profileCardDecoration(),
-              padding: const EdgeInsets.all(ZirenTokens.space16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    LucideIcons.quote,
-                    size: 18,
-                    color: ZirenTokens.textMuted,
-                  ),
-                  const SizedBox(width: ZirenTokens.space10),
-                  Expanded(
-                    child: Text(
-                      incident.reportText.isEmpty
-                          ? (incident.locationAddress ?? t.noDetails)
-                          : IncidentLabels.reportText(t, incident.reportText),
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        height: 1.55,
-                        color: ZirenTokens.textPrimary,
+          DemoAnchor(
+            id: 'detail.said',
+            child: _Section(
+              title: t.reportSectionYourReport,
+              child: Container(
+                decoration: profileCardDecoration(),
+                padding: const EdgeInsets.all(ZirenTokens.space16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      LucideIcons.quote,
+                      size: 18,
+                      color: ZirenTokens.textMuted,
+                    ),
+                    const SizedBox(width: ZirenTokens.space10),
+                    Expanded(
+                      child: Text(
+                        incident.reportText.isEmpty
+                            ? (incident.locationAddress ?? t.noDetails)
+                            : IncidentLabels.reportText(t, incident.reportText),
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          height: 1.55,
+                          color: ZirenTokens.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -389,12 +403,15 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 // report, or one filed with no GPS fix, has an address string
                 // but no coordinates.
                 if (canViewOnMap)
-                  ProfileTile(
-                    key: const Key('report-view-on-map'),
-                    icon: LucideIcons.map,
-                    label: t.reportsViewOnMap,
-                    tone: ZirenTokens.brandOrange,
-                    onTap: () => context.push('/report-map/${incident.id}'),
+                  DemoAnchor(
+                    id: 'detail.map',
+                    child: ProfileTile(
+                      key: const Key('report-view-on-map'),
+                      icon: LucideIcons.map,
+                      label: t.reportsViewOnMap,
+                      tone: ZirenTokens.brandOrange,
+                      onTap: () => context.push('/report-map/${incident.id}'),
+                    ),
                   ),
               ],
             ),
@@ -402,42 +419,45 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
 
           // ── Progress, with every timestamp ─────────────────
           const SizedBox(height: ZirenTokens.space24),
-          _Section(
-            title: t.reportSectionProgress,
-            child: Container(
-              decoration: profileCardDecoration(),
-              padding: const EdgeInsets.all(ZirenTokens.space16),
-              child: ZirenSpine(
-                nodes: [
-                  for (var s = 0; s < _sequence.length; s++)
-                    SpineNode(
-                      title: IncidentLabels.status(t, _sequence[s]),
-                      timestamp: switch (_sequence[s]) {
-                        'received' => _fullTimestamp(incident.createdAt),
-                        'dispatched' =>
-                          incident.dispatchedAt != null
-                              ? _fullTimestamp(incident.dispatchedAt!)
-                              : null,
-                        'resolved' =>
-                          incident.resolvedAt != null
-                              ? _fullTimestamp(incident.resolvedAt!)
-                              : null,
-                        _ => null,
-                      },
-                      state:
-                          incident.status == 'cancelled'
-                              ? (s == 0
-                                  ? SpineState.halted
-                                  : SpineState.pending)
-                              : s < stage
-                              ? SpineState.done
-                              : s == stage
-                              ? (s == _sequence.length - 1
-                                  ? SpineState.done
-                                  : SpineState.active)
-                              : SpineState.pending,
-                    ),
-                ],
+          DemoAnchor(
+            id: 'detail.progress',
+            child: _Section(
+              title: t.reportSectionProgress,
+              child: Container(
+                decoration: profileCardDecoration(),
+                padding: const EdgeInsets.all(ZirenTokens.space16),
+                child: ZirenSpine(
+                  nodes: [
+                    for (var s = 0; s < _sequence.length; s++)
+                      SpineNode(
+                        title: IncidentLabels.status(t, _sequence[s]),
+                        timestamp: switch (_sequence[s]) {
+                          'received' => _fullTimestamp(incident.createdAt),
+                          'dispatched' =>
+                            incident.dispatchedAt != null
+                                ? _fullTimestamp(incident.dispatchedAt!)
+                                : null,
+                          'resolved' =>
+                            incident.resolvedAt != null
+                                ? _fullTimestamp(incident.resolvedAt!)
+                                : null,
+                          _ => null,
+                        },
+                        state:
+                            incident.status == 'cancelled'
+                                ? (s == 0
+                                    ? SpineState.halted
+                                    : SpineState.pending)
+                                : s < stage
+                                ? SpineState.done
+                                : s == stage
+                                ? (s == _sequence.length - 1
+                                    ? SpineState.done
+                                    : SpineState.active)
+                                : SpineState.pending,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

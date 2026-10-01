@@ -1,11 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:intl/intl.dart';
 
+import '../../features/demo/presentation/demo_anchor.dart';
 import '../theme/app_tokens.dart';
 import 'home_kit.dart' show kHomeGutter;
+import 'ziren_mascot.dart';
 
 /// Top of Home, resident and responder alike: the tagline with the
 /// bell and profile buttons, today's date, a large greeting, and the mascot
@@ -28,7 +28,7 @@ class MascotHomeHeader extends StatelessWidget {
     this.avatarUrl,
     required this.greeting,
     required this.greetingName,
-    required this.mascot,
+    this.offline = false,
     required this.mascotName,
     required this.message,
     required this.locationLabel,
@@ -54,8 +54,9 @@ class MascotHomeHeader extends StatelessWidget {
   final String greeting;
   final String greetingName;
 
-  /// The mascot, drawn waving; [MascotArt.resident] or [MascotArt.responder].
-  final MascotArt mascot;
+  /// No internet right now: Ziren plays the no-internet loop instead of
+  /// waving (the same Ziren for residents and responders).
+  final bool offline;
   final String mascotName;
   final String message;
   final String locationLabel;
@@ -94,17 +95,23 @@ class MascotHomeHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: ZirenTokens.space12),
-              _BellButton(
-                hasUnread: hasUnread,
-                onTap: onBellTap,
-                label: hasUnread ? bellLabelUnread : bellLabel,
+              DemoAnchor(
+                id: 'header.bell',
+                child: _BellButton(
+                  hasUnread: hasUnread,
+                  onTap: onBellTap,
+                  label: hasUnread ? bellLabelUnread : bellLabel,
+                ),
               ),
               const SizedBox(width: ZirenTokens.space10),
-              _ProfileButton(
-                displayName: displayName,
-                avatarUrl: avatarUrl,
-                onTap: onProfileTap,
-                label: profileLabel,
+              DemoAnchor(
+                id: 'header.profile',
+                child: _ProfileButton(
+                  displayName: displayName,
+                  avatarUrl: avatarUrl,
+                  onTap: onProfileTap,
+                  label: profileLabel,
+                ),
               ),
             ],
           ),
@@ -130,22 +137,25 @@ class MascotHomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: ZirenTokens.space16),
-          _MascotCard(
-            mascot: mascot,
-            mascotName: mascotName,
-            message: message,
-            chips: [
-              _StatusChip(
-                icon: LucideIcons.map_pin,
-                iconColor: ZirenTokens.brandOrange,
-                label: locationLabel,
-              ),
-              _StatusChip(
-                icon: connectivityIcon,
-                iconColor: connectivityColor,
-                label: connectivityLabel,
-              ),
-            ],
+          DemoAnchor(
+            id: 'header.mascot',
+            child: _MascotCard(
+              offline: offline,
+              mascotName: mascotName,
+              message: message,
+              chips: [
+                _StatusChip(
+                  icon: LucideIcons.map_pin,
+                  iconColor: ZirenTokens.brandOrange,
+                  label: locationLabel,
+                ),
+                _StatusChip(
+                  icon: connectivityIcon,
+                  iconColor: connectivityColor,
+                  label: connectivityLabel,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -320,133 +330,15 @@ class _ProfileButton extends StatelessWidget {
   }
 }
 
-/// A mascot drawn as two layers so its raised hand can wave: the body, and
-/// the hand with its wrist cuff (both full-canvas, so they stack exactly).
-/// Made from the single mascot image by scratchpad split_hand.py; [pivot] is
-/// the centre of the cuff, where the hand turns.
-class MascotArt {
-  const MascotArt({
-    required this.body,
-    required this.hand,
-    required this.pivot,
-    required this.size,
-  });
-
-  final String body;
-  final String hand;
-  final Alignment pivot;
-  final Size size;
-
-  static const resident = MascotArt(
-    body: 'assets/images/mascot_resident_body.png',
-    hand: 'assets/images/mascot_resident_hand.png',
-    pivot: Alignment(0.7382, -0.2259),
-    size: Size(359, 540),
-  );
-
-  static const responder = MascotArt(
-    body: 'assets/images/mascot_responder_body.png',
-    hand: 'assets/images/mascot_responder_hand.png',
-    pivot: Alignment(-0.6287, -0.1630),
-    size: Size(334, 540),
-  );
-}
-
-/// The mascot waving: a few back-and-forth turns of the hand at the start of
-/// every [kMascotLoop] (while "Hi! I'm Ziren" is being typed), then still.
-class _WavingMascot extends StatefulWidget {
-  const _WavingMascot({required this.art});
-
-  final MascotArt art;
-
-  @override
-  State<_WavingMascot> createState() => _WavingMascotState();
-}
-
-class _WavingMascotState extends State<_WavingMascot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _loop = AnimationController(
-    vsync: this,
-    duration: kMascotLoop,
-  );
-
-  /// The wave lasts the first 2 s of the loop: 2.5 swings, ±16° (the widest the wrist join stays hidden).
-  static const double _waveEnd = 0.4;
-  static const double _swings = 2.5;
-  static const double _maxAngle = 16 * math.pi / 180;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _loop
-        ..stop()
-        ..value = 0.5; // hand at rest
-    } else if (!_loop.isAnimating) {
-      _loop.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _loop.dispose();
-    super.dispose();
-  }
-
-  double _angle(double t) {
-    if (t >= _waveEnd) return 0;
-    final p = t / _waveEnd;
-    // Grows in and dies away (the sine envelope), so the hand never jumps.
-    return _maxAngle *
-        math.sin(2 * math.pi * _swings * p) *
-        math.sin(math.pi * p);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final art = widget.art;
-    // Both layers at the art's own size inside one FittedBox, so the pivot
-    // (a fraction of the art) lands on the cuff whatever size the card is.
-    return FittedBox(
-      fit: BoxFit.contain,
-      alignment: Alignment.bottomCenter,
-      child: SizedBox.fromSize(
-        size: art.size,
-        child: Stack(
-          // The turning hand may reach past the art's edge.
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: Image.asset(art.body, excludeFromSemantics: true),
-            ),
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _loop,
-                builder:
-                    (context, hand) => Transform.rotate(
-                      angle: _angle(_loop.value),
-                      alignment: art.pivot,
-                      child: hand,
-                    ),
-                child: Image.asset(art.hand, excludeFromSemantics: true),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _MascotCard extends StatelessWidget {
   const _MascotCard({
-    required this.mascot,
+    required this.offline,
     required this.mascotName,
     required this.message,
     required this.chips,
   });
 
-  final MascotArt mascot;
+  final bool offline;
   final String mascotName;
   final String message;
   final List<Widget> chips;
@@ -466,7 +358,11 @@ class _MascotCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(width: 108, height: 150, child: _WavingMascot(art: mascot)),
+          SizedBox(
+            width: 136,
+            height: 158,
+            child: ZirenMascot(offline: offline),
+          ),
           const SizedBox(width: ZirenTokens.space12),
           Expanded(
             child: Column(

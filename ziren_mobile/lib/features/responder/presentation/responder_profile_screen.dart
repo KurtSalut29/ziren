@@ -13,6 +13,7 @@ import '../domain/responder_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../hotlines/domain/station_hotlines.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// The responder's profile.
 ///
@@ -164,45 +165,48 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         // lives on Home, and two controls for one state is how they end up
         // disagreeing. Badge and approval are the two facts a responder is
         // asked for at a scene, so they get the strip.
-        ProfileHeroCard(
-          avatar: EditableAvatar(
-            displayName: displayName,
-            avatarUrl: p.avatarUrl,
-            busy: _uploadingAvatar,
-            onTap: _changeAvatar,
-            size: 92,
-          ),
-          displayName: displayName,
-          subtitle: email,
-          chips: [
-            if (agencyLabel != null)
-              ProfileChip(
-                label: agencyLabel,
-                color: _agencyColor(p.agencyType),
-                icon: _agencyIcon(p.agencyType),
-              ),
-            if (approved)
-              ProfileChip(
-                label: responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
-                color:
-                    responder.isOnDuty
-                        ? ZirenTokens.systemSuccess
-                        : ZirenTokens.textMuted,
-                icon:
-                    responder.isOnDuty
-                        ? LucideIcons.wifi
-                        : LucideIcons.circle_slash,
-                filled: responder.isOnDuty,
-              ),
-          ],
-          facts: [
-            ProfileFact(label: t.respProfileBadge, value: p.badgeId ?? '—'),
-            ProfileFact(
-              label: t.respProfileStatus,
-              value: _approvalLabel(p.approvalStatus),
-              color: _approvalColor(p.approvalStatus),
+        DemoAnchor(
+          id: 'rprof.hero',
+          child: ProfileHeroCard(
+            avatar: EditableAvatar(
+              displayName: displayName,
+              avatarUrl: p.avatarUrl,
+              busy: _uploadingAvatar,
+              onTap: _changeAvatar,
+              size: 92,
             ),
-          ],
+            displayName: displayName,
+            subtitle: email,
+            chips: [
+              if (agencyLabel != null)
+                ProfileChip(
+                  label: agencyLabel,
+                  color: _agencyColor(p.agencyType),
+                  icon: _agencyIcon(p.agencyType),
+                ),
+              if (approved)
+                ProfileChip(
+                  label: responder.isOnDuty ? t.respOnDuty : t.respOffDuty,
+                  color:
+                      responder.isOnDuty
+                          ? ZirenTokens.systemSuccess
+                          : ZirenTokens.textMuted,
+                  icon:
+                      responder.isOnDuty
+                          ? LucideIcons.wifi
+                          : LucideIcons.circle_slash,
+                  filled: responder.isOnDuty,
+                ),
+            ],
+            facts: [
+              ProfileFact(label: t.respProfileBadge, value: p.badgeId ?? '—'),
+              ProfileFact(
+                label: t.respProfileStatus,
+                value: _approvalLabel(p.approvalStatus),
+                color: _approvalColor(p.approvalStatus),
+              ),
+            ],
+          ),
         ),
 
         // ── Approval ─────────────────────────────────────────
@@ -232,25 +236,28 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         //
         // Read-only. Name and phone changes go through Settings (the same
         // editor the resident side uses) rather than an in-place edit mode.
-        ProfileGroup(
-          title: t.respProfileContact,
-          children: [
-            ProfileTile(
-              icon: LucideIcons.user,
-              label: t.respFieldName,
-              value: p.fullName.isNotEmpty ? p.fullName : '—',
-            ),
-            ProfileTile(
-              icon: LucideIcons.mail,
-              label: t.labelEmailProfile,
-              value: email.isNotEmpty ? email : '—',
-            ),
-            ProfileTile(
-              icon: LucideIcons.phone,
-              label: t.respFieldPhone,
-              value: p.phoneNumber?.isNotEmpty == true ? p.phoneNumber! : '—',
-            ),
-          ],
+        DemoAnchor(
+          id: 'rprof.contact',
+          child: ProfileGroup(
+            title: t.respProfileContact,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.user,
+                label: t.respFieldName,
+                value: p.fullName.isNotEmpty ? p.fullName : '—',
+              ),
+              ProfileTile(
+                icon: LucideIcons.mail,
+                label: t.labelEmailProfile,
+                value: email.isNotEmpty ? email : '—',
+              ),
+              ProfileTile(
+                icon: LucideIcons.phone,
+                label: t.respFieldPhone,
+                value: p.phoneNumber?.isNotEmpty == true ? p.phoneNumber! : '—',
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: ZirenTokens.space24),
 
@@ -260,51 +267,62 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         // member cannot tell whether "a0000001-..." is theirs. The station's
         // own number is here so nobody hunts for it during a shift (Section
         // 21), and pressing it calls.
-        ProfileGroup(
-          title: t.profileStationSection,
-          children: [
-            ProfileTile(
-              icon: _agencyIcon(p.agencyType),
-              tone: _agencyColor(p.agencyType),
-              label: t.respProfileAgency,
-              value: agencyLabel ?? '—',
-            ),
-            ProfileTile(
-              icon: LucideIcons.map_pin,
-              label: t.respProfileMunicipality,
-              value: p.agencyMunicipality ?? '—',
-            ),
-            if (stationNumbers.isNotEmpty)
+        DemoAnchor(
+          id: 'rprof.station',
+          child: ProfileGroup(
+            title: t.profileStationSection,
+            children: [
               ProfileTile(
-                icon: LucideIcons.phone_call,
-                tone: ZirenTokens.systemSuccess,
-                label: t.profileStationContact,
-                value: stationNumbers
-                    .map((n) => n.label == null ? n.display : '${n.label} ${n.display}')
-                    .join('\n'),
-                onTap: () => _callStation(context, stationNumbers),
+                icon: _agencyIcon(p.agencyType),
+                tone: _agencyColor(p.agencyType),
+                label: t.respProfileAgency,
+                value: agencyLabel ?? '—',
               ),
-          ],
+              ProfileTile(
+                icon: LucideIcons.map_pin,
+                label: t.respProfileMunicipality,
+                value: p.agencyMunicipality ?? '—',
+              ),
+              if (stationNumbers.isNotEmpty)
+                ProfileTile(
+                  icon: LucideIcons.phone_call,
+                  tone: ZirenTokens.systemSuccess,
+                  label: t.profileStationContact,
+                  value: stationNumbers
+                      .map(
+                        (n) =>
+                            n.label == null
+                                ? n.display
+                                : '${n.label} ${n.display}',
+                      )
+                      .join('\n'),
+                  onTap: () => _callStation(context, stationNumbers),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: ZirenTokens.space24),
 
         // ── Safety & help ────────────────────────────────────
-        ProfileGroup(
-          title: t.profileSafetyHelp,
-          children: [
-            ProfileTile(
-              icon: LucideIcons.phone_call,
-              tone: ZirenTokens.systemSuccess,
-              label: t.hotlinesTitle,
-              onTap: () => context.push('/hotlines'),
-            ),
-            ProfileTile(
-              icon: LucideIcons.life_buoy,
-              tone: ZirenTokens.systemInfo,
-              label: t.helpTitle,
-              onTap: () => context.push('/help?role=responder'),
-            ),
-          ],
+        DemoAnchor(
+          id: 'rprof.help',
+          child: ProfileGroup(
+            title: t.profileSafetyHelp,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.phone_call,
+                tone: ZirenTokens.systemSuccess,
+                label: t.hotlinesTitle,
+                onTap: () => context.push('/hotlines'),
+              ),
+              ProfileTile(
+                icon: LucideIcons.life_buoy,
+                tone: ZirenTokens.systemInfo,
+                label: t.helpTitle,
+                onTap: () => context.push('/help?role=responder'),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: ZirenTokens.space24),
 
@@ -313,21 +331,24 @@ class _ResponderProfileScreenState extends State<ResponderProfileScreen> {
         // Log out is disabled mid-save: signing out while a PATCH is in flight
         // would tear the session down under the request and lose the edit
         // with no error worth showing.
-        ProfileGroup(
-          title: t.profileAccount,
-          children: [
-            ProfileTile(
-              icon: LucideIcons.settings,
-              label: t.profileSettings,
-              onTap: () => context.push('/settings'),
-            ),
-            ProfileTile(
-              icon: LucideIcons.log_out,
-              label: t.respLogout,
-              danger: true,
-              onTap: provider.isSaving ? null : () => _confirmLogout(context),
-            ),
-          ],
+        DemoAnchor(
+          id: 'rprof.account',
+          child: ProfileGroup(
+            title: t.profileAccount,
+            children: [
+              ProfileTile(
+                icon: LucideIcons.settings,
+                label: t.profileSettings,
+                onTap: () => context.push('/settings'),
+              ),
+              ProfileTile(
+                icon: LucideIcons.log_out,
+                label: t.respLogout,
+                danger: true,
+                onTap: provider.isSaving ? null : () => _confirmLogout(context),
+              ),
+            ],
+          ),
         ),
       ],
     );

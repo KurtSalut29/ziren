@@ -141,7 +141,7 @@ export function MapSearch({ map, maplibre, className }: {
   }
 
   return (
-    <div className={cn('w-[min(320px,calc(100%-5rem))]', className)} ref={boxRef}>
+    <div data-demo="map:search" className={cn('w-[min(320px,calc(100%-5rem))]', className)} ref={boxRef}>
       <style>{`
         .zmk-search-ring { width: 22px; height: 22px; border-radius: 9999px; border: 3px solid var(--color-brand);
           background: color-mix(in srgb, var(--color-brand) 25%, transparent); box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 60%, transparent);

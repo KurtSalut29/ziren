@@ -180,7 +180,7 @@ export function ZirenSidebar({
                         isActive={active}
                         tooltip={tooltip}
                       >
-                        <Link aria-current={active ? 'page' : undefined} href={item.href}>
+                        <Link aria-current={active ? 'page' : undefined} data-demo={`nav:${item.href}`} href={item.href}>
                           <IconChip active={active} badge={badge} item={item} />
                           <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                           <CountPill active={active} count={badge} />

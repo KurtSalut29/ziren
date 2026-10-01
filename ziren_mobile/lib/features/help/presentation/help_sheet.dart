@@ -110,12 +110,13 @@ class _HelpSheetBody extends StatelessWidget {
         ),
         Divider(height: 1, color: ZirenTokens.surfaceBorder),
         Expanded(
-          child: HelpGuide(
+          child: HelpWithDemo(
             forResponder: forResponder,
             controller: controller,
             // The header above already says what this is.
             showIntro: false,
             beforeNavigate: onClose,
+            beforeDemo: onClose,
           ),
         ),
       ],

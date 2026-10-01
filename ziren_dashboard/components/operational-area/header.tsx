@@ -41,6 +41,7 @@ import { AreaTabs, type AreaTabItem } from './area-tabs';
 import { BarangayDialog } from './barangay-picker';
 import { periodDates, periodLong, phToday, type Range } from './period';
 
+import { DemoTarget } from '@/components/help/demo-target';
 /** A field that opens a dialog, dressed like the dropdowns beside it. */
 const FILTER_BUTTON =
   'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[var(--radius-control)] border border-input bg-[var(--color-surface-card)] px-3 text-left text-[13px] font-medium text-foreground transition-colors hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-50';
@@ -137,7 +138,7 @@ export function AreaHeader({
       data-area-header
     >
       {/* ── 1 · Where am I ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 gap-y-3 px-5 py-4 sm:gap-x-4 sm:py-5 md:px-6">
+      <div data-demo="area:where" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 gap-y-3 px-5 py-4 sm:gap-x-4 sm:py-5 md:px-6">
         <span
           aria-hidden="true"
           className="flex size-11 shrink-0 items-center justify-center rounded-xl sm:row-span-2 sm:size-12 sm:rounded-[14px]"
@@ -163,7 +164,7 @@ export function AreaHeader({
           </h1>
         </div>
 
-        <Button
+        <DemoTarget id="area:export"><Button
           aria-label="Export CSV"
           className="shrink-0 rounded-[var(--radius-control)] px-3.5 max-sm:w-9 max-sm:px-0 sm:row-span-2"
           disabled={!data}
@@ -175,7 +176,7 @@ export function AreaHeader({
         >
           <Download className="size-4" />
           <span className="max-sm:hidden">Export CSV</span>
-        </Button>
+        </Button></DemoTarget>
 
         <ul aria-label="About this area" className="col-span-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[var(--color-text-secondary)] sm:col-span-1 sm:col-start-2 sm:gap-x-5">
           {own && (
@@ -203,7 +204,7 @@ export function AreaHeader({
       </div>
 
       {/* ── 2 · What am I looking at ───────────────────────────────────── */}
-      <div
+      <div data-demo="area:filters"
         aria-label="What this screen shows"
         className="flex flex-wrap items-end gap-x-5 gap-y-3.5 border-t border-[var(--color-surface-border)] bg-[var(--color-surface-raised)]/45 px-5 py-3.5 md:px-6"
         role="group"
@@ -284,12 +285,12 @@ export function AreaHeader({
       )}
 
       {/* ── 3 · Where can I go ─────────────────────────────────────────── */}
-      <AreaTabs
+      <DemoTarget id="area:tabs"><AreaTabs
         activeKey={activeTab}
         ariaLabel="Operational area views"
         onSelect={onTab}
         tabs={tabs}
-      />
+      /></DemoTarget>
 
       {/* Renders into the page body (a portal), so where it sits here does not matter;
           nothing is drawn while closed. PeriodPicker's own Custom dialog renders the same

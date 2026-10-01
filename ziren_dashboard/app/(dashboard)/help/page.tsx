@@ -16,6 +16,9 @@ import { Keyboard, LifeBuoy, Search } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { helpFor } from '@/lib/help/help-content';
 import { HelpTopicItem, filterHelp } from '@/components/help/help-topic';
+import { DemoList, HelpModeSwitch, type HelpMode } from '@/components/help/demo-list';
+import { useDemo } from '@/components/help/demo-tour';
+import { demosFor } from '@/lib/help/demo-content';
 import { Button } from '@/components/efferd/ui/button';
 
 export default function HelpPage() {
@@ -23,6 +26,8 @@ export default function HelpPage() {
   const groups = helpFor(Boolean(isProvincialAdmin));
   const [open, setOpen] = useState<string | null>(groups[0]?.topics[0]?.id ?? null);
   const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<HelpMode>('steps');
+  const demo = useDemo();
 
   const q = query.trim().toLowerCase();
   const filtered = useMemo(() => filterHelp(groups, query), [groups, query]);
@@ -38,11 +43,19 @@ export default function HelpPage() {
               {isProvincialAdmin
                 ? 'Guides for Provincial Admins: watching the province, managing accounts and stations, and communicating.'
                 : 'Guides for station dispatchers: handling a report from the alarm to resolved, asking other stations for help, and paperwork.'}
-              {' '}Open a topic to see its steps.
+              {' '}Open a topic to see its steps, or choose Demo and Ziren will show you a page.
             </p>
           </div>
         </div>
 
+        <div className="mb-4">
+          <HelpModeSwitch mode={mode} onChange={setMode} />
+        </div>
+
+        {mode === 'demo' ? (
+          <DemoList demos={demosFor(Boolean(isProvincialAdmin))} onStart={d => demo.start(d)} />
+        ) : (
+        <>
         <label className="relative mb-4 block">
           <span className="sr-only">Search help</span>
           <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -76,6 +89,8 @@ export default function HelpPage() {
             </ul>
           </section>
         ))}
+        </>
+        )}
       </div>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:w-[300px]">

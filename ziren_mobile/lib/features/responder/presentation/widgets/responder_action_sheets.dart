@@ -800,11 +800,10 @@ class _EscalateSheetState extends State<EscalateSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
     return _SheetScaffold(
-      title: 'Escalate Incident',
-      subtitle:
-          'Tell the Agency Admin what changed. This notifies them to '
-          'reassess — it does not change the official severity yourself.',
+      title: t.respEscalateAction,
+      subtitle: t.respEscalateBody,
       accent: ZirenTokens.severityHigh,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,18 +813,16 @@ class _EscalateSheetState extends State<EscalateSheet> {
             maxLines: 4,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'What changed?',
-              hintText:
-                  'e.g. Fire spreading rapidly, multiple casualties, '
-                  'additional agency required…',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: t.respEscalateWhat,
+              hintText: t.respEscalateHint,
+              border: const OutlineInputBorder(),
             ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: ZirenTokens.space20),
           _submitButton(
-            label: 'Send Escalation',
+            label: t.respEscalateSubmit,
             icon: LucideIcons.triangle_alert,
             color: ZirenTokens.severityHigh,
             busy: false,

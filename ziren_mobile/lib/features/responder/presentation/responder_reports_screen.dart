@@ -12,6 +12,7 @@ import '../domain/responder_vocabulary.dart';
 import 'widgets/responder_charts.dart';
 import 'widgets/responder_ui.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Every report that has been assigned to this responder — open and closed.
 ///
@@ -162,11 +163,14 @@ class _ResponderReportsScreenState extends State<ResponderReportsScreen> {
                   kHomeGutter,
                   0,
                 ),
-                child: _ViewToggle(
-                  view: _view,
-                  listLabel: t.respViewList,
-                  recordLabel: t.respViewRecord,
-                  onChanged: (v) => setState(() => _view = v),
+                child: DemoAnchor(
+                  id: 'rrep.toggle',
+                  child: _ViewToggle(
+                    view: _view,
+                    listLabel: t.respViewList,
+                    recordLabel: t.respViewRecord,
+                    onChanged: (v) => setState(() => _view = v),
+                  ),
                 ),
               ),
 
@@ -232,14 +236,23 @@ class _ResponderReportsScreenState extends State<ResponderReportsScreen> {
       groups[g].$2.add(i);
     }
 
+    // The first row on screen, for the demo to point at.
+    final firstId =
+        showOpen && open.isNotEmpty
+            ? open.first.id
+            : (showClosed && closed.isNotEmpty ? closed.first.id : null);
+
     Widget rows(List<ResponderIncidentModel> list) => Padding(
       padding: const EdgeInsets.symmetric(horizontal: kHomeGutter),
       child: Column(
         children: [
           for (final r in list) ...[
-            ReportRow(
-              incident: r,
-              onTap: () => context.push('/responder/incident/${r.id}'),
+            DemoAnchor(
+              id: r.id == firstId ? 'rrep.first' : 'rrep.${r.id}',
+              child: ReportRow(
+                incident: r,
+                onTap: () => context.push('/responder/incident/${r.id}'),
+              ),
             ),
             const SizedBox(height: ZirenTokens.space8),
           ],
@@ -256,50 +269,53 @@ class _ResponderReportsScreenState extends State<ResponderReportsScreen> {
           kHomeGutter,
           0,
         ),
-        child: TextField(
-          controller: _search,
-          onChanged: (v) => setState(() => _query = v),
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: t.respSearchHint,
-            prefixIcon: Icon(
-              LucideIcons.search,
-              size: 18,
-              color: ZirenTokens.textMuted,
-            ),
-            suffixIcon:
-                _query.isEmpty
-                    ? null
-                    : IconButton(
-                      tooltip: t.respCancel,
-                      icon: Icon(
-                        LucideIcons.x,
-                        size: 18,
-                        color: ZirenTokens.textMuted,
+        child: DemoAnchor(
+          id: 'rrep.search',
+          child: TextField(
+            controller: _search,
+            onChanged: (v) => setState(() => _query = v),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: t.respSearchHint,
+              prefixIcon: Icon(
+                LucideIcons.search,
+                size: 18,
+                color: ZirenTokens.textMuted,
+              ),
+              suffixIcon:
+                  _query.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: t.respCancel,
+                        icon: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: ZirenTokens.textMuted,
+                        ),
+                        onPressed:
+                            () => setState(() {
+                              _search.clear();
+                              _query = '';
+                            }),
                       ),
-                      onPressed:
-                          () => setState(() {
-                            _search.clear();
-                            _query = '';
-                          }),
-                    ),
-            filled: true,
-            fillColor: ZirenTokens.surfaceCard,
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: ZirenTokens.brandOrange,
-                width: 1.5,
+              filled: true,
+              fillColor: ZirenTokens.surfaceCard,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: ZirenTokens.surfaceBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: ZirenTokens.brandOrange,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -314,30 +330,33 @@ class _ResponderReportsScreenState extends State<ResponderReportsScreen> {
           kHomeGutter,
           0,
         ),
-        child: Row(
-          children: [
-            _FilterChip(
-              label: t.respFilterAll,
-              count: p.queue.length + p.history.length,
-              selected: _filter == _Filter.all,
-              onTap: () => setState(() => _filter = _Filter.all),
-            ),
-            const SizedBox(width: ZirenTokens.space8),
-            _FilterChip(
-              label: t.respFilterOpen,
-              count: p.queue.length,
-              selected: _filter == _Filter.active,
-              attention: p.queue.isNotEmpty,
-              onTap: () => setState(() => _filter = _Filter.active),
-            ),
-            const SizedBox(width: ZirenTokens.space8),
-            _FilterChip(
-              label: t.respFilterClosed,
-              count: p.history.length,
-              selected: _filter == _Filter.closed,
-              onTap: () => setState(() => _filter = _Filter.closed),
-            ),
-          ],
+        child: DemoAnchor(
+          id: 'rrep.filters',
+          child: Row(
+            children: [
+              _FilterChip(
+                label: t.respFilterAll,
+                count: p.queue.length + p.history.length,
+                selected: _filter == _Filter.all,
+                onTap: () => setState(() => _filter = _Filter.all),
+              ),
+              const SizedBox(width: ZirenTokens.space8),
+              _FilterChip(
+                label: t.respFilterOpen,
+                count: p.queue.length,
+                selected: _filter == _Filter.active,
+                attention: p.queue.isNotEmpty,
+                onTap: () => setState(() => _filter = _Filter.active),
+              ),
+              const SizedBox(width: ZirenTokens.space8),
+              _FilterChip(
+                label: t.respFilterClosed,
+                count: p.history.length,
+                selected: _filter == _Filter.closed,
+                onTap: () => setState(() => _filter = _Filter.closed),
+              ),
+            ],
+          ),
         ),
       ),
 

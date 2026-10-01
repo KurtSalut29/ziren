@@ -55,6 +55,7 @@ import { AboutPanel } from '@/components/settings/panels/about';
 import { BackupPanel, PushPanel, SystemConfigPanel } from '@/components/settings/panels/system';
 import { AiNlpPanel, IncidentCategoriesPanel } from '@/components/settings/extra-panels';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type SettingsTab =
   | 'agency' | 'alerts' | 'responders'
   | 'profile' | 'security' | 'login-devices' | 'privacy'
@@ -209,9 +210,9 @@ export default function SettingsPage() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <h1 className="text-[30px] font-bold leading-none tracking-tight text-foreground">Settings</h1>
             <div className="flex w-full flex-wrap items-center gap-3 sm:ml-auto sm:w-auto">
-              <SettingsSearch groups={groups} onSelect={select} />
+              <DemoTarget id="set:search"><SettingsSearch groups={groups} onSelect={select} /></DemoTarget>
               <div className="contents peer" ref={setSaveSlot} />
-              <span className="hidden items-center gap-1.5 text-[13px] font-medium text-muted-foreground md:inline-flex peer-has-[[data-save-active]]:hidden">
+              <span data-demo="set:saved" className="hidden items-center gap-1.5 text-[13px] font-medium text-muted-foreground md:inline-flex peer-has-[[data-save-active]]:hidden">
                 <Check aria-hidden="true" className="size-4 text-[var(--color-system-success)]" strokeWidth={2.5} />
                 No unsaved changes
               </span>
@@ -220,10 +221,10 @@ export default function SettingsPage() {
         </div>
 
         <div className="px-6 md:px-8">
-          <SettingsTabs activeKey={active} groups={groups} onSelect={select} />
+          <DemoTarget id="set:tabs"><SettingsTabs activeKey={active} groups={groups} onSelect={select} /></DemoTarget>
         </div>
 
-        <div className="min-w-0 px-6 pt-4 md:px-8" key={active}>
+        <div data-demo="set:panel" className="min-w-0 px-6 pt-4 md:px-8" key={active}>
           {/* ── Agency ─────────────────────────────────────────── */}
           {active === 'agency' && (
             <AgencySection isProvincialAdmin={isProvincialAdmin} onOpen={select} section="record" token={token} />

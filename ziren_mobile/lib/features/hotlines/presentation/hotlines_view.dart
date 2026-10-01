@@ -12,6 +12,7 @@ import '../../incident_report/domain/incident_provider.dart';
 import '../../incident_report/presentation/incident_labels.dart';
 import '../data/hotlines_store.dart';
 import '../domain/station_hotlines.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Opens the phone's dialer on [number]. Never places the call by itself:
 /// the resident still presses the dialer's call button, so a mis-tap here
@@ -33,18 +34,18 @@ Future<void> callHotline(BuildContext context, HotlineNumber number) async {
 }
 
 Color _agencyColor(String type) => switch (type) {
-      'BFP' => ZirenTokens.agencyBFP,
-      'PNP' => ZirenTokens.agencyPNP,
-      'MDRRMO' => ZirenTokens.agencyMDRRMO,
-      _ => ZirenTokens.systemInfo,
-    };
+  'BFP' => ZirenTokens.agencyBFP,
+  'PNP' => ZirenTokens.agencyPNP,
+  'MDRRMO' => ZirenTokens.agencyMDRRMO,
+  _ => ZirenTokens.systemInfo,
+};
 
 IconData _agencyIcon(String type) => switch (type) {
-      'BFP' => LucideIcons.flame,
-      'PNP' => LucideIcons.shield,
-      'MDRRMO' => LucideIcons.shield_plus,
-      _ => LucideIcons.hospital,
-    };
+  'BFP' => LucideIcons.flame,
+  'PNP' => LucideIcons.shield,
+  'MDRRMO' => LucideIcons.shield_plus,
+  _ => LucideIcons.hospital,
+};
 
 /// The station hotlines for one kind of emergency, as a bottom sheet.
 ///
@@ -60,13 +61,16 @@ Future<void> showHotlinesSheet(
   HotlinesStore.instance.refresh();
   // Nullable lookup: the sheet must open even where no report is in
   // progress (and in previews); without a fix the towns are just listed A–Z.
-  final pos = Provider.of<IncidentProvider?>(context, listen: false)?.currentPosition;
+  final pos =
+      Provider.of<IncidentProvider?>(context, listen: false)?.currentPosition;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: ZirenTokens.surfaceOverlay,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(ZirenTokens.radius24)),
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(ZirenTokens.radius24),
+      ),
     ),
     builder: (sheetContext) {
       final t = AppLocalizations.of(sheetContext);
@@ -75,80 +79,97 @@ Future<void> showHotlinesSheet(
         initialChildSize: 0.8,
         minChildSize: 0.4,
         maxChildSize: 0.95,
-        builder: (_, controller) => ListenableBuilder(
-          listenable: HotlinesStore.instance,
-          builder: (context, _) {
-            final entries = StationHotlines.forCategory(
-              HotlinesStore.instance.entries,
-              category,
-              lat: pos?.latitude,
-              lng: pos?.longitude,
-            );
-            // Only with a fix: without one the towns are merely A–Z, and
-            // calling the first one "nearest" would send a caller the wrong way.
-            final nearestTown = pos == null || entries.isEmpty ? null : entries.first.municipality;
-            return ListView(
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(
-                ZirenTokens.space20,
-                ZirenTokens.space12,
-                ZirenTokens.space20,
-                ZirenTokens.space24,
-              ),
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: ZirenTokens.surfaceBorder,
-                      borderRadius: BorderRadius.circular(ZirenTokens.radius4),
+        builder:
+            (_, controller) => ListenableBuilder(
+              listenable: HotlinesStore.instance,
+              builder: (context, _) {
+                final entries = StationHotlines.forCategory(
+                  HotlinesStore.instance.entries,
+                  category,
+                  lat: pos?.latitude,
+                  lng: pos?.longitude,
+                );
+                // Only with a fix: without one the towns are merely A–Z, and
+                // calling the first one "nearest" would send a caller the wrong way.
+                final nearestTown =
+                    pos == null || entries.isEmpty
+                        ? null
+                        : entries.first.municipality;
+                return ListView(
+                  controller: controller,
+                  padding: const EdgeInsets.fromLTRB(
+                    ZirenTokens.space20,
+                    ZirenTokens.space12,
+                    ZirenTokens.space20,
+                    ZirenTokens.space24,
+                  ),
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: ZirenTokens.surfaceBorder,
+                          borderRadius: BorderRadius.circular(
+                            ZirenTokens.radius4,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: ZirenTokens.space16),
-                if (offline) ...[
-                  _OfflineNotice(t: t),
-                  const SizedBox(height: ZirenTokens.space16),
-                ],
-                Text(
-                  category == null
-                      ? t.hotlinesTitle
-                      : t.hotlinesForCategory(IncidentLabels.categoryShort(t, category)),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: ZirenTokens.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: ZirenTokens.space4),
-                Text(
-                  t.hotlinesSheetSubtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, height: 1.4, color: ZirenTokens.textSecondary),
-                ),
-                const SizedBox(height: ZirenTokens.space16),
-                for (final h in entries) ...[
-                  HotlineCard(entry: h, nearest: h.municipality == nearestTown),
-                  const SizedBox(height: ZirenTokens.space10),
-                ],
-                const SizedBox(height: ZirenTokens.space6),
-                const _NationalHotline(),
-                const SizedBox(height: ZirenTokens.space12),
-                OutlinedButton.icon(
-                  icon: const Icon(LucideIcons.list, size: 18),
-                  label: Text(t.hotlinesSeeAll),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                  onPressed: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push('/hotlines');
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+                    const SizedBox(height: ZirenTokens.space16),
+                    if (offline) ...[
+                      _OfflineNotice(t: t),
+                      const SizedBox(height: ZirenTokens.space16),
+                    ],
+                    Text(
+                      category == null
+                          ? t.hotlinesTitle
+                          : t.hotlinesForCategory(
+                            IncidentLabels.categoryShort(t, category),
+                          ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: ZirenTokens.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: ZirenTokens.space4),
+                    Text(
+                      t.hotlinesSheetSubtitle,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: ZirenTokens.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: ZirenTokens.space16),
+                    for (final h in entries) ...[
+                      HotlineCard(
+                        entry: h,
+                        nearest: h.municipality == nearestTown,
+                      ),
+                      const SizedBox(height: ZirenTokens.space10),
+                    ],
+                    const SizedBox(height: ZirenTokens.space6),
+                    const _NationalHotline(),
+                    const SizedBox(height: ZirenTokens.space12),
+                    OutlinedButton.icon(
+                      icon: const Icon(LucideIcons.list, size: 18),
+                      label: Text(t.hotlinesSeeAll),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        context.push('/hotlines');
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
       );
     },
   );
@@ -166,12 +187,18 @@ class _OfflineNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: ZirenTokens.systemWarning.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-        border: Border.all(color: ZirenTokens.systemWarning.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: ZirenTokens.systemWarning.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LucideIcons.wifi_off, size: 20, color: ZirenTokens.systemWarning),
+          Icon(
+            LucideIcons.wifi_off,
+            size: 20,
+            color: ZirenTokens.systemWarning,
+          ),
           const SizedBox(width: ZirenTokens.space10),
           Expanded(
             child: Column(
@@ -188,7 +215,11 @@ class _OfflineNotice extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   t.hotlinesOfflineBody,
-                  style: TextStyle(fontSize: 12.5, height: 1.4, color: ZirenTokens.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: ZirenTokens.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -222,7 +253,12 @@ class _NationalHotline extends StatelessWidget {
 
 /// One station: who it is, and a Call button per number.
 class HotlineCard extends StatelessWidget {
-  const HotlineCard({super.key, required this.entry, this.nearest = false, this.icon});
+  const HotlineCard({
+    super.key,
+    required this.entry,
+    this.nearest = false,
+    this.icon,
+  });
 
   final StationHotline entry;
   final bool nearest;
@@ -236,9 +272,10 @@ class HotlineCard extends StatelessWidget {
       padding: const EdgeInsets.all(ZirenTokens.space12),
       decoration: profileCardDecoration().copyWith(
         border: Border.all(
-          color: nearest
-              ? color.withValues(alpha: 0.55)
-              : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+          color:
+              nearest
+                  ? color.withValues(alpha: 0.55)
+                  : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
           width: nearest ? 1.6 : 1,
         ),
       ),
@@ -251,11 +288,17 @@ class HotlineCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: ZirenTokens.isDark ? 0.2 : 0.12),
+                  color: color.withValues(
+                    alpha: ZirenTokens.isDark ? 0.2 : 0.12,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon ?? _agencyIcon(entry.agencyType), size: 20, color: color),
+                child: Icon(
+                  icon ?? _agencyIcon(entry.agencyType),
+                  size: 20,
+                  color: color,
+                ),
               ),
               const SizedBox(width: ZirenTokens.space10),
               Expanded(
@@ -271,24 +314,36 @@ class HotlineCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      entry.agencyType == 'RHU' && entry.agencyId == null && icon == null
+                      entry.agencyType == 'RHU' &&
+                              entry.agencyId == null &&
+                              icon == null
                           ? '${t.hotlinesRhu} · ${entry.municipality}'
                           : entry.municipality,
-                      style: TextStyle(fontSize: 12.5, color: ZirenTokens.textSecondary),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: ZirenTokens.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
               if (nearest)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(ZirenTokens.radius32),
                   ),
                   child: Text(
                     t.hotlinesNearest,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
                   ),
                 ),
             ],
@@ -296,7 +351,8 @@ class HotlineCard extends StatelessWidget {
           const SizedBox(height: ZirenTokens.space10),
           for (final n in entry.numbers) ...[
             _CallButton(number: n, color: color),
-            if (n != entry.numbers.last) const SizedBox(height: ZirenTokens.space8),
+            if (n != entry.numbers.last)
+              const SizedBox(height: ZirenTokens.space8),
           ],
         ],
       ),
@@ -326,7 +382,10 @@ class _CallButton extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 50),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: ZirenTokens.space12,
+                vertical: 8,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -346,13 +405,19 @@ class _CallButton extends StatelessWidget {
                         if (number.label != null)
                           Text(
                             number.label!,
-                            style: TextStyle(fontSize: 11.5, color: ZirenTokens.textMuted),
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: ZirenTokens.textMuted,
+                            ),
                           ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: ZirenTokens.systemSuccess,
                       borderRadius: BorderRadius.circular(ZirenTokens.radius32),
@@ -360,7 +425,11 @@ class _CallButton extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(LucideIcons.phone, size: 15, color: Colors.white),
+                        const Icon(
+                          LucideIcons.phone,
+                          size: 15,
+                          color: Colors.white,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           t.hotlinesCallNow,
@@ -409,12 +478,16 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final pos = Provider.of<IncidentProvider?>(context)?.currentPosition;
-    final towns = StationHotlines.nearestTowns(lat: pos?.latitude, lng: pos?.longitude);
+    final towns = StationHotlines.nearestTowns(
+      lat: pos?.latitude,
+      lng: pos?.longitude,
+    );
     // /map is the RESIDENT shell's tab. The router has no role guard, so a
     // responder sent there landed in the resident app; theirs is
     // /responder/map.
     final isResponder =
-        Provider.of<AuthProvider?>(context, listen: false)?.userRole == 'responder';
+        Provider.of<AuthProvider?>(context, listen: false)?.userRole ==
+        'responder';
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
       appBar: AppBar(
@@ -424,9 +497,10 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
       body: ListenableBuilder(
         listenable: HotlinesStore.instance,
         builder: (context, _) {
-          final all = HotlinesStore.instance.entries
-              .where((h) => _type == null || h.agencyType == _type)
-              .toList();
+          final all =
+              HotlinesStore.instance.entries
+                  .where((h) => _type == null || h.agencyType == _type)
+                  .toList();
           return ListView(
             padding: const EdgeInsets.fromLTRB(
               ZirenTokens.space16,
@@ -435,37 +509,52 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
               ZirenTokens.space32,
             ),
             children: [
-              const _NationalHotline(),
+              const DemoAnchor(id: 'hot.national', child: _NationalHotline()),
               const SizedBox(height: ZirenTokens.space16),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: ZirenTokens.space4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ZirenTokens.space4,
+                ),
                 child: Text(
                   t.hotlinesScreenIntro,
-                  style: TextStyle(fontSize: 13, height: 1.45, color: ZirenTokens.textSecondary),
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: ZirenTokens.textSecondary,
+                  ),
                 ),
               ),
               const SizedBox(height: ZirenTokens.space12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final (label, value) in [
-                      (t.hotlinesFilterAll, null),
-                      ('BFP', 'BFP'),
-                      ('PNP', 'PNP'),
-                      ('MDRRMO', 'MDRRMO'),
-                      ('RHU', 'RHU'),
-                    ]) ...[
-                      _FilterPill(
-                        label: label,
-                        icon: value == null ? LucideIcons.list : _agencyIcon(value),
-                        color: value == null ? ZirenTokens.brandOrange : _agencyColor(value),
-                        selected: _type == value,
-                        onTap: () => setState(() => _type = value),
-                      ),
-                      const SizedBox(width: ZirenTokens.space8),
+              DemoAnchor(
+                id: 'hot.filters',
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final (label, value) in [
+                        (t.hotlinesFilterAll, null),
+                        ('BFP', 'BFP'),
+                        ('PNP', 'PNP'),
+                        ('MDRRMO', 'MDRRMO'),
+                        ('RHU', 'RHU'),
+                      ]) ...[
+                        _FilterPill(
+                          label: label,
+                          icon:
+                              value == null
+                                  ? LucideIcons.list
+                                  : _agencyIcon(value),
+                          color:
+                              value == null
+                                  ? ZirenTokens.brandOrange
+                                  : _agencyColor(value),
+                          selected: _type == value,
+                          onTap: () => setState(() => _type = value),
+                        ),
+                        const SizedBox(width: ZirenTokens.space8),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
               for (final town in towns)
@@ -477,7 +566,17 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
                   ),
                   const SizedBox(height: ZirenTokens.space8),
                   for (final h in all.where((h) => h.municipality == town)) ...[
-                    HotlineCard(entry: h),
+                    DemoAnchor(
+                      id:
+                          town == towns.first &&
+                                  h ==
+                                      all.firstWhere(
+                                        (x) => x.municipality == town,
+                                      )
+                              ? 'hot.first'
+                              : 'hot.${identityHashCode(h)}',
+                      child: HotlineCard(entry: h),
+                    ),
                     const SizedBox(height: ZirenTokens.space10),
                   ],
                 ],
@@ -492,7 +591,9 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
                     tone: ZirenTokens.systemInfo,
                     label: t.contactsFindOnMap,
                     value: t.contactsFindOnMapBody,
-                    onTap: () => context.go(isResponder ? '/responder/map' : '/map'),
+                    onTap:
+                        () =>
+                            context.go(isResponder ? '/responder/map' : '/map'),
                   ),
                 ],
               ),
@@ -576,9 +677,7 @@ class _FilterPill extends StatelessWidget {
       child: Material(
         color: selected ? color : ZirenTokens.surfaceCard,
         shape: StadiumBorder(
-          side: BorderSide(
-            color: selected ? color : ZirenTokens.surfaceBorder,
-          ),
+          side: BorderSide(color: selected ? color : ZirenTokens.surfaceBorder),
         ),
         child: InkWell(
           customBorder: const StadiumBorder(),

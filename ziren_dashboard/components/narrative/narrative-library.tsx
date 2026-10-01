@@ -58,6 +58,7 @@ import {
 } from '@/components/incidents/incident-vocabulary';
 import { CategoryTile, TABLE_HEAD_CELL } from '@/components/incidents/incident-table-parts';
 
+import { DemoTarget } from '@/components/help/demo-target';
 const PAGE_SIZE = 25;
 
 /** The drawer labels, in the wizard's own order, then the catch-all. */
@@ -215,7 +216,7 @@ export function NarrativeLibrary() {
   return (
     <div className="min-h-full">
       {/* ── Filters ── */}
-      <div className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3.5 backdrop-blur md:px-7">
+      <div data-demo="narr:filters" className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3.5 backdrop-blur md:px-7">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3.5">
           {mode === 'reports' && (
             <>
@@ -251,7 +252,7 @@ export function NarrativeLibrary() {
             this console uses (Operational Area, Verification), so a tab reads
             the same way wherever it appears. */}
         {!isProvincialAdmin && (
-          <NavTabs
+          <DemoTarget id="narr:tabs"><NavTabs
             activeKey={mode}
             ariaLabel="Narrative report view"
             onSelect={key => setMode(key as Mode)}
@@ -259,11 +260,11 @@ export function NarrativeLibrary() {
               { key: 'reports', label: 'Reports', icon: FileText, badge: data ? counts?.all ?? 0 : undefined },
               { key: 'awaiting', label: 'Awaiting a report', icon: FilePenLine, badge: awaiting ? awaiting.length : undefined },
             ]}
-          />
+          /></DemoTarget>
         )}
 
         {/* ── The drawer labels: kinds of incident ── */}
-        <div aria-label="Filter by type of incident" className="flex flex-wrap gap-2" data-type-tabs role="group">
+        <div data-demo="narr:types" aria-label="Filter by type of incident" className="flex flex-wrap gap-2" data-type-tabs role="group">
           {[
             { key: 'all', label: 'All types', Icon: LayoutGrid, n: mode === 'reports' ? counts?.all : awaiting?.length },
             ...TYPES.map(k => ({
@@ -336,7 +337,7 @@ export function NarrativeLibrary() {
                 title={filtersOn ? 'No reports found' : 'No narrative reports yet'}
               />
             ) : (
-              <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]">
+              <div data-demo="narr:list" className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]">
                 {/* border-separate, not collapse: under collapse the border
                     belongs to the table, so a sticky header leaves its rule
                     behind when the rows scroll. */}
@@ -406,7 +407,7 @@ export function NarrativeLibrary() {
                 title={awaiting.length === 0 ? 'All caught up' : 'Nothing found'}
               />
             ) : (
-              <div
+              <div data-demo="narr:list"
                 className="scroll-slim overflow-auto rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] shadow-[var(--shadow-card)]"
                 data-list-scroll
                 ref={listRef}

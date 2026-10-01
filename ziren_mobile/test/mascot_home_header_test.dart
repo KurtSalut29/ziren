@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +6,7 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:ziren/features/help/presentation/help_sheet.dart';
 import 'package:ziren/l10n/app_localizations.dart';
 import 'package:ziren/shared/widgets/mascot_home_header.dart';
+import 'package:ziren/shared/widgets/ziren_mascot.dart';
 
 Widget _app(Widget child, {String lang = 'en'}) => MaterialApp(
   locale: Locale(lang),
@@ -26,7 +26,6 @@ MascotHomeHeader _header({String message = 'Hello there'}) => MascotHomeHeader(
   profileLabel: 'Open your profile',
   greeting: 'Good morning, Kurt!',
   greetingName: 'Kurt',
-  mascot: MascotArt.resident,
   mascotName: 'Ziren',
   message: message,
   locationLabel: 'Caraycaray, Naval',
@@ -110,7 +109,7 @@ void main() {
         tagline: '', hasUnread: false, onBellTap: () {}, bellLabel: 'b',
         bellLabelUnread: 'b', displayName: 'Kurt', onProfileTap: () {}, profileLabel: 'p',
         greeting: 'Good morning, Kurt!', greetingName: 'Kurt',
-        mascot: MascotArt.resident, mascotName: "Hi! I'm Ziren",
+        mascotName: "Hi! I'm Ziren",
         message: 'Hello there', locationLabel: 'x', connectivityLabel: 'y',
         connectivityIcon: LucideIcons.radio_tower, connectivityColor: Colors.green,
       ))));
@@ -162,56 +161,142 @@ void main() {
     });
   });
 
-  testWidgets('the mascot waves at the start of every loop, then holds still', (tester) async {
-    await tester.pumpWidget(_app(SingleChildScrollView(child: _header())));
+  group('Ziren on Home (Wave_Mascot / No_Internet_Mascot frames)', () {
+    Widget loop(ZirenMascotMood mood) => MaterialApp(
+      home: Center(
+        child: SizedBox.fromSize(size: ZirenMascot.canvas, child: ZirenFrameLoop(mood: mood)),
+      ),
+    );
 
-    double handAngle() {
-      final rotate = tester.widget<Transform>(find.ancestor(
-        of: find.image(const AssetImage('assets/images/mascot_resident_hand.png')),
-        matching: find.byType(Transform),
-      ).first);
-      // Rotation about z: atan2 of the matrix's first column.
-      return math.atan2(rotate.transform.entry(1, 0), rotate.transform.entry(0, 0));
-    }
+    /// The frames on screen now, by number, with their opacity.
+    Map<int, double> shown(WidgetTester tester) => {
+      for (final img in tester.widgetList<Image>(find.byType(Image)))
+        int.parse(RegExp(r'_(\d\d)\.webp').firstMatch((img.image as AssetImage).assetName)!.group(1)!):
+            img.opacity!.value,
+    };
 
-    final seen = <double>[];
-    for (var ms = 100; ms <= 1900; ms += 100) {
+    testWidgets('the wave plays Start to End, each frame fading into the next, and End goes straight back to Start',
+        (tester) async {
+      await tester.pumpWidget(loop(ZirenMascotMood.wave));
+      expect(shown(tester), {1: 1.0}); // Start
+
+      await tester.pump(const Duration(milliseconds: 50)); // held
+      expect(shown(tester), {1: 1.0});
+
+      await tester.pump(const Duration(milliseconds: 60)); // 110 ms: fading into Move 1
+      final mid = shown(tester);
+      expect(mid.keys, [1, 2]);
+      expect(mid[2], inExclusiveRange(0, 1));
+
+      await tester.pump(const Duration(milliseconds: 60)); // 170 ms: Move 1
+      expect(shown(tester).keys.first, 2);
+
+      // 9 frames x 150 ms in, the End fades into Start — no pause, no jump.
+      await tester.pump(const Duration(milliseconds: 1320)); // 1490 ms
+      expect(shown(tester).keys, [10, 1]);
+      await tester.pump(const Duration(milliseconds: 30)); // 1520 ms: Start again
+      expect(shown(tester), {1: 1.0});
+    });
+
+    testWidgets('mid-fade the figure never goes see-through', (tester) async {
+      await tester.pumpWidget(loop(ZirenMascotMood.wave));
+      for (var ms = 0; ms < 150; ms += 5) {
+        final now = shown(tester);
+        final cover = 1 - now.values.fold<double>(1, (left, o) => left * (1 - o));
+        expect(cover, greaterThan(0.93), reason: '$ms ms: $now');
+        await tester.pump(const Duration(milliseconds: 5));
+      }
+    });
+
+    testWidgets('the no-internet loop holds each pose long enough to read', (tester) async {
+      await tester.pumpWidget(loop(ZirenMascotMood.offline));
+      expect(shown(tester), {1: 1.0}); // Not connected
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(shown(tester), {1: 1.0});
+      await tester.pump(const Duration(milliseconds: 600)); // 900 ms: Look around
+      expect(shown(tester).keys.first, 2);
+      await tester.pump(const Duration(milliseconds: 4700)); // 5.6 s: round again
+      expect(shown(tester).keys.first, 1);
+    });
+
+    testWidgets('with "Remove animations" on, Ziren stands still on the first frame', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await tester.pumpWidget(loop(ZirenMascotMood.wave));
+      await tester.pump(const Duration(seconds: 2));
+      expect(shown(tester), {1: 1.0});
+    });
+
+    testWidgets('losing the internet swaps the wave for the no-internet loop with a fade-through, and back',
+        (tester) async {
+      var offline = false;
+      late StateSetter set;
+      await tester.pumpWidget(MaterialApp(
+        home: StatefulBuilder(builder: (context, setState) {
+          set = setState;
+          return Center(child: SizedBox(width: 136, height: 158, child: ZirenMascot(offline: offline)));
+        }),
+      ));
+      // All 20 frames are decoded before Ziren appears.
+      await tester.runAsync(() => Future<void>.delayed(const Duration(seconds: 2)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(ZirenFrameLoop), findsOneWidget);
+      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.wave);
+
+      set(() => offline = true);
+      await tester.pump();
+      // A fade-through: never both showing at once (two sets drawn over each
+      // other showed two pins).
+      double opacityOf(ZirenMascotMood mood) => tester
+          .widget<FadeTransition>(find.ancestor(
+            of: find.byWidgetPredicate((w) => w is ZirenFrameLoop && w.mood == mood),
+            matching: find.byType(FadeTransition),
+          ).first)
+          .opacity
+          .value;
+      for (var ms = 0; ms <= 520; ms += 40) {
+        final loops = tester.widgetList<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).map((w) => w.mood).toList();
+        if (loops.length == 2) {
+          final both = opacityOf(ZirenMascotMood.wave) > 0 && opacityOf(ZirenMascotMood.offline) > 0;
+          expect(both, isFalse, reason: 'at $ms ms both loops were showing');
+        }
+        if (ms == 120) expect(loops.length, 2, reason: 'the wave is still fading out');
+        await tester.pump(const Duration(milliseconds: 40));
+      }
+      // The new loop held its first pose while it faded in, so no change of
+      // pose was half-seen through the fade.
+      final faded = tester.widgetList<Image>(find.descendant(
+        of: find.byType(ZirenFrameLoop), matching: find.byType(Image),
+      )).map((i) => (i.image as AssetImage).assetName);
+      expect(faded, ['assets/images/mascot/offline_01.webp']);
       await tester.pump(const Duration(milliseconds: 100));
-      seen.add(handAngle());
-    }
-    // Swings both ways, never past 16°.
-    expect(seen.any((a) => a > 0.05), isTrue);
-    expect(seen.any((a) => a < -0.05), isTrue);
-    expect(seen.every((a) => a.abs() <= 16 * math.pi / 180 + 1e-9), isTrue);
+      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.offline);
 
-    await tester.pump(const Duration(seconds: 1)); // 2.9 s: resting
-    expect(handAngle(), 0);
-    await tester.pump(const Duration(milliseconds: 2600)); // 5.5 s: waving again
-    expect(handAngle().abs(), greaterThan(0.01));
+      set(() => offline = false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(tester.widget<ZirenFrameLoop>(find.byType(ZirenFrameLoop)).mood, ZirenMascotMood.wave);
+    });
   });
 
-  test('each mascot is split into a body and a hand layer of the same size', () {
-    (int, int) size(String path) {
-      final b = File(path).readAsBytesSync();
-      int u32(int o) => (b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3];
-      return (u32(16), u32(20)); // IHDR width, height
-    }
-
-    for (final art in [MascotArt.resident, MascotArt.responder]) {
-      expect(size(art.body), (art.size.width.toInt(), art.size.height.toInt()), reason: art.body);
-      expect(size(art.hand), size(art.body), reason: art.hand);
+  test('all 20 frames share one transparent canvas, so they cross-fade in place', () {
+    for (final mood in ZirenMascotMood.values) {
+      for (final path in mood.frames) {
+        final b = File(path).readAsBytesSync();
+        expect(String.fromCharCodes(b.sublist(8, 16)), 'WEBPVP8X', reason: path);
+        expect(b[20] & 0x10, 0x10, reason: '$path has an alpha channel');
+        final w = (b[24] | b[25] << 8 | b[26] << 16) + 1;
+        final h = (b[27] | b[28] << 8 | b[29] << 16) + 1;
+        expect((w, h), (ZirenMascot.canvas.width.toInt(), ZirenMascot.canvas.height.toInt()), reason: path);
+      }
     }
   });
 
-  test('the mascot images are bundled with transparent backgrounds', () {
-    for (final name in [
-      'mascot_resident', 'mascot_responder', 'mascot_help',
-      'mascot_resident_body', 'mascot_resident_hand',
-      'mascot_responder_body', 'mascot_responder_hand',
-    ]) {
-      final bytes = File('assets/images/$name.png').readAsBytesSync();
-      // PNG colour type 6 = RGBA: the white studio backdrop was cut out.
-      expect(bytes[25], 6, reason: name);
-    }
+  test('the help head is bundled with a transparent background', () {
+    final bytes = File('assets/images/mascot_help.png').readAsBytesSync();
+    // PNG colour type 6 = RGBA: the white studio backdrop was cut out.
+    expect(bytes[25], 6);
   });
 }

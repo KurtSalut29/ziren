@@ -85,7 +85,9 @@ export function ZirenHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
-        <NotificationCenter token={token} />
+        <span className="contents" data-demo="header:notifications">
+          <NotificationCenter token={token} />
+        </span>
         {/* One click, not a menu — the dropdown's own Light/Dark/System
             radio group stays for the person who wants "System" specifically;
             this is for everyone else, who just wants the lights off. Mirrors
@@ -93,6 +95,7 @@ export function ZirenHeader({
             icon doesn't paint a guess before the stored preference loads. */}
         <Button
           aria-label={mounted && theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          data-demo="header:theme"
           onClick={toggle}
           size="icon-sm"
           type="button"
@@ -113,6 +116,7 @@ export function ZirenHeader({
         <AccountMenu user={user}>
           <button
             aria-label={`Account menu, signed in as ${user.name}`}
+            data-demo="header:account"
             className="relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
             type="button"
           >

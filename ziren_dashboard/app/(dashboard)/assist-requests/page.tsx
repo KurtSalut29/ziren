@@ -30,6 +30,7 @@ import { AG_COLOR, AGENCY_ICON, SEV_COLOR, SEV_ICON } from '@/components/inciden
 import { CATEGORY_LABELS } from '@/lib/charts/queue-series';
 import { cn } from '@/lib/utils';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type Box = 'attention' | 'incoming' | 'outgoing' | 'all';
 
 export default function AssistRequestsPage() {
@@ -107,13 +108,13 @@ function AssistRequestsView() {
     <div className="flex h-full min-h-0 flex-col gap-4 px-4 py-4 md:px-7 md:py-5">
       {/* The three-step explainer only while nothing is open: with a request
           on screen, its answer buttons need that height more. */}
-      {!selectedId && <HowItWorks isProvincialAdmin={isProvincialAdmin} />}
+      {!selectedId && <DemoTarget id="assist:how"><HowItWorks isProvincialAdmin={isProvincialAdmin} /></DemoTarget>}
 
       <div className="grid min-h-[560px] flex-1 grid-cols-1 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] lg:grid-cols-[380px_1fr]">
         {/* ── Inbox ─────────────────────────────────────────────────── */}
-        <aside className={cn('flex min-h-0 flex-col border-[var(--color-surface-border)] lg:border-r', selected && 'hidden lg:flex')}>
+        <aside data-demo="assist:inbox" className={cn('flex min-h-0 flex-col border-[var(--color-surface-border)] lg:border-r', selected && 'hidden lg:flex')}>
           <div className="flex flex-col gap-3 border-b border-[var(--color-surface-border)] p-3">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--color-surface-raised)] p-1">
+            <div data-demo="assist:tabs" className="grid grid-cols-2 gap-1 rounded-xl bg-[var(--color-surface-raised)] p-1">
               {tabs.filter(t => !t.hide).map(t => (
                 <button
                   aria-pressed={box === t.key}
@@ -138,7 +139,7 @@ function AssistRequestsView() {
                 </button>
               ))}
             </div>
-            <label className="relative block">
+            <label data-demo="assist:search" className="relative block">
               <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 className="h-9 w-full rounded-xl border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] pl-9 pr-3 text-[13px] focus:border-[var(--color-brand)] focus:outline-none"
@@ -179,7 +180,7 @@ function AssistRequestsView() {
         </aside>
 
         {/* ── Conversation ──────────────────────────────────────────── */}
-        <section className={cn('flex min-h-0 flex-col', !selected && 'hidden lg:flex')}>
+        <section data-demo="assist:conversation" className={cn('flex min-h-0 flex-col', !selected && 'hidden lg:flex')}>
           {selected && token ? (
             <>
               <button

@@ -58,6 +58,7 @@ import {
 } from '@/components/efferd/ui/alert-dialog';
 import { useNotice } from '@/lib/toast';
 
+import { DemoTarget } from '@/components/help/demo-target';
 // ── Types ─────────────────────────────────────────────────────
 
 /**
@@ -328,7 +329,7 @@ export default function AgenciesPage() {
     <div className="flex flex-col gap-4 px-6 py-5 md:px-7">
       {error  && <Alert variant="error" message={error} />}
 
-      <StatStrip>
+      <DemoTarget id="agn:stats"><StatStrip>
         <StatCell
           bg="var(--color-brand-subtle)"
           color="var(--color-brand)"
@@ -358,7 +359,7 @@ export default function AgenciesPage() {
           whole={stations.filter(s => s.is_active).length}
           wholeLabel="stations"
         />
-      </StatStrip>
+      </StatStrip></DemoTarget>
 
       <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-4 py-3">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--color-system-warning)]" />
@@ -390,7 +391,7 @@ export default function AgenciesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
+        <div data-demo="agn:list" className="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
           {groups.map(group => (
             <AgencyCard
               activityCount={activityByAgency.get(group.agency.name) ?? 0}
@@ -856,10 +857,10 @@ function StationList({
           </h3>
           <Fig className="text-[11.5px] text-muted-foreground">{stations.length}</Fig>
           {canManage && !adding && (
-            <Button className="ml-auto" onClick={() => setAdding(true)} size="xs" variant="outline">
+            <DemoTarget id="agn:add"><Button className="ml-auto" onClick={() => setAdding(true)} size="xs" variant="outline">
               <Plus data-icon="inline-start" />
               Add station
-            </Button>
+            </Button></DemoTarget>
           )}
         </div>
 

@@ -8,6 +8,7 @@ import '../data/announcement_repository.dart';
 import '../domain/announcement_model.dart';
 import 'announcement_tile.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Official broadcasts from a Provincial Admin — spec Section 24.
 ///
@@ -25,7 +26,8 @@ class AnnouncementsScreen extends StatefulWidget {
 }
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
-  late final AnnouncementRepository _repo = widget.repository ?? AnnouncementRepository();
+  late final AnnouncementRepository _repo =
+      widget.repository ?? AnnouncementRepository();
   List<AnnouncementModel>? _items;
   String? _error;
 
@@ -46,7 +48,9 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = AppLocalizations.of(context).announcementsLoadError);
+        setState(
+          () => _error = AppLocalizations.of(context).announcementsLoadError,
+        );
       }
     }
   }
@@ -63,10 +67,13 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,
       appBar: AppBar(title: Text(t.announcementsTitle)),
-      body: RefreshIndicator(
-        color: ZirenTokens.brandOrange,
-        onRefresh: _load,
-        child: _buildBody(t),
+      body: DemoAnchor(
+        id: 'ann.screen',
+        child: RefreshIndicator(
+          color: ZirenTokens.brandOrange,
+          onRefresh: _load,
+          child: _buildBody(t),
+        ),
       ),
     );
   }
@@ -80,7 +87,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             padding: const EdgeInsets.all(ZirenTokens.space32),
             child: Column(
               children: [
-                Icon(LucideIcons.cloud_off, size: 40, color: ZirenTokens.textMuted),
+                Icon(
+                  LucideIcons.cloud_off,
+                  size: 40,
+                  color: ZirenTokens.textMuted,
+                ),
                 const SizedBox(height: ZirenTokens.space12),
                 Text(
                   _error!,
@@ -88,7 +99,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   style: TextStyle(color: ZirenTokens.textSecondary),
                 ),
                 const SizedBox(height: ZirenTokens.space16),
-                OutlinedButton(onPressed: _load, child: Text(t.announcementsRetry)),
+                OutlinedButton(
+                  onPressed: _load,
+                  child: Text(t.announcementsRetry),
+                ),
               ],
             ),
           ),
@@ -111,7 +125,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             child: Column(
               children: [
                 const SizedBox(height: ZirenTokens.space32),
-                Icon(LucideIcons.megaphone, size: 48, color: ZirenTokens.surfaceBorder),
+                Icon(
+                  LucideIcons.megaphone,
+                  size: 48,
+                  color: ZirenTokens.surfaceBorder,
+                ),
                 const SizedBox(height: ZirenTokens.space12),
                 Text(
                   t.announcementsEmptyTitle,
@@ -125,7 +143,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 Text(
                   t.announcementsEmptyBody,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12.5, color: ZirenTokens.textMuted),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: ZirenTokens.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -134,13 +155,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       );
     }
 
-    final safety = _items!.where((a) => a.isSafety).toList()
-      // Unanswered questions first, then newest.
-      ..sort((a, b) {
-        final pa = a.canAnswer && a.myResponse == null ? 0 : 1;
-        final pb = b.canAnswer && b.myResponse == null ? 0 : 1;
-        return pa != pb ? pa - pb : b.createdAt.compareTo(a.createdAt);
-      });
+    final safety =
+        _items!.where((a) => a.isSafety).toList()
+          // Unanswered questions first, then newest.
+          ..sort((a, b) {
+            final pa = a.canAnswer && a.myResponse == null ? 0 : 1;
+            final pb = b.canAnswer && b.myResponse == null ? 0 : 1;
+            return pa != pb ? pa - pb : b.createdAt.compareTo(a.createdAt);
+          });
     final other = _items!.where((a) => !a.isSafety).toList();
 
     return ListView(
@@ -155,7 +177,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         if (safety.isNotEmpty) ...[
           _Heading(icon: LucideIcons.triangle_alert, label: t.annSafetyAlerts),
           for (final a in safety) ...[
-            AnnouncementTile(item: a, onTap: () => _open(a)),
+            DemoAnchor(
+              id: a == safety.first ? 'ann.safety' : 'ann.safety.${a.id}',
+              child: AnnouncementTile(item: a, onTap: () => _open(a)),
+            ),
             const SizedBox(height: ZirenTokens.space10),
           ],
           const SizedBox(height: ZirenTokens.space8),
@@ -163,7 +188,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         if (other.isNotEmpty) ...[
           _Heading(icon: LucideIcons.megaphone, label: t.annUpdates),
           for (final a in other) ...[
-            AnnouncementTile(item: a, onTap: () => _open(a)),
+            DemoAnchor(
+              id: a == other.first ? 'ann.update' : 'ann.update.${a.id}',
+              child: AnnouncementTile(item: a, onTap: () => _open(a)),
+            ),
             const SizedBox(height: ZirenTokens.space10),
           ],
         ],
@@ -181,7 +209,10 @@ class _Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: ZirenTokens.space8, top: ZirenTokens.space4),
+      padding: const EdgeInsets.only(
+        bottom: ZirenTokens.space8,
+        top: ZirenTokens.space4,
+      ),
       child: Row(
         children: [
           Icon(icon, size: 15, color: ZirenTokens.textSecondary),

@@ -38,6 +38,7 @@ import { PeriodPicker } from '@/components/ui/period-picker';
 import { phToday, periodWords, resolvePeriod, type Range } from '@/components/ui/period';
 import { cn } from '@/lib/utils';
 
+import { DemoTarget } from '@/components/help/demo-target';
 type Doc = 'records' | 'narratives';
 
 function useErrorText() {
@@ -61,7 +62,7 @@ export default function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-5 px-4 py-5 md:px-7">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2" role="tablist" aria-label="Document to print">
+      <div data-demo="rep:docs" className="grid grid-cols-1 gap-3 md:grid-cols-2" role="tablist" aria-label="Document to print">
         <DocTab
           active={doc === 'records'}
           description="Every incident in a period as one formatted table — with a summary and a signature block."
@@ -318,7 +319,7 @@ function RecordsWorkspace({ token, today, days, range, setDays, setRange, period
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[380px_1fr]">
-      <aside className="flex flex-col gap-5 self-start rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-5">
+      <aside data-demo="rep:options" className="flex flex-col gap-5 self-start rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-5">
         <div>
           <h2 className="text-[15px] font-bold text-foreground">Incident Records Report</h2>
           <p className="mt-1 text-[12.5px] leading-relaxed text-muted-foreground">
@@ -336,7 +337,7 @@ function RecordsWorkspace({ token, today, days, range, setDays, setRange, period
           <Segmented onChange={setSeverity} options={SEVERITY_OPTIONS} value={severity} />
         </OptionBlock>
 
-        <div className="flex flex-col gap-2 border-t border-[var(--color-surface-border)] pt-4">
+        <div data-demo="rep:actions" className="flex flex-col gap-2 border-t border-[var(--color-surface-border)] pt-4">
           <ActionButton disabled={!file || loading} icon={Printer} onClick={() => file && printPdf(file.blob)} variant="primary">
             Print report
           </ActionButton>
@@ -355,13 +356,13 @@ function RecordsWorkspace({ token, today, days, range, setDays, setRange, period
         </div>
       </aside>
 
-      <Preview
+      <DemoTarget id="rep:preview"><Preview
         error={error}
         file={file}
         loading={loading}
         onRetry={() => setNonce(n => n + 1)}
         title="Incident Records Report"
-      />
+      /></DemoTarget>
     </div>
   );
 }

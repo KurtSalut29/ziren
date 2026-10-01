@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/profile_kit.dart';
+import '../../demo/presentation/demo_launcher.dart';
+import '../../demo/domain/demo_models.dart';
+import '../../demo/presentation/demo_picker.dart';
 import '../domain/help_content.dart';
 
 /// "How to use Ziren": short, step-by-step topics, one open at a time.
@@ -24,8 +27,72 @@ class HelpScreen extends StatelessWidget {
         backgroundColor: ZirenTokens.surfaceBase,
         title: Text(AppLocalizations.of(context).helpTitle),
       ),
-      body: HelpGuide(forResponder: forResponder),
+      body: HelpWithDemo(
+        forResponder: forResponder,
+        // A demo opens its own screen; this page steps out of the way first.
+        beforeDemo: () => Navigator.of(context).maybePop(),
+      ),
     );
+  }
+}
+
+/// Help with its two ways in: the written step-by-step guide (unchanged), or
+/// a demo, where Ziren takes the user to a screen and shows it part by part.
+/// Shared by the Help screen and the Home help sheet.
+class HelpWithDemo extends StatefulWidget {
+  const HelpWithDemo({
+    super.key,
+    this.forResponder = false,
+    this.controller,
+    this.showIntro = true,
+    this.beforeNavigate,
+    this.beforeDemo,
+  });
+
+  final bool forResponder;
+  final ScrollController? controller;
+  final bool showIntro;
+
+  /// Runs before a guide topic opens another screen.
+  final VoidCallback? beforeNavigate;
+
+  /// Runs before a demo starts (the sheet closes; the Help page pops).
+  final VoidCallback? beforeDemo;
+
+  @override
+  State<HelpWithDemo> createState() => _HelpWithDemoState();
+}
+
+class _HelpWithDemoState extends State<HelpWithDemo> {
+  HelpMode _mode = HelpMode.steps;
+
+  void _start(DemoScript script) {
+    // Taken before the sheet or page goes: the root navigator outlives both.
+    final root = Navigator.of(context, rootNavigator: true).context;
+    widget.beforeDemo?.call();
+    startDemo(root, script);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final header = HelpModeSwitch(
+      mode: _mode,
+      onChanged: (m) => setState(() => _mode = m),
+    );
+    return _mode == HelpMode.steps
+        ? HelpGuide(
+          forResponder: widget.forResponder,
+          controller: widget.controller,
+          showIntro: widget.showIntro,
+          beforeNavigate: widget.beforeNavigate,
+          header: header,
+        )
+        : DemoPicker(
+          forResponder: widget.forResponder,
+          controller: widget.controller,
+          header: header,
+          onStart: _start,
+        );
   }
 }
 
@@ -42,12 +109,16 @@ class HelpGuide extends StatefulWidget {
     this.controller,
     this.showIntro = true,
     this.beforeNavigate,
+    this.header,
   });
 
   final bool forResponder;
   final ScrollController? controller;
   final bool showIntro;
   final VoidCallback? beforeNavigate;
+
+  /// Drawn first in the list (the step-by-step / demo switch).
+  final Widget? header;
 
   @override
   State<HelpGuide> createState() => _HelpGuideState();
@@ -80,9 +151,16 @@ class _HelpGuideState extends State<HelpGuide> {
         ZirenTokens.space32,
       ),
       children: [
+        if (widget.header != null) ...[
+          widget.header!,
+          const SizedBox(height: ZirenTokens.space16),
+        ],
         if (widget.showIntro) ...[
           _IntroCard(
-            text: widget.forResponder ? t.helpIntroResponder : t.helpIntroResident,
+            text:
+                widget.forResponder
+                    ? t.helpIntroResponder
+                    : t.helpIntroResident,
           ),
           const SizedBox(height: ZirenTokens.space20),
         ],
@@ -123,12 +201,18 @@ class _IntroCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ZirenTokens.brandOrange.withValues(alpha: ZirenTokens.isDark ? 0.22 : 0.14),
-            ZirenTokens.brandOrange.withValues(alpha: ZirenTokens.isDark ? 0.08 : 0.04),
+            ZirenTokens.brandOrange.withValues(
+              alpha: ZirenTokens.isDark ? 0.22 : 0.14,
+            ),
+            ZirenTokens.brandOrange.withValues(
+              alpha: ZirenTokens.isDark ? 0.08 : 0.04,
+            ),
           ],
         ),
         borderRadius: BorderRadius.circular(ZirenTokens.radius20),
-        border: Border.all(color: ZirenTokens.brandOrange.withValues(alpha: 0.22)),
+        border: Border.all(
+          color: ZirenTokens.brandOrange.withValues(alpha: 0.22),
+        ),
       ),
       child: Row(
         children: [
@@ -198,9 +282,10 @@ class _TopicCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: profileCardDecoration().copyWith(
         border: Border.all(
-          color: open
-              ? ZirenTokens.brandOrange.withValues(alpha: 0.45)
-              : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
+          color:
+              open
+                  ? ZirenTokens.brandOrange.withValues(alpha: 0.45)
+                  : ZirenTokens.surfaceBorder.withValues(alpha: 0.8),
           width: open ? 1.4 : 1,
         ),
       ),
@@ -222,16 +307,22 @@ class _TopicCard extends StatelessWidget {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: open
-                              ? ZirenTokens.brandOrange.withValues(alpha: 0.12)
-                              : ZirenTokens.surfaceRaised,
+                          color:
+                              open
+                                  ? ZirenTokens.brandOrange.withValues(
+                                    alpha: 0.12,
+                                  )
+                                  : ZirenTokens.surfaceRaised,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         alignment: Alignment.center,
                         child: Icon(
                           topic.icon,
                           size: 20,
-                          color: open ? ZirenTokens.brandOrange : ZirenTokens.textSecondary,
+                          color:
+                              open
+                                  ? ZirenTokens.brandOrange
+                                  : ZirenTokens.textSecondary,
                         ),
                       ),
                       const SizedBox(width: ZirenTokens.space12),
@@ -299,7 +390,9 @@ class _TopicCard extends StatelessWidget {
                         padding: const EdgeInsets.all(ZirenTokens.space12),
                         decoration: BoxDecoration(
                           color: ZirenTokens.systemInfoBg,
-                          borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+                          borderRadius: BorderRadius.circular(
+                            ZirenTokens.radius12,
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +511,10 @@ class _Step extends StatelessWidget {
           const SizedBox(width: ZirenTokens.space12),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: 3, bottom: last ? ZirenTokens.space12 : ZirenTokens.space16),
+              padding: EdgeInsets.only(
+                top: 3,
+                bottom: last ? ZirenTokens.space12 : ZirenTokens.space16,
+              ),
               child: Text(
                 text,
                 style: TextStyle(

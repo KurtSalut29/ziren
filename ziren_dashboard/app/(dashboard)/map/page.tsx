@@ -22,6 +22,7 @@ import {
   type SeverityKey,
 } from '@/components/map/map-legend';
 
+import { DemoTarget } from '@/components/help/demo-target';
 // MapLibre reads `window` on mount — must be client-only, no SSR.
 const ZirenMap = dynamic(() => import('@/components/map/ZirenMap'), {
   ssr: false,
@@ -161,7 +162,7 @@ function MapView() {
       {/* min-h-0 so this pane can shrink inside the flex column. Without it a
           flex item's implicit min-height:auto floors it at its content height
           and the toolbar gets pushed off the top. */}
-      <div className="relative min-h-0 flex-1">
+      <div data-demo="map:canvas" className="relative min-h-0 flex-1">
         {loading && !data ? (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -198,11 +199,11 @@ function MapView() {
         {/* Beside the credits (i) button, bottom-left: the one corner nothing
             else on this page uses. */}
         {data && (
-          <MapLiveBadge
+          <DemoTarget id="map:live"><MapLiveBadge
             className="absolute bottom-2.5 left-12 z-[900]"
             lastRefresh={lastRefresh}
             stale={Boolean(error)}
-          />
+          /></DemoTarget>
         )}
 
         {/* Every layer switched off is a legitimate state, not an empty one —

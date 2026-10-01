@@ -926,6 +926,11 @@
   "respDeclineSent": "Naibalik sa dispatcher. Maghahanap sila ng ibang unit.",
   "respBackupSentTo": "Naipadala sa {station}. Nasa queue na nila ito.",
   "respEscalateSent": "Naipadala. Alam na ng Agency Admin.",
+  "respEscalateAction": "I-escalate ang insidente",
+  "respEscalateBody": "Sabihin sa Agency Admin kung ano ang nagbago. Aabisuhan sila para muling suriin — hindi mo mismo binabago ang opisyal na severity.",
+  "respEscalateWhat": "Ano ang nagbago?",
+  "respEscalateHint": "hal. Mabilis kumakalat ang sunog, maraming sugatan, kailangan ng isa pang ahensya…",
+  "respEscalateSubmit": "Ipadala ang escalation",
   "respDistressSentLive": "NAIPADALA. Nakikita ka na ng dispatcher.",
   "respDistressSentQueued": "Walang signal — naka-queue ito. TAWAGAN ANG STATION SA RADYO NGAYON.",
   "respConfirmResolve": "I-mark ba itong insidente bilang Natapos? Makikita ito ng dispatcher at ng nag-ulat.",
@@ -1624,5 +1629,12 @@
   "annRespondNow": "Sagutin: ligtas ka ba?",
   "annOpen": "Buksan",
   "annHelpAckTitle": "Natanggap ang tawag mo para sa tulong",
-  "annHelpAckBody": "Natanggap ng {station} ang hiling mo at tumutugon na sila. Manatili sa pinakaligtas na lugar."
+  "annHelpAckBody": "Natanggap ng {station} ang hiling mo at tumutugon na sila. Manatili sa pinakaligtas na lugar.",
+  "welcomeDemoTitle": "Hi, {name}!",
+  "welcomeDemoTitleNoName": "Hi!",
+  "welcomeDemoBodyResident": "Maligayang pagdating sa Ziren! Gusto mo bang ipakita ko muna sa iyo ang app? Sandali lang ito, at walang maipapadala habang nagpapakita ako.",
+  "welcomeDemoBodyResponder": "Maligayang pagdating sa team! Gusto mo bang ipakita ko muna sa iyo ang mga screen mo? Sandali lang ito, at walang mababago habang nagpapakita ako.",
+  "welcomeDemoStart": "Oo, ipakita mo",
+  "welcomeDemoLater": "Mamaya na lang",
+  "welcomeDemoHint": "Mapapanood mo ito anumang oras: pindutin ang \"{button}\" sa Home, tapos Demo."
 }

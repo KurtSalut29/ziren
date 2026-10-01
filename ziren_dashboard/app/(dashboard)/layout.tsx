@@ -16,6 +16,7 @@ import { useAssistInbox } from '@/lib/hooks/useAssistInbox';
 import { AssistInboxProvider } from '@/components/assist/assist-context';
 import { AssistAlerts } from '@/components/assist/assist-alerts';
 import { ZirenHelp } from '@/components/help/ziren-help';
+import { DemoProvider } from '@/components/help/demo-tour';
 import { getRouteMeta } from '@/lib/utils/route-meta';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -151,6 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       : assistInbox.alerts;
 
   return (
+    <DemoProvider>
     <>
       {/* Applies the saved display and accessibility preferences on EVERY page
           — see the note in that component for why it lives here and not in the
@@ -264,6 +266,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </>
       )}
     </>
+    </DemoProvider>
   );
 }
 

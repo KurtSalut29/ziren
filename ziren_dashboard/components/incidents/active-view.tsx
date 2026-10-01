@@ -81,6 +81,8 @@ import { SearchInput } from '@/components/ui/search-input';
 import type { OptionItem } from '@/components/ui/option-dialog';
 import { CATEGORY_LABELS, REAL_CATEGORIES } from '@/lib/charts/queue-series';
 
+import { DemoTarget } from '@/components/help/demo-target';
+import { useDemoDialog } from '@/components/help/demo-tour';
 /** Severity filter values — the real triage severities plus the untriaged bucket. */
 const SEVERITY_FILTERS = ['critical', 'high', 'medium', 'low', 'untriaged'] as const;
 const SEVERITY_LABEL: Record<string, string> = {
@@ -556,8 +558,26 @@ export function ActiveIncidentsView() {
   /** Opening a report is looking at it: it stops being announced as new. */
   const openIncident = (id: string) => {
     markSeen([id]);
+    setDemoOpened(false);
     setOpenId(id);
   };
+
+  // The Incident Management demo walks through a report: the first one on
+  // screen, opened as a preview — it is not marked seen and no alarm is
+  // silenced, because a demo never does anything for real.
+  const [demoOpened, setDemoOpened] = useState(false);
+  useDemoDialog('incident', open => {
+    if (!open) {
+      setOpenId(null);
+      setDemoOpened(false);
+      return true;
+    }
+    const first = pageRows[0];
+    if (!first) return false;
+    setDemoOpened(true);
+    setOpenId(first.id);
+    return true;
+  });
 
   // Any change to what the list CONTAINS starts the reader at the top again.
   useEffect(() => {
@@ -589,7 +609,7 @@ export function ActiveIncidentsView() {
           scrolled off. Below the header's z-50 so it never covers the nav.
           top-0, not top-11: this page no longer sits under a tab shell —
           Incident History is its own sidebar route now, not a toggle here. */}
-      <div className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3 backdrop-blur md:px-7">
+      <div data-demo="queue:filters" className="sticky top-0 z-20 border-b border-[var(--color-surface-border)] bg-background/95 px-6 py-3 backdrop-blur md:px-7">
         <div className="flex flex-wrap items-center gap-2">
           <SearchInput
             className="min-w-[200px] flex-1"
@@ -714,7 +734,7 @@ export function ActiveIncidentsView() {
             tiers that must never be buried sitting where the eye lands first.
             Every figure counts the FILTERED set, so the band and the tile
             above it can never disagree. */}
-        <StatStrip>
+        <DemoTarget id="queue:stats"><StatStrip>
           <StatCell
             bg="var(--color-system-warning-bg)"
             color="var(--color-system-warning)"
@@ -755,7 +775,7 @@ export function ActiveIncidentsView() {
             label="On scene"
             value={onScene.length}
           />
-        </StatStrip>
+        </StatStrip></DemoTarget>
 
         {/* ── The queue ───────────────────────────────────────── */}
         {isProvincialAdmin && (
@@ -770,7 +790,7 @@ export function ActiveIncidentsView() {
             Admin's rail has neither, because they hold no queue position and
             the page always refreshes on its own. */}
         <div className="flex flex-col gap-4 lg:flex-row">
-          <QueueOverview
+          <DemoTarget id="queue:bands"><QueueOverview
             active={band}
             bands={bands}
             connection={{
@@ -782,13 +802,13 @@ export function ActiveIncidentsView() {
             onOpen={openIncident}
             onSelect={k => setBand(k as BandKey)}
             showSync={!isProvincialAdmin}
-          />
+          /></DemoTarget>
 
           {/* No overflow-hidden. It would make this card the scrollport for
               the table's sticky header, which then stops following the page.
               The corners give up a pixel of clipping on the last row's hover
               tint; a header that scrolls away on a 25-row table costs more. */}
-          <div className="min-w-0 flex-1 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
+          <div data-demo="queue:table" className="min-w-0 flex-1 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)]">
             {/* Header: what you are looking at, and where in it you are. */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[var(--color-surface-border)] px-4 py-2.5">
               <div className="min-w-0 flex-1">
@@ -862,7 +882,7 @@ export function ActiveIncidentsView() {
           under them mid-decision — so for them the page simply stays current
           and neither control is drawn. */}
       {!isProvincialAdmin && (
-      <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-3 border-t border-[var(--color-surface-border)] bg-background/95 px-6 py-2 backdrop-blur md:px-7">
+      <div data-demo="queue:live" className="sticky bottom-0 z-10 flex flex-wrap items-center gap-3 border-t border-[var(--color-surface-border)] bg-background/95 px-6 py-2 backdrop-blur md:px-7">
         <button
           aria-pressed={autoRefresh}
           className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-surface-border)] px-2.5 py-1 text-[12px] font-semibold text-foreground transition-colors hover:bg-[var(--color-surface-hover)]"
@@ -897,7 +917,7 @@ export function ActiveIncidentsView() {
       </div>
       )}
 
-      <IncidentDetailModal incidentId={openId} onClose={() => setOpenId(null)} />
+      <IncidentDetailModal incidentId={openId} onClose={() => setOpenId(null)} preview={demoOpened} />
     </div>
   );
 }

@@ -2400,6 +2400,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get respEscalateSent => 'Naipadala. Alam na ng Agency Admin.';
 
   @override
+  String get respEscalateAction => 'I-escalate ang insidente';
+
+  @override
+  String get respEscalateBody => 'Sabihin sa Agency Admin kung ano ang nagbago. Aabisuhan sila para muling suriin — hindi mo mismo binabago ang opisyal na severity.';
+
+  @override
+  String get respEscalateWhat => 'Ano ang nagbago?';
+
+  @override
+  String get respEscalateHint => 'hal. Mabilis kumakalat ang sunog, maraming sugatan, kailangan ng isa pang ahensya…';
+
+  @override
+  String get respEscalateSubmit => 'Ipadala ang escalation';
+
+  @override
   String get respDistressSentLive => 'NAIPADALA. Nakikita ka na ng dispatcher.';
 
   @override
@@ -4478,5 +4493,30 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String annHelpAckBody(String station) {
     return 'Natanggap ng $station ang hiling mo at tumutugon na sila. Manatili sa pinakaligtas na lugar.';
+  }
+
+  @override
+  String welcomeDemoTitle(String name) {
+    return 'Hi, $name!';
+  }
+
+  @override
+  String get welcomeDemoTitleNoName => 'Hi!';
+
+  @override
+  String get welcomeDemoBodyResident => 'Maligayang pagdating sa Ziren! Gusto mo bang ipakita ko muna sa iyo ang app? Sandali lang ito, at walang maipapadala habang nagpapakita ako.';
+
+  @override
+  String get welcomeDemoBodyResponder => 'Maligayang pagdating sa team! Gusto mo bang ipakita ko muna sa iyo ang mga screen mo? Sandali lang ito, at walang mababago habang nagpapakita ako.';
+
+  @override
+  String get welcomeDemoStart => 'Oo, ipakita mo';
+
+  @override
+  String get welcomeDemoLater => 'Mamaya na lang';
+
+  @override
+  String welcomeDemoHint(String button) {
+    return 'Mapapanood mo ito anumang oras: pindutin ang \"$button\" sa Home, tapos Demo.';
   }
 }

@@ -123,6 +123,7 @@ export function IncidentDetailModal({
   isHistory = false,
   otherPendingCount = 0,
   fromAlert = false,
+  preview = false,
 }: {
   /** Null closes the dialog. Passing the id IS the open signal. */
   incidentId: string | null;
@@ -147,12 +148,17 @@ export function IncidentDetailModal({
   otherPendingCount?: number;
   /** The layout's alert-owned instance. Only it keeps the alert in the tray until close. */
   fromAlert?: boolean;
+  /**
+   * Opened by a Ziren demo to show what is in a report. Not announced as
+   * opened, so it neither silences an alarm nor clears an alert.
+   */
+  preview?: boolean;
 }) {
   const { token, isProvincialAdmin } = useAuth();
 
   useEffect(() => {
-    if (incidentId) announceOpened({ id: incidentId, fromAlert });
-  }, [incidentId, fromAlert]);
+    if (incidentId && !preview) announceOpened({ id: incidentId, fromAlert });
+  }, [incidentId, fromAlert, preview]);
   // A Provincial Admin oversees every station of their agency_type and
   // dispatches for none of them — assignment belongs to the agency that
   // owns the incident. Their useful next step is spatial: see where this
@@ -509,6 +515,7 @@ export function IncidentDetailModal({
             shrink-0: in a flex column with a max-height, a long body compresses
             its siblings. */}
         <DialogHeader
+          data-demo="modal:header"
           className="shrink-0 border-b border-[var(--color-surface-border)] py-3.5 pl-5 pr-14 text-left sm:pl-6"
           style={{
             borderTop: `4px solid ${sevColor}`,
@@ -660,7 +667,7 @@ export function IncidentDetailModal({
                     gathered under WHAT as tiles, each tagged with the W it
                     answers, so they can be read in one look. */}
 
-                <Section facet="What" icon={ListTree} title="What the reporter said" tone={sevColor}>
+                <Section demo="modal:said" facet="What" icon={ListTree} title="What the reporter said" tone={sevColor}>
                   {/* A voice report's stored text opens with the app's own
                       "<Category> — reported by voice recording —". That is
                       scaffolding, not their words, so it is dropped here; the
@@ -717,7 +724,7 @@ export function IncidentDetailModal({
                   )}
                 </Section>
 
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2" data-demo="modal:where">
                   <Section facet="Where" icon={MapPin} title="Where it is" tone="var(--color-brand)">
                     {/* The resident placed this incident on the map because
                         they are not at it (a relative called them, say). The
@@ -866,7 +873,7 @@ export function IncidentDetailModal({
                     has no live queue, and that is where they meet one - where it is
                     read-only (canDispatch is false there). */}
                 {token && !detail.responder && !detail.assigned_responder_id && awaiting && (
-                  <Section facet="Response" icon={Users} title="Responders near this incident">
+                  <Section demo="modal:nearby" facet="Response" icon={Users} title="Responders near this incident">
                     <NearbyResponders
                       active
                       incidentId={detail.id}
@@ -959,7 +966,7 @@ export function IncidentDetailModal({
                   </Section>
                 )}
 
-                <Section facet="When" icon={CalendarClock} title="Timeline">
+                <Section demo="modal:timeline" facet="When" icon={CalendarClock} title="Timeline">
                   <Milestones items={milestones} />
                   <div className="border-t border-[var(--color-surface-border)] pt-3">
                     <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Activity</p>
@@ -1005,7 +1012,7 @@ export function IncidentDetailModal({
                 </Section>
 
                 {!isProvincialAdmin && (
-                  <Section icon={Handshake} title="Need another station?" tone="var(--color-brand)">
+                  <Section demo="modal:assist" icon={Handshake} title="Need another station?" tone="var(--color-brand)">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <button
                         className="inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[12.5px] font-semibold transition-all hover:brightness-105"
@@ -1051,7 +1058,7 @@ export function IncidentDetailModal({
           </div>
 
           {/* ── Where it is, and how far help has to come ───────────────── */}
-          <div className="flex min-h-0 flex-col border-t border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-4 sm:px-5 lg:border-t-0">
+          <div className="flex min-h-0 flex-col border-t border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-4 sm:px-5 lg:border-t-0" data-demo="modal:map">
             {detail ? (
               <IncidentLocationPanel
                 detail={detail}
@@ -1077,6 +1084,7 @@ export function IncidentDetailModal({
             "stop this incident". */}
         <div
           className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 shadow-[0_-6px_16px_-12px_rgba(16,24,40,0.25)] sm:px-6"
+          data-demo="modal:actions"
           data-testid="incident-actions"
         >
           {actionBarVisible ? (

@@ -7,7 +7,8 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../incident_report/domain/incident_category_style.dart';
-import '../../incident_report/domain/incident_provider.dart' show IncidentCategory;
+import '../../incident_report/domain/incident_provider.dart'
+    show IncidentCategory;
 import '../../incident_report/presentation/incident_labels.dart';
 import '../../incident_report/presentation/widgets/quick_report_kit.dart';
 import '../domain/sos_provider.dart';
@@ -15,6 +16,7 @@ import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 import '../../hotlines/presentation/hotlines_view.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// SOS confirmation screen — shown after the Resident taps the SOS button.
 ///
@@ -86,19 +88,33 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
           ),
           children: [
             // ── SOS / category banner ─────────────────────────
-            _SosBanner(category: provider.category),
+            DemoAnchor(
+              id: 'sos.banner',
+              child: _SosBanner(category: provider.category),
+            ),
             const SizedBox(height: ZirenTokens.space20),
 
             // ── GPS / location status ─────────────────────────
-            QuickReportSectionLabel(t.sosWhereSection),
-            const SizedBox(height: ZirenTokens.space8),
-            _LocationStatus(provider: provider),
+            DemoAnchor(
+              id: 'sos.where',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  QuickReportSectionLabel(t.sosWhereSection),
+                  const SizedBox(height: ZirenTokens.space8),
+                  _LocationStatus(provider: provider),
+                ],
+              ),
+            ),
             const SizedBox(height: ZirenTokens.space20),
 
             // ── Category (optional) ───────────────────────────
-            _CategoryPicker(
-              selected: provider.category,
-              onSelect: provider.setCategory,
+            DemoAnchor(
+              id: 'sos.category',
+              child: _CategoryPicker(
+                selected: provider.category,
+                onSelect: provider.setCategory,
+              ),
             ),
 
             // ── Cooldown warning ──────────────────────────────
@@ -110,9 +126,12 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
             const SizedBox(height: ZirenTokens.space20),
 
             // ── Legal warning + checkbox ──────────────────────
-            _LegalWarning(
-              confirmed: _legalConfirmed,
-              onChanged: (v) => setState(() => _legalConfirmed = v ?? false),
+            DemoAnchor(
+              id: 'sos.confirm',
+              child: _LegalWarning(
+                confirmed: _legalConfirmed,
+                onChanged: (v) => setState(() => _legalConfirmed = v ?? false),
+              ),
             ),
 
             if (provider.errorMessage != null) ...[
@@ -139,27 +158,30 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
             const SizedBox(height: ZirenTokens.space24),
 
             // ── Send SOS button ────────────────────────────────
-            _SendButton(
-              enabled:
-                  provider.category != null &&
-                  _legalConfirmed &&
-                  !provider.isSubmitting &&
-                  !provider.isCoolingDown,
-              isSubmitting: provider.isSubmitting,
-              // The cooldown has its own banner already explaining that
-              // blocker — repeating a different reason here would just
-              // contradict it. Otherwise show whichever requirement isn't
-              // met yet, category first since it's the one listed first on
-              // screen.
-              disabledHint:
-                  provider.isCoolingDown
-                      ? null
-                      : provider.category == null
-                      ? 'Choose what kind of emergency above to continue'
-                      : !_legalConfirmed
-                      ? 'Confirm the checkbox above to continue'
-                      : null,
-              onPressed: _submit,
+            DemoAnchor(
+              id: 'sos.send',
+              child: _SendButton(
+                enabled:
+                    provider.category != null &&
+                    _legalConfirmed &&
+                    !provider.isSubmitting &&
+                    !provider.isCoolingDown,
+                isSubmitting: provider.isSubmitting,
+                // The cooldown has its own banner already explaining that
+                // blocker — repeating a different reason here would just
+                // contradict it. Otherwise show whichever requirement isn't
+                // met yet, category first since it's the one listed first on
+                // screen.
+                disabledHint:
+                    provider.isCoolingDown
+                        ? null
+                        : provider.category == null
+                        ? 'Choose what kind of emergency above to continue'
+                        : !_legalConfirmed
+                        ? 'Confirm the checkbox above to continue'
+                        : null,
+                onPressed: _submit,
+              ),
             ),
 
             const SizedBox(height: ZirenTokens.space12),
@@ -195,9 +217,13 @@ class _SosBanner extends StatelessWidget {
             ? IncidentCategoryStyle.background(category!)
             : ZirenTokens.severityCriticalBg;
     final icon =
-        category != null ? IncidentCategoryStyle.icon(category!) : LucideIcons.siren;
+        category != null
+            ? IncidentCategoryStyle.icon(category!)
+            : LucideIcons.siren;
     final title =
-        category != null ? IncidentLabels.categoryShort(t, category!) : t.sosHeading;
+        category != null
+            ? IncidentLabels.categoryShort(t, category!)
+            : t.sosHeading;
 
     return Container(
       padding: const EdgeInsets.all(ZirenTokens.space16),
@@ -374,7 +400,8 @@ class _CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = IncidentCategoryStyle.color(category);
     return Material(
-      color: isSelected ? color.withValues(alpha: 0.10) : ZirenTokens.surfaceCard,
+      color:
+          isSelected ? color.withValues(alpha: 0.10) : ZirenTokens.surfaceCard,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -396,7 +423,11 @@ class _CategoryTile extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(IncidentCategoryStyle.icon(category), size: 34, color: color),
+              Icon(
+                IncidentCategoryStyle.icon(category),
+                size: 34,
+                color: color,
+              ),
               const SizedBox(height: ZirenTokens.space10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -484,49 +515,46 @@ class _LocationStatus extends StatelessWidget {
     String subtitle,
   ) {
     return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: ZirenTokens.space10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: ZirenTokens.textPrimary,
-                    height: 1.35,
-                  ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: ZirenTokens.space10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: ZirenTokens.textPrimary,
+                  height: 1.35,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 12, color: color),
-                ),
-              ],
+              ),
+              const SizedBox(height: 2),
+              Text(subtitle, style: TextStyle(fontSize: 12, color: color)),
+            ],
+          ),
+        ),
+        if (provider.isLocating || provider.geocoding)
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        else
+          GestureDetector(
+            onTap: () => provider.fetchLocation(),
+            child: Icon(
+              LucideIcons.refresh_cw,
+              size: 20,
+              color: ZirenTokens.textMuted,
             ),
           ),
-          if (provider.isLocating || provider.geocoding)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            GestureDetector(
-              onTap: () => provider.fetchLocation(),
-              child: Icon(
-                LucideIcons.refresh_cw,
-                size: 20,
-                color: ZirenTokens.textMuted,
-              ),
-            ),
-        ],
-      );
+      ],
+    );
   }
 }
 
@@ -759,7 +787,10 @@ class _CooldownBanner extends StatelessWidget {
           Expanded(
             child: Text(
               AppLocalizations.of(context).sosCooldownWarning(minutesLeft),
-              style: const TextStyle(fontSize: 13, color: ZirenTokens.systemWarning),
+              style: const TextStyle(
+                fontSize: 13,
+                color: ZirenTokens.systemWarning,
+              ),
             ),
           ),
         ],
@@ -807,14 +838,16 @@ class _LegalWarning extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: ZirenTokens.space10),
-              Flexible(child: Text(
-                t.sosLegalWarning,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: ZirenTokens.systemError,
+              Flexible(
+                child: Text(
+                  t.sosLegalWarning,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: ZirenTokens.systemError,
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
           const SizedBox(height: ZirenTokens.space10),
@@ -883,7 +916,10 @@ class _ConfirmRow extends StatelessWidget {
                     : ZirenTokens.surfaceCard,
             borderRadius: BorderRadius.circular(ZirenTokens.radius8),
             border: Border.all(
-              color: confirmed ? ZirenTokens.systemError : ZirenTokens.surfaceBorder,
+              color:
+                  confirmed
+                      ? ZirenTokens.systemError
+                      : ZirenTokens.surfaceBorder,
               width: confirmed ? 1.5 : 1,
             ),
           ),
@@ -894,18 +930,25 @@ class _ConfirmRow extends StatelessWidget {
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
-                  color: confirmed ? ZirenTokens.systemError : Colors.transparent,
+                  color:
+                      confirmed ? ZirenTokens.systemError : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color:
-                        confirmed ? ZirenTokens.systemError : ZirenTokens.textMuted,
+                        confirmed
+                            ? ZirenTokens.systemError
+                            : ZirenTokens.textMuted,
                     width: 1.5,
                   ),
                 ),
                 alignment: Alignment.center,
                 child:
                     confirmed
-                        ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                        ? const Icon(
+                          LucideIcons.check,
+                          size: 14,
+                          color: Colors.white,
+                        )
                         : null,
               ),
               const SizedBox(width: ZirenTokens.space10),
@@ -925,7 +968,10 @@ class _ConfirmRow extends StatelessWidget {
               if (!confirmed) ...[
                 const SizedBox(width: ZirenTokens.space8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: ZirenTokens.systemError.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
@@ -1036,16 +1082,16 @@ class _SendButtonState extends State<_SendButton>
 
     final t = AppLocalizations.of(context);
     final baseColor =
-        widget.enabled ? ZirenTokens.severityCritical : ZirenTokens.surfaceRaised;
+        widget.enabled
+            ? ZirenTokens.severityCritical
+            : ZirenTokens.surfaceRaised;
 
     // A caption always sits under the button once it's settled (not
     // submitting): what to do when enabled, why not otherwise. A control
     // this consequential should never leave the resident guessing whether
     // a tap or a hold is what sends it.
     final caption =
-        widget.enabled
-            ? 'Press and hold to send'
-            : widget.disabledHint;
+        widget.enabled ? 'Press and hold to send' : widget.disabledHint;
 
     return Column(
       children: [
@@ -1102,19 +1148,26 @@ class _SendButtonState extends State<_SendButton>
                     children: [
                       Icon(
                         LucideIcons.siren,
-                        color: widget.enabled ? Colors.white : ZirenTokens.textMuted,
+                        color:
+                            widget.enabled
+                                ? Colors.white
+                                : ZirenTokens.textMuted,
                         size: 20,
                       ),
                       const SizedBox(width: ZirenTokens.space8),
-                      Flexible(child: Text(
-                        t.sosSendNow,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color:
-                              widget.enabled ? Colors.white : ZirenTokens.textMuted,
+                      Flexible(
+                        child: Text(
+                          t.sosSendNow,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color:
+                                widget.enabled
+                                    ? Colors.white
+                                    : ZirenTokens.textMuted,
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 ],
@@ -1158,7 +1211,11 @@ class _FallbackReminder extends StatelessWidget {
           child: Text(
             'For life-threatening emergencies, also call 911 directly. This '
             'report is reviewed by a human dispatcher — not AI.',
-            style: TextStyle(fontSize: 12, height: 1.4, color: ZirenTokens.textMuted),
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: ZirenTokens.textMuted,
+            ),
           ),
         ),
       ],
@@ -1195,7 +1252,10 @@ class _ErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 13, color: ZirenTokens.systemError),
+              style: const TextStyle(
+                fontSize: 13,
+                color: ZirenTokens.systemError,
+              ),
             ),
           ),
         ],

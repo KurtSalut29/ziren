@@ -58,7 +58,8 @@ abstract final class HelpContent {
         'Ikuwento ang nangyari: magsalita gamit ang mikropono, o mag-type. Puwede ring maglagay ng litrato o video.',
         'Pindutin ang "I-review ang ulat", tingnan kung tama lahat, at saka ipadala.',
       ],
-      tip: 'Awtomatikong pinipili ng Ziren ang pinakamalapit na tamang station — BFP sa sunog, PNP sa krimen, MDRRMO sa iba.',
+      tip:
+          'Awtomatikong pinipili ng Ziren ang pinakamalapit na tamang station — BFP sa sunog, PNP sa krimen, MDRRMO sa iba.',
     ),
     HelpTopic(
       icon: LucideIcons.map_pinned,
@@ -70,19 +71,22 @@ abstract final class HelpContent {
         'Pindutin ang "Gamitin ang lokasyong ito".',
         'Tingnan ang landmark at ituloy ang report gaya ng dati.',
       ],
-      tip: 'Sa lugar ng insidente pupunta ang responder, hindi sa kinaroroonan mo. Makikita rin ng station na nasa ibang lugar ka, para matawagan ka kung may itatanong.',
+      tip:
+          'Sa lugar ng insidente pupunta ang responder, hindi sa kinaroroonan mo. Makikita rin ng station na nasa ibang lugar ka, para matawagan ka kung may itatanong.',
     ),
     HelpTopic(
       icon: LucideIcons.phone_call,
       title: 'Walang internet? Tumawag sa station',
-      summary: 'Nasa app ang opisyal na numero ng bawat station — gumagana kahit offline.',
+      summary:
+          'Nasa app ang opisyal na numero ng bawat station — gumagana kahit offline.',
       steps: [
         'Kapag "Walang internet" ang nasa itaas ng Home, pindutin ang uri ng emergency.',
         'Lalabas ang mga numero ng tamang station, nauuna ang pinakamalapit na bayan.',
         'Pindutin ang "Tumawag" sa numero — bubukas ang dialer ng phone mo.',
         'Puwede mo ring buksan anumang oras ang "Hotline ng mga station" sa Home.',
       ],
-      tip: 'Signal lang ang kailangan sa tawag, hindi data. Nandiyan din ang 911.',
+      tip:
+          'Signal lang ang kailangan sa tawag, hindi data. Nandiyan din ang 911.',
       route: '/hotlines',
       routeLabel: 'Buksan ang hotlines',
     ),
@@ -95,7 +99,8 @@ abstract final class HelpContent {
         'Puwedeng pumili ng uri ng emergency kung alam mo — hindi ito kailangan.',
         'Lagyan ng tsek ang babala, at pindutin nang matagal ang button para ipadala.',
       ],
-      tip: 'Kasama nang awtomatiko ang lokasyon at pinakamalapit na landmark. Para lamang ito sa totoong emergency — may parusa ang maling report.',
+      tip:
+          'Kasama nang awtomatiko ang lokasyon at pinakamalapit na landmark. Para lamang ito sa totoong emergency — may parusa ang maling report.',
     ),
     HelpTopic(
       icon: LucideIcons.clipboard_list,
@@ -144,24 +149,28 @@ abstract final class HelpContent {
         'Say what happened with the microphone, or type it. You can add a photo or video too.',
         'Tap "Review report", check that everything is right, then send.',
       ],
-      tip: 'Ziren picks the nearest right station for you — BFP for fire, PNP for crime, MDRRMO for the rest.',
+      tip:
+          'Ziren picks the nearest right station for you — BFP for fire, PNP for crime, MDRRMO for the rest.',
     ),
     HelpTopic(
       icon: LucideIcons.map_pinned,
       title: 'When the incident is somewhere else',
-      summary: 'For example: you are in Kawayan but the incident is in Larrazabal.',
+      summary:
+          'For example: you are in Kawayan but the incident is in Larrazabal.',
       steps: [
         'In the report, under "Where is the incident?", choose "Somewhere else".',
         'Move the map until the orange pin is on the incident — or type the barangay or landmark in search.',
         'Tap "Use this location".',
         'Check the landmark and finish the report as usual.',
       ],
-      tip: 'Responders go to the incident, not to you. The station also sees that you reported from elsewhere, so they can call you back if needed.',
+      tip:
+          'Responders go to the incident, not to you. The station also sees that you reported from elsewhere, so they can call you back if needed.',
     ),
     HelpTopic(
       icon: LucideIcons.phone_call,
       title: 'No internet? Call a station',
-      summary: 'Every station\'s official number is inside the app — works offline.',
+      summary:
+          'Every station\'s official number is inside the app — works offline.',
       steps: [
         'When Home shows "No internet" at the top, tap the kind of emergency.',
         'The numbers of the right stations appear, nearest town first.',
@@ -181,12 +190,14 @@ abstract final class HelpContent {
         'Choose the kind of emergency if you know it — it is optional.',
         'Tick the warning, then press and hold the button to send.',
       ],
-      tip: 'Your location and nearest landmark are attached automatically. Use it only for real emergencies — false reports are penalised.',
+      tip:
+          'Your location and nearest landmark are attached automatically. Use it only for real emergencies — false reports are penalised.',
     ),
     HelpTopic(
       icon: LucideIcons.clipboard_list,
       title: 'Track your report',
-      summary: 'The Reports tab shows the status and messages from the station.',
+      summary:
+          'The Reports tab shows the status and messages from the station.',
       steps: [
         'Open the Reports tab at the bottom.',
         'Tap a report to see its status: Received, Being reviewed, Responder on the way, Responder arrived, Resolved.',
@@ -261,7 +272,8 @@ abstract final class HelpContent {
     HelpTopic(
       icon: LucideIcons.shield_alert,
       title: 'Kung ikaw mismo ang nasa panganib',
-      summary: 'Ang distress signal ay para sa kaligtasan mo, hindi sa insidente.',
+      summary:
+          'Ang distress signal ay para sa kaligtasan mo, hindi sa insidente.',
       steps: [
         'Pindutin nang matagal ang "PINDUTIN NANG MATAGAL KUNG NASA PANGANIB KA".',
         'Makikita agad ng dispatcher ang lokasyon mo.',
@@ -271,7 +283,8 @@ abstract final class HelpContent {
     HelpTopic(
       icon: LucideIcons.radar,
       title: 'Mga insidente malapit sa iyo',
-      summary: 'Bago pa may maipadala, puwede mong sabihin kung kaya mong pumunta.',
+      summary:
+          'Bago pa may maipadala, puwede mong sabihin kung kaya mong pumunta.',
       steps: [
         'Lalabas sa "May insidenteng malapit sa iyo" ang mga bagong report sa paligid mo.',
         'Pindutin ang "Kaya kong pumunta" o "Hindi kaya". Ang dispatcher pa rin ang magpapasya.',
@@ -280,7 +293,8 @@ abstract final class HelpContent {
     HelpTopic(
       icon: LucideIcons.phone_call,
       title: 'Walang internet',
-      summary: 'Naka-queue ang mga action mo at maipapadala pagbalik ng signal.',
+      summary:
+          'Naka-queue ang mga action mo at maipapadala pagbalik ng signal.',
       steps: [
         'Ang pag-accept, status update at litrato ay ipapadala kapag may signal na.',
         'Para sa agarang koordinasyon, tawagan ang station — nasa "Hotline ng mga station" ang lahat ng numero.',

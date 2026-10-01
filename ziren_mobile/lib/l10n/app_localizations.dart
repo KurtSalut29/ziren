@@ -4693,6 +4693,36 @@ abstract class AppLocalizations {
   /// **'Sent. The Agency Admin knows.'**
   String get respEscalateSent;
 
+  /// Responder app: escalate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Escalate incident'**
+  String get respEscalateAction;
+
+  /// Responder app: escalate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tell the Agency Admin what changed. This notifies them to reassess — it does not change the official severity yourself.'**
+  String get respEscalateBody;
+
+  /// Responder app: escalate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'What changed?'**
+  String get respEscalateWhat;
+
+  /// Responder app: escalate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Fire spreading rapidly, multiple casualties, additional agency required…'**
+  String get respEscalateHint;
+
+  /// Responder app: escalate sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send escalation'**
+  String get respEscalateSubmit;
+
   /// Responder app: incident detail, distress signal sent while online
   ///
   /// In en, this message translates to:
@@ -8550,6 +8580,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{station} has your request and is responding. Stay where it is safest.'**
   String annHelpAckBody(String station);
+
+  /// First time a new account reaches Home: the excited mascot greets them by first name.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}!'**
+  String welcomeDemoTitle(String name);
+
+  /// No description provided for @welcomeDemoTitleNoName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi there!'**
+  String get welcomeDemoTitleNoName;
+
+  /// No description provided for @welcomeDemoBodyResident.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Ziren! Want me to show you around the app first? It takes a minute, and nothing is sent while I show you.'**
+  String get welcomeDemoBodyResident;
+
+  /// No description provided for @welcomeDemoBodyResponder.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to the team! Want me to show you around your screens first? It takes a minute, and nothing is changed while I show you.'**
+  String get welcomeDemoBodyResponder;
+
+  /// No description provided for @welcomeDemoStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, show me'**
+  String get welcomeDemoStart;
+
+  /// No description provided for @welcomeDemoLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe later'**
+  String get welcomeDemoLater;
+
+  /// No description provided for @welcomeDemoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can watch it anytime: tap \"{button}\" on Home, then Demo.'**
+  String welcomeDemoHint(String button);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

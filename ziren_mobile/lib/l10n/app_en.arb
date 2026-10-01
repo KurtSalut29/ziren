@@ -1704,6 +1704,26 @@
   "@respEscalateSent": {
     "description": "Responder app: incident detail, escalate success toast"
   },
+  "respEscalateAction": "Escalate incident",
+  "@respEscalateAction": {
+    "description": "Responder app: escalate sheet"
+  },
+  "respEscalateBody": "Tell the Agency Admin what changed. This notifies them to reassess — it does not change the official severity yourself.",
+  "@respEscalateBody": {
+    "description": "Responder app: escalate sheet"
+  },
+  "respEscalateWhat": "What changed?",
+  "@respEscalateWhat": {
+    "description": "Responder app: escalate sheet"
+  },
+  "respEscalateHint": "e.g. Fire spreading rapidly, multiple casualties, additional agency required…",
+  "@respEscalateHint": {
+    "description": "Responder app: escalate sheet"
+  },
+  "respEscalateSubmit": "Send escalation",
+  "@respEscalateSubmit": {
+    "description": "Responder app: escalate sheet"
+  },
   "respDistressSentLive": "SENT. The dispatcher can see you now.",
   "@respDistressSentLive": {
     "description": "Responder app: incident detail, distress signal sent while online"
@@ -2835,5 +2855,14 @@
   "annOpen": "Open",
   "annHelpAckTitle": "Your call for help was received",
   "annHelpAckBody": "{station} has your request and is responding. Stay where it is safest.",
-  "@annHelpAckBody": {"placeholders": {"station": {"type": "String"}}}
+  "@annHelpAckBody": {"placeholders": {"station": {"type": "String"}}},
+  "welcomeDemoTitle": "Hi, {name}!",
+  "@welcomeDemoTitle": {"description": "First time a new account reaches Home: the excited mascot greets them by first name.", "placeholders": {"name": {"type": "String"}}},
+  "welcomeDemoTitleNoName": "Hi there!",
+  "welcomeDemoBodyResident": "Welcome to Ziren! Want me to show you around the app first? It takes a minute, and nothing is sent while I show you.",
+  "welcomeDemoBodyResponder": "Welcome to the team! Want me to show you around your screens first? It takes a minute, and nothing is changed while I show you.",
+  "welcomeDemoStart": "Yes, show me",
+  "welcomeDemoLater": "Maybe later",
+  "welcomeDemoHint": "You can watch it anytime: tap \"{button}\" on Home, then Demo.",
+  "@welcomeDemoHint": {"placeholders": {"button": {"type": "String"}}}
 }

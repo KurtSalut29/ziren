@@ -24,6 +24,7 @@ import 'widgets/responder_voice_note.dart';
 import '../domain/responder_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 /// Full incident detail screen for Responders.
 ///
@@ -543,84 +544,103 @@ class _DetailBody extends StatelessWidget {
                   ),
 
                 // ── What happened ────────────────────────────
-                _SummaryCard(incident: incident),
+                DemoAnchor(
+                  id: 'ridet.summary',
+                  child: _SummaryCard(incident: incident),
+                ),
 
                 // ── Where the assignment stands ──────────────
                 if (closed)
                   _ClosedBanner(text: t.respClosedBanner)
                 else
-                  _DetailCard(
-                    icon: LucideIcons.route,
-                    title: t.respStepsTitle,
-                    child: AssignmentProgress(incident: incident),
+                  DemoAnchor(
+                    id: 'ridet.progress',
+                    child: _DetailCard(
+                      icon: LucideIcons.route,
+                      title: t.respStepsTitle,
+                      child: AssignmentProgress(incident: incident),
+                    ),
                   ),
 
                 // ── Where ────────────────────────────────────
-                _DetailCard(
-                  icon: LucideIcons.map_pin,
-                  title: t.respCardLocation,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        incident.locationAddress ?? t.respNoLocation,
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.3,
-                          fontWeight: FontWeight.w800,
-                          color: ZirenTokens.textPrimary,
+                DemoAnchor(
+                  id: 'ridet.where',
+                  child: _DetailCard(
+                    icon: LucideIcons.map_pin,
+                    title: t.respCardLocation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          incident.locationAddress ?? t.respNoLocation,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.3,
+                            fontWeight: FontWeight.w800,
+                            color: ZirenTokens.textPrimary,
+                          ),
                         ),
-                      ),
-                      if (incident.landmarkNote?.trim().isNotEmpty == true) ...[
-                        const SizedBox(height: ZirenTokens.space10),
-                        _LandmarkBox(
-                          label: t.respFieldLandmark,
-                          value: incident.landmarkNote!.trim(),
-                        ),
-                      ],
-                      if (incident.latitude != null &&
-                          incident.longitude != null) ...[
-                        const SizedBox(height: ZirenTokens.space12),
-                        _InlineMap(
-                          lat: incident.latitude!,
-                          lng: incident.longitude!,
-                        ),
-                        const SizedBox(height: ZirenTokens.space8),
-                        _GpsRow(
-                          lat: incident.latitude!,
-                          lng: incident.longitude!,
-                        ),
-                      ],
-                      if (!closed) ...[
-                        const SizedBox(height: ZirenTokens.space12),
-                        OutlinedButton.icon(
-                          icon: const Icon(LucideIcons.navigation, size: 18),
-                          label: Text(t.respNavigate),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: ZirenTokens.brandOrange,
-                            minimumSize: const Size.fromHeight(48),
-                            side: const BorderSide(
-                              color: ZirenTokens.brandOrange,
-                              width: 1.5,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            textStyle: responderButtonText(
-                              context,
-                              14.5,
-                              FontWeight.w800,
+                        if (incident.landmarkNote?.trim().isNotEmpty ==
+                            true) ...[
+                          const SizedBox(height: ZirenTokens.space10),
+                          _LandmarkBox(
+                            label: t.respFieldLandmark,
+                            value: incident.landmarkNote!.trim(),
+                          ),
+                        ],
+                        if (incident.latitude != null &&
+                            incident.longitude != null) ...[
+                          const SizedBox(height: ZirenTokens.space12),
+                          _InlineMap(
+                            lat: incident.latitude!,
+                            lng: incident.longitude!,
+                          ),
+                          const SizedBox(height: ZirenTokens.space8),
+                          _GpsRow(
+                            lat: incident.latitude!,
+                            lng: incident.longitude!,
+                          ),
+                        ],
+                        if (!closed) ...[
+                          const SizedBox(height: ZirenTokens.space12),
+                          DemoAnchor(
+                            id: 'ridet.navigate',
+                            child: OutlinedButton.icon(
+                              icon: const Icon(
+                                LucideIcons.navigation,
+                                size: 18,
+                              ),
+                              label: Text(t.respNavigate),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: ZirenTokens.brandOrange,
+                                minimumSize: const Size.fromHeight(48),
+                                side: const BorderSide(
+                                  color: ZirenTokens.brandOrange,
+                                  width: 1.5,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                textStyle: responderButtonText(
+                                  context,
+                                  14.5,
+                                  FontWeight.w800,
+                                ),
+                              ),
+                              onPressed: onNavigate,
                             ),
                           ),
-                          onPressed: onNavigate,
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
 
                 // ── Who reported ─────────────────────────────
-                _ReporterCard(incident: incident),
+                DemoAnchor(
+                  id: 'ridet.reporter',
+                  child: _ReporterCard(incident: incident),
+                ),
 
                 // ── Station ──────────────────────────────────
                 if (incident.stationName != null)
@@ -647,20 +667,26 @@ class _DetailBody extends StatelessWidget {
                 if (incident.status != 'dispatched' ||
                     incident.isAcceptedNotMoving) ...[
                   const SizedBox(height: ZirenTokens.space4),
-                  ResponderNotesPanel(incidentId: incident.id),
+                  DemoAnchor(
+                    id: 'ridet.notes',
+                    child: ResponderNotesPanel(incidentId: incident.id),
+                  ),
                 ],
 
                 // Mutual aid, scene photos and the responder's own panic
                 // button. Last on the page, far from the status button that
                 // is pressed on every call.
                 if (!closed)
-                  _EmergencyActions(
-                    incidentId: incident.id,
-                    sceneCaptureEnabled: incident.status == 'arrived',
-                    onRequestBackup: onRequestBackup,
-                    onEscalate: onEscalate,
-                    onPanic: onPanic,
-                    busy: provider.answering || provider.raisingDistress,
+                  DemoAnchor(
+                    id: 'ridet.emergency',
+                    child: _EmergencyActions(
+                      incidentId: incident.id,
+                      sceneCaptureEnabled: incident.status == 'arrived',
+                      onRequestBackup: onRequestBackup,
+                      onEscalate: onEscalate,
+                      onPanic: onPanic,
+                      busy: provider.answering || provider.raisingDistress,
+                    ),
                   ),
               ],
             ),
@@ -669,12 +695,15 @@ class _DetailBody extends StatelessWidget {
 
         // ── The next step, under the thumb ───────────────────
         if (hasAction)
-          _StatusActionBar(
-            incident: incident,
-            provider: provider,
-            onAdvanceStatus: onAdvanceStatus,
-            onAccept: onAccept,
-            onDecline: onDecline,
+          DemoAnchor(
+            id: 'ridet.action',
+            child: _StatusActionBar(
+              incident: incident,
+              provider: provider,
+              onAdvanceStatus: onAdvanceStatus,
+              onAccept: onAccept,
+              onDecline: onDecline,
+            ),
           ),
       ],
     );
@@ -1797,7 +1826,7 @@ class _EmergencyActions extends StatelessWidget {
             IncidentActionRow(
               icon: LucideIcons.triangle_alert,
               iconColor: ZirenTokens.severityHigh,
-              label: 'Escalate Incident',
+              label: AppLocalizations.of(context).respEscalateAction,
               onTap: busy ? null : onEscalate,
             ),
             SceneCaptureButton(

@@ -226,7 +226,7 @@ export default function OperationalAreaPage() {
         </div>
       )}
 
-      <div aria-labelledby={areaTabId(tab)} id={AREA_PANEL_ID} role="tabpanel">
+      <div data-demo="area:panel" aria-labelledby={areaTabId(tab)} id={AREA_PANEL_ID} role="tabpanel">
         {!data ? (
           error ? null : <LoadingShell />
         ) : (

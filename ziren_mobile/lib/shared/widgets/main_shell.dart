@@ -10,6 +10,7 @@ import '../../features/notifications/presentation/open_report.dart';
 import '../../features/notifications/presentation/notice_view.dart';
 import '../../features/notifications/presentation/widgets/status_update_sheet.dart';
 import '../theme/app_tokens.dart';
+import '../../features/demo/presentation/demo_anchor.dart';
 import 'home_kit.dart';
 import 'ziren_toast.dart';
 import '../../l10n/app_localizations.dart';
@@ -115,7 +116,9 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
     // buttons do. Read the profile again now, not at the next launch.
     if (target.isAccount) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(context.read<ProfileProvider>().loadProfile(force: true));
+        if (mounted) {
+          unawaited(context.read<ProfileProvider>().loadProfile(force: true));
+        }
       });
     }
 
@@ -228,15 +231,28 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
                 children: [
                   for (var i = 0; i < tabs.length; i++)
                     Expanded(
-                      child: _NavItem(
-                        tab: tabs[i],
-                        isActive: i == currentIndex,
-                        // Reports carries the unread dot: a status change on
-                        // your own report is what you would go there to read.
-                        // A safety alert is not about a report: it does not light
-                        // the dot on a tab that would not show it.
-                        showBadge: i == 1 && notifications.unread.any((n) => !n.isAnnouncement),
-                        onTap: () => _onTap(i),
+                      child: DemoAnchor(
+                        id:
+                            const [
+                              'nav.home',
+                              'nav.reports',
+                              'nav.map',
+                              'nav.profile',
+                            ][i],
+                        child: _NavItem(
+                          tab: tabs[i],
+                          isActive: i == currentIndex,
+                          // Reports carries the unread dot: a status change on
+                          // your own report is what you would go there to read.
+                          // A safety alert is not about a report: it does not light
+                          // the dot on a tab that would not show it.
+                          showBadge:
+                              i == 1 &&
+                              notifications.unread.any(
+                                (n) => !n.isAnnouncement,
+                              ),
+                          onTap: () => _onTap(i),
+                        ),
                       ),
                     ),
                 ],

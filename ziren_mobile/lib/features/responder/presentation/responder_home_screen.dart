@@ -26,6 +26,8 @@ import 'widgets/assignment_cards.dart';
 import 'widgets/nearby_incident_card.dart';
 import 'widgets/responder_kit.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
+import '../../demo/presentation/welcome_demo.dart';
 
 /// Responder Home — the assignment queue.
 ///
@@ -65,6 +67,9 @@ class ResponderHomeScreen extends StatefulWidget {
 enum _ConnectivityMode { unknown, online, offline }
 
 class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
+  /// Whether the new-account greeting has been considered on this Home.
+  bool _welcomeChecked = false;
+
   /// The one nearby card currently sending an answer, so only its own
   /// buttons show a spinner and disable — a slow reply on one card must not
   /// freeze the others.
@@ -107,13 +112,39 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
   Future<void> _checkConnectivity() async {
     // "Online" means OUR backend answered, not that the phone shows bars — see
     // BackendHealth for the two ways those come apart.
+    var reachable = await BackendHealth.isReachable();
+    // One miss while online is usually the phone handing over between mobile
+    // data and wifi, not a lost connection: ask once more before saying so.
+    // Without this, Home (and Ziren on it) flipped to "no internet" for a few
+    // seconds every time wifi came back.
+    if (!reachable && _connectivity == _ConnectivityMode.online) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      reachable = await BackendHealth.isReachable();
+    }
     final mode =
-        await BackendHealth.isReachable()
-            ? _ConnectivityMode.online
-            : _ConnectivityMode.offline;
+        reachable ? _ConnectivityMode.online : _ConnectivityMode.offline;
     if (mounted && mode != _connectivity) {
       setState(() => _connectivity = mode);
     }
+  }
+
+  /// The OS said "no network". During a handover it says that for a moment
+  /// too, so look again shortly before showing the offline state.
+  void _confirmNoNetwork() {
+    Future<void>.delayed(const Duration(milliseconds: 1500), () async {
+      final now = await Connectivity().checkConnectivity();
+      final stillNone =
+          !now.any(
+            (r) =>
+                r == ConnectivityResult.wifi ||
+                r == ConnectivityResult.mobile ||
+                r == ConnectivityResult.ethernet,
+          );
+      if (stillNone && mounted && _connectivity != _ConnectivityMode.offline) {
+        setState(() => _connectivity = _ConnectivityMode.offline);
+      }
+    });
   }
 
   @override
@@ -160,8 +191,8 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
         );
         if (hasNetwork) {
           Future.delayed(const Duration(seconds: 2), _checkConnectivity);
-        } else if (mounted && _connectivity != _ConnectivityMode.offline) {
-          setState(() => _connectivity = _ConnectivityMode.offline);
+        } else {
+          _confirmNoNetwork();
         }
       });
     });
@@ -356,6 +387,22 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
     // wraps onto a third line on a small phone.
     final firstName = displayName.trim().split(RegExp(r'\s+')).first;
 
+    // A new account's first visit: Ziren says hi and offers the demo
+    // (WelcomeDemo decides whether this account is new and not yet asked).
+    // Waits for the profile, so the greeting has the real first name.
+    if (!_welcomeChecked && profile != null) {
+      _welcomeChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          WelcomeDemo.maybeGreet(
+            context,
+            responder: true,
+            firstName: firstName,
+          );
+        }
+      });
+    }
+
     // Newest-first, closed by when it closed. Capped at four rows — this is
     // a glance at the dashboard, not the record; the full list with filters
     // is what the Reports tab is for.
@@ -401,7 +448,7 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                     profileLabel: t.homeProfileButtonLabel,
                     greeting: _greeting(t, firstName),
                     greetingName: firstName,
-                    mascot: MascotArt.responder,
+                    offline: _connectivity == _ConnectivityMode.offline,
                     mascotName: t.mascotName,
                     message:
                         !onDuty
@@ -435,18 +482,21 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                   const SizedBox(height: ZirenTokens.space20),
 
                   // ── Duty status ────────────────────────────────
-                  DutyStatusCard(
-                    onDuty: onDuty,
-                    busy: provider.togglingAvailability,
-                    onChanged: (_) => _toggleDuty(provider),
-                    displayName: displayName,
-                    rank:
-                        profile?.badgeId != null
-                            ? '#${profile!.badgeId}'
-                            : null,
-                    agencyLabel: profile?.agencyName,
-                    avatarUrl: profile?.avatarUrl,
-                    onTap: () => context.go('/responder/profile'),
+                  DemoAnchor(
+                    id: 'resp.duty',
+                    child: DutyStatusCard(
+                      onDuty: onDuty,
+                      busy: provider.togglingAvailability,
+                      onChanged: (_) => _toggleDuty(provider),
+                      displayName: displayName,
+                      rank:
+                          profile?.badgeId != null
+                              ? '#${profile!.badgeId}'
+                              : null,
+                      agencyLabel: profile?.agencyName,
+                      avatarUrl: profile?.avatarUrl,
+                      onTap: () => context.go('/responder/profile'),
+                    ),
                   ),
 
                   if (provider.availabilityError != null)
@@ -465,32 +515,35 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                   // Every number is this responder's own (get_dashboard
                   // scopes to assigned_responder_id). Tapping one brings the
                   // work it counts into view.
-                  ResponderStatBand(
-                    cells: [
-                      ResponderStat(
-                        icon: LucideIcons.clipboard_list,
-                        value: '${queue.length}',
-                        label: t.respStatAssigned,
-                        color: ZirenTokens.brandOrange,
-                        onTap: queue.isEmpty ? null : _scrollToQueue,
-                      ),
-                      ResponderStat(
-                        icon: LucideIcons.triangle_alert,
-                        value: '$criticalCount',
-                        label: t.respStatCritical,
-                        color: ZirenTokens.severityCritical,
-                        onTap: criticalCount == 0 ? null : _scrollToQueue,
-                      ),
-                      ResponderStat(
-                        icon: LucideIcons.hourglass,
-                        value: ResponderVocabulary.waiting(
-                          provider.oldestWaitingMinutes,
+                  DemoAnchor(
+                    id: 'resp.stats',
+                    child: ResponderStatBand(
+                      cells: [
+                        ResponderStat(
+                          icon: LucideIcons.clipboard_list,
+                          value: '${queue.length}',
+                          label: t.respStatAssigned,
+                          color: ZirenTokens.brandOrange,
+                          onTap: queue.isEmpty ? null : _scrollToQueue,
                         ),
-                        label: t.respStatOldest,
-                        onTap: queue.isEmpty ? null : _scrollToQueue,
-                        color: ZirenTokens.severityHigh,
-                      ),
-                    ],
+                        ResponderStat(
+                          icon: LucideIcons.triangle_alert,
+                          value: '$criticalCount',
+                          label: t.respStatCritical,
+                          color: ZirenTokens.severityCritical,
+                          onTap: criticalCount == 0 ? null : _scrollToQueue,
+                        ),
+                        ResponderStat(
+                          icon: LucideIcons.hourglass,
+                          value: ResponderVocabulary.waiting(
+                            provider.oldestWaitingMinutes,
+                          ),
+                          label: t.respStatOldest,
+                          onTap: queue.isEmpty ? null : _scrollToQueue,
+                          color: ZirenTokens.severityHigh,
+                        ),
+                      ],
+                    ),
                   ),
 
                   // ── The work ───────────────────────────────────
@@ -519,36 +572,44 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                       child: _InlineError(message: provider.queueError!),
                     )
                   else if (queue.isEmpty)
-                    HomeActivityCard(
-                      title:
-                          onDuty
-                              ? t.respHomeNoAssignmentsTitle
-                              : t.respHomeOffDutyTitle,
-                      emptyIcon:
-                          onDuty ? LucideIcons.circle_check : LucideIcons.moon,
-                      emptyTitle:
-                          onDuty
-                              ? t.respHomeQueueClear
-                              : t.respHomeNotAccepting,
-                      emptyBody:
-                          onDuty
-                              ? t.respHomeQueueClearBody
-                              : t.respHomeOffDutyBody,
+                    DemoAnchor(
+                      id: 'resp.work',
+                      child: HomeActivityCard(
+                        title:
+                            onDuty
+                                ? t.respHomeNoAssignmentsTitle
+                                : t.respHomeOffDutyTitle,
+                        emptyIcon:
+                            onDuty
+                                ? LucideIcons.circle_check
+                                : LucideIcons.moon,
+                        emptyTitle:
+                            onDuty
+                                ? t.respHomeQueueClear
+                                : t.respHomeNotAccepting,
+                        emptyBody:
+                            onDuty
+                                ? t.respHomeQueueClearBody
+                                : t.respHomeOffDutyBody,
+                      ),
                     )
                   else ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: kHomeGutter,
                       ),
-                      child: NextUpAssignmentCard(
-                        incident: sorted.first,
-                        total: sorted.length,
-                        highlighted: sorted.first.id == _highlightedId,
-                        onOpen:
-                            () => context.push(
-                              '/responder/incident/${sorted.first.id}',
-                            ),
-                        onNavigate: _navigateTo(sorted.first),
+                      child: DemoAnchor(
+                        id: 'resp.work',
+                        child: NextUpAssignmentCard(
+                          incident: sorted.first,
+                          total: sorted.length,
+                          highlighted: sorted.first.id == _highlightedId,
+                          onOpen:
+                              () => context.push(
+                                '/responder/incident/${sorted.first.id}',
+                              ),
+                          onNavigate: _navigateTo(sorted.first),
+                        ),
                       ),
                     ),
                     if (sorted.length > 1) ...[
@@ -609,22 +670,31 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                       padding: const EdgeInsets.symmetric(
                         horizontal: kHomeGutter,
                       ),
-                      child: Column(
-                        children: [
-                          for (final n in provider.nearby) ...[
-                            NearbyIncidentCard(
-                              incident: n,
-                              answering: _answeringNearbyId == n.incidentId,
-                              onRespond:
-                                  () =>
-                                      _answerNearby(provider, n, 'can_respond'),
-                              onUnavailable:
-                                  () =>
-                                      _answerNearby(provider, n, 'unavailable'),
-                            ),
-                            const SizedBox(height: ZirenTokens.space10),
+                      child: DemoAnchor(
+                        id: 'resp.nearby',
+                        child: Column(
+                          children: [
+                            for (final n in provider.nearby) ...[
+                              NearbyIncidentCard(
+                                incident: n,
+                                answering: _answeringNearbyId == n.incidentId,
+                                onRespond:
+                                    () => _answerNearby(
+                                      provider,
+                                      n,
+                                      'can_respond',
+                                    ),
+                                onUnavailable:
+                                    () => _answerNearby(
+                                      provider,
+                                      n,
+                                      'unavailable',
+                                    ),
+                              ),
+                              const SizedBox(height: ZirenTokens.space10),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -643,19 +713,22 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
                       padding: const EdgeInsets.symmetric(
                         horizontal: kHomeGutter,
                       ),
-                      child: Column(
-                        children: [
-                          for (final incident in recentActivityTop) ...[
-                            ReportRow(
-                              incident: incident,
-                              onTap:
-                                  () => context.push(
-                                    '/responder/incident/${incident.id}',
-                                  ),
-                            ),
-                            const SizedBox(height: ZirenTokens.space10),
+                      child: DemoAnchor(
+                        id: 'resp.recent',
+                        child: Column(
+                          children: [
+                            for (final incident in recentActivityTop) ...[
+                              ReportRow(
+                                incident: incident,
+                                onTap:
+                                    () => context.push(
+                                      '/responder/incident/${incident.id}',
+                                    ),
+                              ),
+                              const SizedBox(height: ZirenTokens.space10),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ],
@@ -670,9 +743,12 @@ class _ResponderHomeScreenState extends State<ResponderHomeScreen> {
           Positioned(
             right: kHomeGutter,
             bottom: provider.hasPendingSync ? 64 : ZirenTokens.space16,
-            child: ZirenHelpButton(
-              label: t.helpButtonLabel,
-              onPressed: () => showHelpSheet(context, forResponder: true),
+            child: DemoAnchor(
+              id: 'resp.help',
+              child: ZirenHelpButton(
+                label: t.helpButtonLabel,
+                onPressed: () => showHelpSheet(context, forResponder: true),
+              ),
             ),
           ),
         ],

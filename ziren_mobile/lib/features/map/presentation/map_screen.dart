@@ -26,6 +26,7 @@ import '../../../shared/map/ziren_map_style.dart';
 import '../domain/map_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../demo/presentation/demo_anchor.dart';
 
 const _kBiliranCenter = LatLng(kBiliranLat, kBiliranLng);
 const _kInitialZoom = 11.5;
@@ -94,19 +95,32 @@ const double _kMeTipInset = 17;
 /// interpolate, and silently rejects the whole icon-size otherwise (logcat:
 /// `icon-size "zoom" expression may only be used as input to a top-level
 /// "step" or "interpolate" expression`) — which is how pins went unscaled.
-const List<double> _kPinZoomStops = [7, 0.5, 9, 0.65, 11.5, 0.85, 14, 1.0, 16, 1.1, 18, 1.25];
+const List<double> _kPinZoomStops = [
+  7,
+  0.5,
+  9,
+  0.65,
+  11.5,
+  0.85,
+  14,
+  1.0,
+  16,
+  1.1,
+  18,
+  1.25,
+];
 
 /// icon-size for a pin whose normal size is [base]: the zoom curve above
 /// with every stop pre-multiplied by [base], so zoom stays top-level.
 List<dynamic> _pinScale(double base) => [
-      Expressions.interpolate,
-      ['linear'],
-      [Expressions.zoom],
-      for (var i = 0; i < _kPinZoomStops.length; i += 2) ...[
-        _kPinZoomStops[i],
-        _kPinZoomStops[i + 1] * base,
-      ],
-    ];
+  Expressions.interpolate,
+  ['linear'],
+  [Expressions.zoom],
+  for (var i = 0; i < _kPinZoomStops.length; i += 2) ...[
+    _kPinZoomStops[i],
+    _kPinZoomStops[i + 1] * base,
+  ],
+];
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, this.forResponder = false, this.focusIncidentId});
@@ -889,14 +903,16 @@ class _MapScreenState extends State<MapScreen> {
         _kMePointSource,
         _kMePointLayer,
         SymbolLayerProperties(
-          iconImage:
-              widget.forResponder ? _kMeIconResponder : _kMeIconResident,
+          iconImage: widget.forResponder ? _kMeIconResponder : _kMeIconResident,
           iconSize: _pinScale(_kMeIconScale),
           iconAnchor: 'bottom',
           // Array values go in as a `literal`: a bare [0, 17] is read as an
           // expression and rejected ("icon-offset value must be an array of
           // 2 numbers"), which left the pin's tip off the fix.
-          iconOffset: const [Expressions.literal, [0, _kMeTipInset]],
+          iconOffset: const [
+            Expressions.literal,
+            [0, _kMeTipInset],
+          ],
           // Never dropped for collision. Every other mark on this map can be
           // hidden by a neighbour without costing anything; the one that says
           // where the viewer is standing cannot.
@@ -952,7 +968,10 @@ class _MapScreenState extends State<MapScreen> {
         lineWidth: 3,
         lineOpacity: 0.85,
         // As a `literal`, or MapLibre rejects it and draws the line solid.
-        lineDasharray: [Expressions.literal, [2, 1.5]],
+        lineDasharray: [
+          Expressions.literal,
+          [2, 1.5],
+        ],
       ),
     );
   }
@@ -1015,7 +1034,9 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       if (_incidents?.currentPosition == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).mapNoLocationYet)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).mapNoLocationYet),
+          ),
         );
         return;
       }
@@ -1055,7 +1076,9 @@ class _MapScreenState extends State<MapScreen> {
       pos = _incidents?.currentPosition;
       if (pos == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context).mapNoLocationYet)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).mapNoLocationYet),
+          ),
         );
         return;
       }
@@ -1262,173 +1285,175 @@ class _MapScreenState extends State<MapScreen> {
             // The map runs edge to edge, under the status bar; the header
             // floats over it instead of taking a band of the screen.
             body: Stack(
-                      children: [
-                        if (_resolvedStyle == null)
-                          const Center(child: CircularProgressIndicator())
-                        else if (_visible)
-                          MapLibreMap(
-                            // See [_mapKey]: a fresh native view every time the
-                            // map comes back on screen.
-                            key: _mapKey,
-                            styleString: _resolvedStyle!,
-                            initialCameraPosition:
-                                _lastCamera ??
-                                const CameraPosition(
-                                  target: _kBiliranCenter,
-                                  zoom: _kInitialZoom,
-                                ),
-                            onMapCreated: _onMapCreated,
-                            onStyleLoadedCallback: _onStyleLoaded,
-                            compassEnabled: false,
-                            rotateGesturesEnabled: false,
-                            // Tracked so the camera survives the map being
-                            // rebuilt - see [_lastCamera].
-                            trackCameraPosition: true,
-                          )
-                        else
-                          const SizedBox.expand(),
+              children: [
+                if (_resolvedStyle == null)
+                  const Center(child: CircularProgressIndicator())
+                else if (_visible)
+                  MapLibreMap(
+                    // See [_mapKey]: a fresh native view every time the
+                    // map comes back on screen.
+                    key: _mapKey,
+                    styleString: _resolvedStyle!,
+                    initialCameraPosition:
+                        _lastCamera ??
+                        const CameraPosition(
+                          target: _kBiliranCenter,
+                          zoom: _kInitialZoom,
+                        ),
+                    onMapCreated: _onMapCreated,
+                    onStyleLoadedCallback: _onStyleLoaded,
+                    compassEnabled: false,
+                    rotateGesturesEnabled: false,
+                    // Tracked so the camera survives the map being
+                    // rebuilt - see [_lastCamera].
+                    trackCameraPosition: true,
+                  )
+                else
+                  const SizedBox.expand(),
 
-                        // ── Nearest / selected station card ───
-                        // Suppressed when focused — the incident detail
-                        // sheet _maybeFocusInitialIncident opens already
-                        // covers this report's own status, and letting the
-                        // resident pick a DIFFERENT station from here would
-                        // contradict "only the station that responded".
-                        if (isFocused &&
-                            _focusCardOpen &&
-                            _focusIncident != null)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: GestureDetector(
-                              // A downward flick puts the card away; tapping
-                              // the report's own pin brings it back.
-                              onVerticalDragEnd: (details) {
-                                if ((details.primaryVelocity ?? 0) > 250) {
-                                  setState(() => _focusCardOpen = false);
-                                }
-                              },
-                              child: _IncidentDetailSheet(
-                                incident: _focusIncident!,
-                              ),
+                // ── Nearest / selected station card ───
+                // Suppressed when focused — the incident detail
+                // sheet _maybeFocusInitialIncident opens already
+                // covers this report's own status, and letting the
+                // resident pick a DIFFERENT station from here would
+                // contradict "only the station that responded".
+                if (isFocused && _focusCardOpen && _focusIncident != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      // A downward flick puts the card away; tapping
+                      // the report's own pin brings it back.
+                      onVerticalDragEnd: (details) {
+                        if ((details.primaryVelocity ?? 0) > 250) {
+                          setState(() => _focusCardOpen = false);
+                        }
+                      },
+                      child: _IncidentDetailSheet(incident: _focusIncident!),
+                    ),
+                  ),
+                if (displayStation != null && !isFocused)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: DemoAnchor(
+                      id: 'map.station',
+                      child: MapStationCard(
+                        station: displayStation,
+                        isNearest: showingNearest,
+                        distanceKm: displayDistanceKm,
+                        onGetDirections:
+                            () => _showDirectionsOnMap(displayStation),
+                        pickerOpen: _stationPickerOpen,
+                        onTogglePicker:
+                            () => setState(
+                              () => _stationPickerOpen = !_stationPickerOpen,
                             ),
-                          ),
-                        if (displayStation != null && !isFocused)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: MapStationCard(
-                              station: displayStation,
-                              isNearest: showingNearest,
-                              distanceKm: displayDistanceKm,
-                              onGetDirections:
-                                  () => _showDirectionsOnMap(displayStation),
-                              pickerOpen: _stationPickerOpen,
-                              onTogglePicker:
-                                  () => setState(
-                                    () =>
-                                        _stationPickerOpen =
-                                            !_stationPickerOpen,
-                                  ),
-                              otherStations:
-                                  pickerStations
-                                      .where((s) => s.id != displayStation.id)
-                                      .toList(),
-                              distanceKmTo: _distanceKmTo,
-                              onSelectStation: _onStationTap,
-                            ),
-                          ),
+                        otherStations:
+                            pickerStations
+                                .where((s) => s.id != displayStation.id)
+                                .toList(),
+                        distanceKmTo: _distanceKmTo,
+                        onSelectStation: _onStationTap,
+                      ),
+                    ),
+                  ),
 
-                        // ── Floating header, status and controls ──
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          child: SafeArea(
-                            bottom: false,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                ZirenTokens.space12,
-                                ZirenTokens.space8,
-                                ZirenTokens.space12,
-                                0,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  MapHeaderCard(
-                                    title:
-                                        widget.forResponder
-                                            ? t.mapResponderTitle
-                                            : isFocused
-                                            ? t.mapReportLocationTitle
-                                            : t.mapNearbyStationsTitle,
-                                    subtitle:
-                                        isFocused || provider.loading
-                                            ? null
-                                            : t.mapStationsOnMap(
-                                              '${provider.plottableStations.length}',
-                                            ),
-                                    showBack: widget.forResponder || isFocused,
-                                    fallbackRoute:
-                                        widget.forResponder
-                                            ? '/responder/queue'
-                                            : '/my-reports',
-                                    filters:
-                                        isFocused
-                                            ? null
-                                            : MapAgencyFilters(
-                                              provider: provider,
-                                            ),
-                                  ),
-                                  const SizedBox(height: ZirenTokens.space10),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            if (provider.loading)
-                                              const _LoadingOverlay(),
-                                            if (provider.error != null)
-                                              _ErrorBanner(
-                                                message: provider.error!,
-                                              ),
-                                          ],
+                // ── Floating header, status and controls ──
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        ZirenTokens.space12,
+                        ZirenTokens.space8,
+                        ZirenTokens.space12,
+                        0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DemoAnchor(
+                            id: 'map.header',
+                            child: MapHeaderCard(
+                              title:
+                                  widget.forResponder
+                                      ? t.mapResponderTitle
+                                      : isFocused
+                                      ? t.mapReportLocationTitle
+                                      : t.mapNearbyStationsTitle,
+                              subtitle:
+                                  isFocused || provider.loading
+                                      ? null
+                                      : t.mapStationsOnMap(
+                                        '${provider.plottableStations.length}',
+                                      ),
+                              showBack: widget.forResponder || isFocused,
+                              fallbackRoute:
+                                  widget.forResponder
+                                      ? '/responder/queue'
+                                      : '/my-reports',
+                              filters:
+                                  isFocused
+                                      ? null
+                                      : DemoAnchor(
+                                        id: 'map.filters',
+                                        child: MapAgencyFilters(
+                                          provider: provider,
                                         ),
                                       ),
-                                      const SizedBox(width: ZirenTokens.space10),
-                                      Column(
-                                        children: [
-                                          _MyLocationChip(
-                                            provider:
-                                                context
-                                                    .watch<IncidentProvider>(),
-                                          ),
-                                          const SizedBox(
-                                            height: ZirenTokens.space10,
-                                          ),
-                                          _MapFab(
-                                            icon: LucideIcons.locate_fixed,
-                                            iconColor: ZirenTokens.brandOrange,
-                                            tooltip: t.mapRecenter,
-                                            onTap: _locateMe,
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                            ),
+                          ),
+                          const SizedBox(height: ZirenTokens.space10),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (provider.loading)
+                                      const _LoadingOverlay(),
+                                    if (provider.error != null)
+                                      _ErrorBanner(message: provider.error!),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: ZirenTokens.space10),
+                              Column(
+                                children: [
+                                  DemoAnchor(
+                                    id: 'map.mylocation',
+                                    child: _MyLocationChip(
+                                      provider:
+                                          context.watch<IncidentProvider>(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: ZirenTokens.space10),
+                                  DemoAnchor(
+                                    id: 'map.locate',
+                                    child: _MapFab(
+                                      icon: LucideIcons.locate_fixed,
+                                      iconColor: ZirenTokens.brandOrange,
+                                      tooltip: t.mapRecenter,
+                                      onTap: _locateMe,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -2072,22 +2097,21 @@ class MapStationCard extends StatelessWidget {
                           await callHotline(context, numbers.first);
                           return;
                         }
-                        final picked = await showZirenOptionSheet<
-                          HotlineNumber
-                        >(
-                          context,
-                          title: station.name,
-                          options: [
-                            for (final n in numbers)
-                              ZirenSheetOption(
-                                icon: LucideIcons.phone,
-                                label: n.display,
-                                subtitle: n.label,
-                                value: n,
-                                tone: ZirenTone.success,
-                              ),
-                          ],
-                        );
+                        final picked =
+                            await showZirenOptionSheet<HotlineNumber>(
+                              context,
+                              title: station.name,
+                              options: [
+                                for (final n in numbers)
+                                  ZirenSheetOption(
+                                    icon: LucideIcons.phone,
+                                    label: n.display,
+                                    subtitle: n.label,
+                                    value: n,
+                                    tone: ZirenTone.success,
+                                  ),
+                              ],
+                            );
                         if (picked != null && context.mounted) {
                           await callHotline(context, picked);
                         }
@@ -2195,9 +2219,7 @@ class MapStationCard extends StatelessWidget {
                           if (sKm != null) ...[
                             const SizedBox(width: ZirenTokens.space8),
                             Text(
-                              t.mapStationDistanceShort(
-                                sKm.toStringAsFixed(1),
-                              ),
+                              t.mapStationDistanceShort(sKm.toStringAsFixed(1)),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -2388,10 +2410,7 @@ class _IncidentDetailSheet extends StatelessWidget {
               const Spacer(),
               Text(
                 _timeAgo(incident.createdAt),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: ZirenTokens.textMuted,
-                ),
+                style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
               ),
             ],
           ),
@@ -2547,37 +2566,33 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: ZirenTokens.space12,
-          vertical: ZirenTokens.space10,
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZirenTokens.space12,
+        vertical: ZirenTokens.space10,
+      ),
+      decoration: BoxDecoration(
+        color: ZirenTokens.systemErrorBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: ZirenTokens.systemError.withValues(alpha: 0.30),
         ),
-        decoration: BoxDecoration(
-          color: ZirenTokens.systemErrorBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: ZirenTokens.systemError.withValues(alpha: 0.30),
-          ),
-          boxShadow: ZirenTokens.shadowMd,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              LucideIcons.wifi_off,
-              size: 16,
-              color: ZirenTokens.systemError,
-            ),
-            const SizedBox(width: ZirenTokens.space8),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: ZirenTokens.systemError,
-                ),
+        boxShadow: ZirenTokens.shadowMd,
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.wifi_off, size: 16, color: ZirenTokens.systemError),
+          const SizedBox(width: ZirenTokens.space8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 12,
+                color: ZirenTokens.systemError,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }

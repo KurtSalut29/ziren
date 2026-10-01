@@ -345,6 +345,7 @@ function _Row({
       // button, which is what a keyboard and a screen reader reach.
       className="group cursor-pointer border-b border-[var(--color-surface-border)] align-middle transition-colors last:border-b-0 hover:bg-[var(--color-surface-hover)]"
       // What "Show in list" scrolls to - see ActiveIncidentsView.
+      data-demo="queue:row"
       data-incident-id={incident.id}
       data-new={isNew ? '' : undefined}
       onClick={() => onOpen(incident.id)}
