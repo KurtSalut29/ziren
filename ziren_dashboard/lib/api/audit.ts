@@ -13,6 +13,10 @@ export interface AuditLogEntry {
   new_value: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  /** Migration 044: the row is written before the action. 'pending' = never
+   *  confirmed, 'failed' = the action did not go through. */
+  outcome?: 'pending' | 'succeeded' | 'failed';
+  error?: string | null;
 }
 
 export interface AuditLogFilters {

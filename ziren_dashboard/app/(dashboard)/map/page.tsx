@@ -206,6 +206,16 @@ function MapView() {
           /></DemoTarget>
         )}
 
+        {/* The map carries at most a fixed number of pins; when there are more,
+            it says so instead of looking complete (finding #17). */}
+        {data?.limits?.truncated && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[899] flex justify-center">
+            <p className="pointer-events-auto rounded-full border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-1.5 text-meta text-[var(--color-text-secondary)] shadow-[var(--shadow-md)]">
+              Showing the newest {data.incidents.length.toLocaleString()} of {data.limits.incidents_total.toLocaleString()} reports.
+            </p>
+          </div>
+        )}
+
         {/* Every layer switched off is a legitimate state, not an empty one —
             but an unexplained blank island reads as a broken page. */}
         {data && LAYER_KEYS.every(k => !layers[k]) && (

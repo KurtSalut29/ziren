@@ -738,7 +738,14 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
         statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
         statusBarBrightness: dark ? Brightness.dark : Brightness.light,
       ),
-      child: page,
+      // The phone's Back button: one step back, like the arrow (finding #19).
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) RegistrationScaffold.goBackFrom(context, RegStep.selfie);
+        },
+        child: page,
+      ),
     );
   }
 }

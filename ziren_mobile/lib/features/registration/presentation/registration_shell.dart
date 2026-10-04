@@ -70,6 +70,20 @@ class RegistrationScaffold extends StatelessWidget {
     final index = draft.indexOf(step);
     final t = AppLocalizations.of(context);
 
+    // The phone's own Back button takes the same single step back as the arrow
+    // (evaluator finding #19). Steps move forward with `go`, which leaves
+    // nothing beneath them, so the system pop used to close registration
+    // entirely; the draft (held above the router) keeps what was typed.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) goBackFrom(context, step);
+      },
+      child: _shell(context, steps, index, t),
+    );
+  }
+
+  Widget _shell(BuildContext context, List<RegStep> steps, int index, AppLocalizations t) {
     return AuthShell(
       compact: true,
       title: title,

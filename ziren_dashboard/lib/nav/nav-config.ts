@@ -79,9 +79,15 @@ export interface NavItem {
 }
 
 export interface NavGroup {
-  /** Uppercase section heading. Not clickable, not focusable. */
-  label: string;
+  /** Uppercase section heading; per role where the two roles use it differently. */
+  label: string | ((role: NavRole) => string);
   items: NavItem[];
+  /**
+   * The group can be folded away, and starts folded for someone who has not
+   * opened it - unless they are on one of its pages. For the groups used
+   * occasionally, not every shift (evaluator findings #30 / #33).
+   */
+  collapsible?: boolean;
 }
 
 /** A resolved NavItem, with `label` always a plain string. */
@@ -93,8 +99,13 @@ export type ResolvedNavItem = Omit<NavItem, 'label' | 'children'> & {
 export interface ResolvedNavGroup {
   label: string;
   items: ResolvedNavItem[];
+  collapsible?: boolean;
 }
 
+// Grouped by task, in the order a shift uses them (evaluator findings #30 /
+// #33: the portal showed a dozen equal entries at once, which was hard for a
+// new admin to start from). What needs a response now comes first; records
+// and people/area admin fold away until wanted. Nothing was removed.
 const NAV: NavGroup[] = [
   {
     label: 'Overview',
@@ -103,7 +114,8 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    label: 'Monitoring',
+    // A Provincial Admin dispatches nothing; for them this is what to watch.
+    label: r => (r.isAgencyAdmin ? 'Respond now' : 'Watch now'),
     items: [
       // matchNested keeps this lit on /incidents/[id] as well — a dispatcher
       // who drilled into a report from the queue is still looking at this
@@ -125,6 +137,20 @@ const NAV: NavGroup[] = [
         matchNested: true,
         visible: r => r.isAgencyAdmin,
       },
+      { href: '/map', label: 'Incident Map', icon: MapPinned },
+      // Help between stations: requests this station sent, requests asking it
+      // for help, and the conversation behind each. Its own entry (not a panel
+      // on Operational Area, where it used to be) because stations testing it
+      // could not find it there. Both roles — a Provincial Admin reads their
+      // agency type's requests for oversight. Badged by the layout while a
+      // request waits for an answer or holds an unread reply.
+      { href: '/assist-requests', label: 'Assist Requests', icon: Handshake },
+    ],
+  },
+  {
+    label: 'Records & reports',
+    collapsible: true,
+    items: [
       // Its own entry rather than a tab on Incident Monitoring — was merged
       // into one page with an Active/History toggle earlier; split back out
       // to its own sidebar item at the user's request. A separate top-level
@@ -134,31 +160,24 @@ const NAV: NavGroup[] = [
       // Label is "Incident Records"; the path keeps its old name so existing
       // links and bookmarks still resolve.
       { href: '/incident-history', label: 'Incident Records', icon: History },
-      // Help between stations: requests this station sent, requests asking it
-      // for help, and the conversation behind each. Its own entry (not a panel
-      // on Operational Area, where it used to be) because stations testing it
-      // could not find it there. Both roles — a Provincial Admin reads their
-      // agency type's requests for oversight. Badged by the layout while a
-      // request waits for an answer or holds an unread reply.
-      { href: '/assist-requests', label: 'Assist Requests', icon: Handshake },
       // The filing cabinet for narrative reports - every one an agency has
       // written, organised by kind of incident. Both roles: an Agency Admin
       // writes them, a Provincial Admin reads the ones filed under their agency
       // type. matchNested keeps it lit on /narrative-reports/[id], the editor.
       { href: '/narrative-reports', label: 'Narrative Reports', icon: NotebookText, matchNested: true },
-      { href: '/map', label: 'Incident Map', icon: MapPinned },
       {
-        // Same page for both roles — Agency Admin's Operational Area (spec
-        // Section 16) reuses it locked to their own agency's municipality;
-        // see /geographic's router for the server-side enforcement.
-        href: '/geographic',
-        label: r => (r.isProvincialAdmin ? 'Geographic Overview' : 'Operational Area'),
-        icon: Globe2,
+        // The two printable documents — Incident Records and Narrative
+        // Reports — for both roles, each scoped server-side to the caller's
+        // own station (Agency Admin) or agency type (Provincial Admin).
+        href: '/reports',
+        label: 'Reports & Export',
+        icon: FileDown,
       },
     ],
   },
   {
-    label: 'Management',
+    label: 'People & area',
+    collapsible: true,
     items: [
       {
         href: '/accounts',
@@ -188,10 +207,18 @@ const NAV: NavGroup[] = [
         matchNested: true,
         visible: r => r.isAgencyAdmin || r.isProvincialAdmin,
       },
+      {
+        // Same page for both roles — Agency Admin's Operational Area (spec
+        // Section 16) reuses it locked to their own agency's municipality;
+        // see /geographic's router for the server-side enforcement.
+        href: '/geographic',
+        label: r => (r.isProvincialAdmin ? 'Geographic Overview' : 'Operational Area'),
+        icon: Globe2,
+      },
     ],
   },
   {
-    label: 'Communication',
+    label: 'Communicate',
     items: [
       {
         // Publishing is Provincial-Admin-only (enforced server-side and by the
@@ -201,14 +228,6 @@ const NAV: NavGroup[] = [
         href: '/announcements',
         label: 'Announcements',
         icon: Megaphone,
-      },
-      {
-        // The two printable documents — Incident Records and Narrative
-        // Reports — for both roles, each scoped server-side to the caller's
-        // own station (Agency Admin) or agency type (Provincial Admin).
-        href: '/reports',
-        label: 'Reports & Export',
-        icon: FileDown,
       },
     ],
   },
@@ -244,6 +263,7 @@ export function getNavGroups(role: NavRole): ResolvedNavGroup[] {
   return NAV
     .map(group => ({
       ...group,
+      label: typeof group.label === 'function' ? group.label(role) : group.label,
       items: group.items
         .filter(item => !item.visible || item.visible(role))
         .map(item => resolveItem(item, role)),

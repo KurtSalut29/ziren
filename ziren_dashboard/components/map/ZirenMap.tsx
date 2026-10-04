@@ -236,7 +236,11 @@ export default function ZirenMap({
         // A responder with no agency is still drawn — dropping them would be
         // hiding a person on duty.
         if (resp.agency_type && !agencies[resp.agency_type as AgencyKey]) continue;
-        const detail = [resp.full_name ?? 'Responder', resp.badge_id, resp.agency_type].filter(Boolean).join(' · ');
+        // With the position's age: a dot from an hour ago otherwise looks
+        // exactly like one from a minute ago.
+        const age = resp.location_updated_at ? Math.round((Date.now() - Date.parse(resp.location_updated_at)) / 60_000) : null;
+        const seen = age == null || Number.isNaN(age) ? null : age <= 0 ? 'updated just now' : `updated ${age} min ago`;
+        const detail = [resp.full_name ?? 'Responder', resp.badge_id, resp.agency_type, seen].filter(Boolean).join(' · ');
         place(markerHtml({ src: RESPONDER_MARKER, w: PERSON_W, h: PERSON_H, label: 'Responder', labelColor: agencyColor(color, resp.agency_type) }),
           PERSON_W, PERSON_H, PERSON_TIP_RATIO, resp.lng, resp.lat, detail, 20);
       }

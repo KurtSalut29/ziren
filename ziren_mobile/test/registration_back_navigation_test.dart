@@ -62,9 +62,39 @@ void main() {
                 child: const SizedBox.shrink(),
               ),
         ),
+        GoRoute(
+          path: '/register/personal',
+          builder:
+              (_, _) => RegistrationScaffold(
+                step: RegStep.personal,
+                title: 'Your name',
+                onContinue: () {},
+                child: const SizedBox.shrink(),
+              ),
+        ),
       ],
     );
   }
+
+  // Evaluator finding #19 (2026-10-05): the phone's own Back button left
+  // registration altogether, because steps move forward with `go` and leave
+  // nothing beneath them. It now takes one step back, like the arrow, and
+  // what was typed is still in the draft.
+  testWidgets("the phone's Back button goes one step back, keeping what was typed", (
+    tester,
+  ) async {
+    final draft = RegistrationDraft()..firstName = 'Maria';
+    final router = buildRouter(initial: '/register/personal');
+    await tester.pumpWidget(harness(draft, router));
+    await tester.pumpAndSettle();
+    expect(find.text('Your name'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Create account'), findsOneWidget, reason: 'one step back, not out');
+    expect(draft.firstName, 'Maria');
+  });
 
   testWidgets('back from step one returns to sign-in when it came from there', (
     tester,

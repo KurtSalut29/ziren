@@ -198,7 +198,7 @@ def test_details_are_kept_to_what_the_kind_knows():
 
 def test_each_office_issues_only_its_own_kinds():
     db = _db()
-    with pytest.raises(PermissionError, match="MDRRMO"):
+    with pytest.raises(PermissionError, match="PDRRMO"):
         _publish(db, actor=PNP)  # an evacuation order from the police
     with pytest.raises(PermissionError, match="PNP"):
         _publish(db, category="missing_person", asks_response=False,
@@ -221,7 +221,7 @@ def test_only_the_issuing_office_ends_or_takes_down_an_alert():
     db = _db()
     warning = _publish(db)  # MDRRMO
     with _on(db):
-        with pytest.raises(PermissionError, match="MDRRMO provincial office"):
+        with pytest.raises(PermissionError, match="PDRRMO"):
             svc.publish(BFP, title="All clear", body="x", category="all_clear", target_type="all",
                         ends_announcement_id=warning["id"])
         with pytest.raises(PermissionError):
@@ -557,7 +557,7 @@ def test_http_refuses_a_kind_that_is_not_the_office_s():
     with patch("app.core.dependencies.get_supabase", return_value=_auth_as(P2, "PNP")), _on(db):
         H["Authorization"] = "Bearer token-pnp"
         resp = client.post("/announcements/", json=EVAC, headers=H)
-    assert resp.status_code == 403 and "MDRRMO" in resp.json()["detail"]
+    assert resp.status_code == 403 and "PDRRMO" in resp.json()["detail"]
 
 
 def test_http_refuses_bad_input():

@@ -99,7 +99,7 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
     final facts = announcementFacts(t, a);
     final ended = !a.isActive || !a.isOpen;
     final meta = [
-      if (a.issuer != null) t.annIssuedBy(a.issuer!),
+      if (a.issuerOffice != null) t.annIssuedBy(a.issuerOffice!),
       timeAgoShort(t, a.createdAt),
     ].join(' · ');
 

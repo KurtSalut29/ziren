@@ -2726,7 +2726,7 @@ abstract class AppLocalizations {
   /// No description provided for @quickMediaHint.
   ///
   /// In en, this message translates to:
-  /// **'Add photos or videos as evidence (max 5, 50MB each)'**
+  /// **'Photos or videos as evidence: up to 5 files, 50 MB each, videos up to 2 minutes.'**
   String get quickMediaHint;
 
   /// No description provided for @quickTakePhoto.
@@ -6040,7 +6040,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewAttachmentsHint.
   ///
   /// In en, this message translates to:
-  /// **'Optional — add a photo or video as evidence (max 5, 50MB each)'**
+  /// **'Optional: add photos or videos as evidence. Up to 5 files, 50 MB each, videos up to 2 minutes.'**
   String get reviewAttachmentsHint;
 
   /// No description provided for @sosAddDetailsExample.
@@ -8622,6 +8622,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can watch it anytime: tap \"{button}\" on Home, then Demo.'**
   String welcomeDemoHint(String button);
+
+  /// Responder app: Photos and videos from the caller
+  ///
+  /// In en, this message translates to:
+  /// **'Photos and videos from the caller'**
+  String get respAttachmentsTitle;
+
+  /// Responder app: Could not load the attachments. Pull down to try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the attachments. Pull down to try again.'**
+  String get respAttachmentsLoadFailed;
+
+  /// Responder app: Could not open this file.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open this file.'**
+  String get respAttachmentUnavailable;
+
+  /// Responder app: Play video
+  ///
+  /// In en, this message translates to:
+  /// **'Play video'**
+  String get respAttachmentPlayVideo;
+
+  /// Responder app: This video could not be opened on this phone.
+  ///
+  /// In en, this message translates to:
+  /// **'This video could not be opened on this phone.'**
+  String get respAttachmentVideoFailed;
+
+  /// Responder app: Close
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get respPhotoViewerClose;
+
+  /// Report form: media limit
+  ///
+  /// In en, this message translates to:
+  /// **'This file is {size} MB. Each photo or video can be up to {max} MB. Record a shorter video or choose a smaller file.'**
+  String mediaTooLarge(String size, String max);
+
+  /// Report form: media limit
+  ///
+  /// In en, this message translates to:
+  /// **'You can attach up to 5 files.'**
+  String get mediaMaxFiles;
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking: {language}'**
+  String speakingLanguageLabel(String language);
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Which language will you speak?'**
+  String get speakingLanguageTitle;
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'This tells the phone which language to listen for. It does not change the app\'s language.'**
+  String get speakingLanguageMessage;
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'No {language} recogniser on this phone. It will listen in {fallback}.'**
+  String speakingLanguageFallback(String language, String fallback);
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no speech recogniser for it. Type instead.'**
+  String get speakingLanguageNone;
+
+  /// Report form: which language the resident speaks into the microphone
+  ///
+  /// In en, this message translates to:
+  /// **'Check the words: the phone may mishear {language}. Fix anything wrong before sending.'**
+  String speakingLanguageCheck(String language);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -8,6 +8,7 @@ import 'widgets/incident_location_section.dart';
 import '../domain/incident_category_style.dart';
 import '../domain/incident_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import 'widgets/spoken_language_chip.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Combined report screen — Step 1 of 2.
@@ -416,6 +417,16 @@ class _CatchAllField extends StatelessWidget {
                 );
               }
             },
+          ),
+          const SizedBox(height: ZirenTokens.space8),
+          // Which language the phone listens for (evaluator finding #22).
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SpokenLanguageChip(provider: provider),
+          ),
+          SpokenLanguageCheckNote(
+            provider: provider,
+            hasText: controller.text.trim().isNotEmpty,
           ),
         ],
       ],

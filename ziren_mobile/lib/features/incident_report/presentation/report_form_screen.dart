@@ -11,6 +11,7 @@ import '../../../shared/widgets/loading_indicator.dart';
 import '../domain/incident_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'widgets/spoken_language_chip.dart';
 import '../../../shared/widgets/ziren_photo_sheet.dart';
 
 /// Step 2 of the report flow — free-text description.
@@ -454,13 +455,26 @@ class _SpeechButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!provider.speechAvailable) return const SizedBox.shrink();
+    final t = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _micButton(t),
+        const SizedBox(height: ZirenTokens.space8),
+        // Which language the phone listens for (evaluator finding #22).
+        SpokenLanguageChip(provider: provider),
+      ],
+    );
+  }
+
+  Widget _micButton(AppLocalizations t) {
     return OutlinedButton.icon(
       icon: Icon(
         provider.isListening ? LucideIcons.mic : LucideIcons.mic,
         color: provider.isListening ? ZirenTokens.brandOrange : null,
       ),
       label: Text(
-        provider.isListening ? 'Listening… (tap to stop)' : 'Speak your report',
+        provider.isListening ? t.wizardListening : t.wizardSpeakDetails,
       ),
       style: OutlinedButton.styleFrom(
         foregroundColor:
@@ -594,7 +608,7 @@ class _MediaAttachmentSection extends StatelessWidget {
         ] else ...[
           const SizedBox(height: ZirenTokens.space4),
           Text(
-            'Add photos or videos as evidence (max 5, 50MB each)',
+            AppLocalizations.of(context).quickMediaHint,
             style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
           ),
         ],

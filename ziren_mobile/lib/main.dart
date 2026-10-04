@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,7 @@ import 'features/responder/domain/responder_notification_provider.dart';
 import 'features/responder/domain/responder_provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/theme/app_tokens.dart';
+import 'core/push/push_registration.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -162,6 +164,9 @@ class _ZirenAppState extends State<ZirenApp> {
       final userId = _authProvider.user?.id;
       if (userId != _providersLoadedForUserId) {
         _providersLoadedForUserId = userId;
+        // Notices with the app closed (evaluator findings #11 / #12). No-op
+        // until Firebase is configured in dart_defines.json.
+        unawaited(PushRegistration.start());
         _profileProvider.clear();
         _profileProvider.loadProfile();
       }

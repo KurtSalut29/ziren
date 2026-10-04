@@ -23,6 +23,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.services import announcement_service
 from tests.fake_db import FakeDB
+from tests.audit_helpers import patch_audit_action
 
 client = TestClient(app)
 
@@ -73,7 +74,7 @@ def _roster_db():
 def _publish(db, **kw):
     with patch("app.services.announcement_service.get_supabase", return_value=db), \
          patch("app.services.notification_service.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         row = announcement_service.publish(ACTOR, **kw)
     return row, {n["recipient_id"] for n in db.rows("notifications")}, audit_record
 

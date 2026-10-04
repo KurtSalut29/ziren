@@ -22,6 +22,7 @@
 import Link from 'next/link';
 import { Moon, Settings, Sun } from 'lucide-react';
 import { AccountMenu } from './account-menu';
+import { GlobalSearch } from './global-search';
 import { ConnectivityDot } from './connectivity-dot';
 import { Button } from '@/components/efferd/ui/button';
 import { Separator } from '@/components/efferd/ui/separator';
@@ -85,6 +86,7 @@ export function ZirenHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        <GlobalSearch token={token} />
         <span className="contents" data-demo="header:notifications">
           <NotificationCenter token={token} />
         </span>

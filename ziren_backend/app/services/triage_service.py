@@ -35,6 +35,8 @@ import os
 import threading
 from typing import Any
 
+import time
+
 import structlog
 
 from app.models.incident import IncidentCategory, SeverityLevel
@@ -701,18 +703,65 @@ def triage(
     if not load():
         return None
 
+    trace = _Trace()
     try:
-        return _triage_inner(
+        result = _triage_inner(
             report_text=report_text,
             incident_category=incident_category,
             wizard_answers=wizard_answers,
             overlap_agencies=overlap_agencies,
             landmark_note=landmark_note,
+            trace=trace,
         )
     except Exception as e:
-        # A malformed report must not cost the resident their report.
-        log.error("triage.failed", error=str(e), error_type=type(e).__name__)
+        # A malformed report must not cost the resident their report. The stage
+        # it failed in is named, so nobody has to trace client -> router ->
+        # service -> model to find it (evaluator finding #28).
+        log.error("triage.failed", stage=trace.current, completed=trace.names(),
+                  error=str(e), error_type=type(e).__name__)
         return None
+
+    trace.done()
+    result["signals"]["pipeline_trace"] = trace.steps
+    log.info(
+        "triage.completed",
+        stages=trace.names(),
+        total_ms=trace.total_ms(),
+        severity=result.get("severity"),
+        rule=result["signals"].get("severity_rule"),
+        verification=result["signals"].get("verification_status"),
+    )
+    return result
+
+
+class _Trace:
+    """Which stage of a triage pass is running, and how long each took.
+
+    Stored on the incident as signals.pipeline_trace and logged as
+    triage.completed / triage.failed, so a report that came out wrong can be
+    followed stage by stage from the dashboard or the server log. See
+    docs/TRIAGE_PIPELINE.md.
+    """
+
+    def __init__(self) -> None:
+        self.steps: list[dict] = []
+        self.current = "start"
+        self._t = time.perf_counter()
+
+    def stage(self, name: str) -> None:
+        now = time.perf_counter()
+        if self.current != "start":
+            self.steps.append({"stage": self.current, "ms": round((now - self._t) * 1000, 2)})
+        self.current, self._t = name, now
+
+    def done(self) -> None:
+        self.stage("done")
+
+    def names(self) -> list[str]:
+        return [s["stage"] for s in self.steps]
+
+    def total_ms(self) -> float:
+        return round(sum(s["ms"] for s in self.steps), 2)
 
 
 def _triage_inner(
@@ -722,7 +771,9 @@ def _triage_inner(
     wizard_answers: dict[str, Any] | None,
     overlap_agencies: list[str] | None,
     landmark_note: str | None = None,
+    trace: "_Trace | None" = None,
 ) -> dict:
+    step = trace.stage if trace is not None else (lambda _name: None)
     Z = _Z
     text = (report_text or "").strip()
     glued: list[str] = []
@@ -732,9 +783,11 @@ def _triage_inner(
     if text:
         # Collapse recogniser stutters before normalising, so a doubled word
         # does not become a doubled correction.
+        step("normalise")
         text = _collapse_immediate_repeats(text)
         norm, changes = normalise_text(text)
         glued = _glued_number_words(norm)
+        step("classify")
         # Classify the ORIGINAL text; `norm` feeds signal extraction only.
         # Normalising before classification causes train/serve skew - see the
         # note in predict.run().
@@ -746,6 +799,7 @@ def _triage_inner(
             "category": classes[order[1]],
             "confidence": round(float(proba[order[1]]), 3),
         }
+        step("signals")
         sig, _hedged = Z.extract(norm)
     else:
         norm, changes, predicted, confidence, runner_up = "", [], None, 0.0, None
@@ -767,6 +821,7 @@ def _triage_inner(
             sig["location"] = from_landmark
 
     # -- the resident's own answers win over anything read from the text ---
+    step("wizard")
     chips, people = _chips_from_wizard(
         incident_category, wizard_answers, overlap_agencies
     )
@@ -780,6 +835,7 @@ def _triage_inner(
         chips_used.append("people_involved")
 
     # -- verification: does the model agree with what the resident chose? --
+    step("verify")
     if not text:
         status_code = "NO_TEXT"
         message = "No free text supplied; category and wizard answers used as given."
@@ -813,11 +869,13 @@ def _triage_inner(
     # over the SR010 fail-safe. `selected` is None both when the resident chose
     # nothing and when they chose `other`, which are the same claim: no
     # category was asserted.
+    step("severity")
     rule, level, why = Z.severity(
         sig, routing_category, confidence,
         category_from_user=selected is not None,
     )
 
+    step("routing")
     agencies = list(Z.AGENCY.get(routing_category, []))
     if sig.get("entrapment") and "BFP" not in agencies:
         agencies.append("BFP")

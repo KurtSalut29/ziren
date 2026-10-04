@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/failures.dart';
 import '../../onboarding/data/onboarding_repository.dart';
 import '../data/auth_repository.dart';
+import '../../../core/push/push_registration.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
@@ -164,6 +165,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Stop push to this phone first, while the session can still authorise the
+    // request; otherwise the next person on it would get this account's notices.
+    await PushRegistration.stop();
     _clearAuthState();
     try {
       await _repo.logout();

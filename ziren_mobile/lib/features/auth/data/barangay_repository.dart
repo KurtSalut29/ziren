@@ -46,13 +46,21 @@ class BarangayRepository {
     final rows = await _client
         .from('barangays')
         .select('id, name, municipality')
-        .order('municipality')
-        .order('name');
+        // ascending: true is not optional. postgrest-dart's order() defaults
+        // to DESCENDING, so these dropdowns read Z to A (evaluator #32).
+        .order('municipality', ascending: true)
+        .order('name', ascending: true);
 
     final list =
         (rows as List)
             .map((r) => Barangay.fromMap(r as Map<String, dynamic>))
-            .toList();
+            .toList()
+          // Also sorted here, case-insensitively, so the order never depends
+          // on a query option being remembered.
+          ..sort((a, b) {
+            final m = a.municipality.toLowerCase().compareTo(b.municipality.toLowerCase());
+            return m != 0 ? m : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
     _cache = list;
     return list;
   }

@@ -41,7 +41,7 @@ DO $$ BEGIN
             'other'
           )
         );
-  END 
+  END IF;
 END $$;
 
 -- Constrain victim_relationship to known values.

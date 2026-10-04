@@ -30,6 +30,7 @@ import {
   StatusPill, type CurrentStatus, type CurrentIncidentRef,
 } from '@/components/responders/status-pill';
 import { Button } from '@/components/ui/button';
+import { SeverityRule } from '@/components/ui/severity-rationale';
 import { SearchInput } from '@/components/ui/search-input';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -69,7 +70,13 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
   onError: (msg: string) => void;
 }) {
   const sev = (incident.suggested_severity ?? incident.severity) as SeverityLevel | null;
-  const [chosenSeverity, setChosenSeverity] = useState<SeverityLevel>(sev ?? 'medium');
+  // No silent default when the model could not read the report: "medium"
+  // used to be pre-selected, so a crew could be sent on a severity nobody
+  // chose. The dispatcher picks it (evaluator finding #4).
+  const [chosenSeverity, setChosenSeverity] = useState<SeverityLevel | null>(sev);
+  // The person takes the decision: they confirm they read the severity and
+  // the reason for it. The server refuses a dispatch without this.
+  const [confirmed, setConfirmed] = useState(false);
   const [selectedResponder, setSelectedResponder] = useState<string>(initialResponderId ?? '');
   const [overrideReason, setOverrideReason] = useState('');
   const [notes, setNotes] = useState('');
@@ -156,11 +163,14 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
     );
   }, [sortedRoster, query]);
 
-  const wasOverride = chosenSeverity !== (sev ?? 'medium');
+  // Choosing a severity where the model gave none is not an override of anything.
+  const wasOverride = sev !== null && chosenSeverity !== sev;
 
   async function handleDispatch() {
     if (!selectedResponder) { onError('Select a responder before dispatching.'); return; }
+    if (!chosenSeverity) { onError('Choose a severity. The system could not assess this report.'); return; }
     if (wasOverride && !overrideReason.trim()) { onError('Provide an override reason.'); return; }
+    if (!confirmed) { onError('Confirm that you checked the severity and its reason.'); return; }
 
     setLoading(true);
     try {
@@ -170,6 +180,7 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
         suggested_severity: sev,
         override_reason:    wasOverride ? overrideReason.trim() : null,
         notes:              notes.trim() || null,
+        severity_confirmed: confirmed,
       }, token);
       onSuccess('Responder dispatched successfully.');
     } catch (e: unknown) {
@@ -199,6 +210,7 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
             {SEVERITY_ORDER.map(s => (
               <button
                 key={s}
+                aria-pressed={chosenSeverity === s}
                 onClick={() => setChosenSeverity(s)}
                 className="px-3 py-1.5 rounded-[var(--radius-md)] text-[13px] font-semibold border transition-colors"
                 style={{
@@ -212,6 +224,23 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
             ))}
           </div>
         </div>
+
+        {/* Why the system suggested it, right where the decision is made: the
+            rule and the reason, or a plain statement that there is none. */}
+        {sev ? (
+          <SeverityRule severity={sev} signals={incident.signals} />
+        ) : (
+          <p
+            className="rounded-[var(--radius-md)] border px-3 py-2 text-[12.5px]"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--color-system-warning) 45%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--color-system-warning) 8%, transparent)',
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            The system could not assess this report. Read it and choose the severity yourself.
+          </p>
+        )}
 
         {/* Override reason */}
         {wasOverride && (
@@ -371,6 +400,21 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
           />
         </div>
 
+        <label className="flex items-start gap-2.5 rounded-[var(--radius-md)] border border-[var(--color-surface-border)] px-3 py-2.5 text-[13px] text-[var(--color-text-primary)]">
+          <input
+            checked={confirmed}
+            className="mt-0.5 size-4 shrink-0 accent-[var(--color-brand)]"
+            data-testid="severity-confirm"
+            onChange={e => setConfirmed(e.target.checked)}
+            type="checkbox"
+          />
+          <span>
+            I have checked the severity
+            {chosenSeverity ? <strong> ({chosenSeverity.toUpperCase()})</strong> : null}
+            {' '}and the reason for it. The decision to send this crew is mine.
+          </span>
+        </label>
+
       </div>
       <DialogFooter>
         <Button variant="outline" size="md" onClick={onClose}>Cancel</Button>
@@ -379,7 +423,7 @@ export function DispatchModal({ incident, token, initialResponderId, onClose, on
           size="md"
           onClick={handleDispatch}
           isLoading={loading}
-          disabled={!selectedResponder || incident.available_responders.length === 0}
+          disabled={!selectedResponder || !chosenSeverity || !confirmed || incident.available_responders.length === 0}
         >
           <Shield className="h-4 w-4" data-icon="inline-start" />
           Dispatch

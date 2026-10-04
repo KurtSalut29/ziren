@@ -51,6 +51,8 @@ def _auth_db(user_id, role):
 def _healthy_db():
     db = MagicMock()
     db.table.return_value.select.return_value.limit.return_value.execute.return_value = MagicMock()
+    # Audit Trail: no audited change left unconfirmed.
+    db.table.return_value.select.return_value.eq.return_value.lt.return_value.limit.return_value         .execute.return_value = MagicMock(count=0)
     db.auth.admin.list_users.return_value = []
     db.storage.list_buckets.return_value = []
     return db
@@ -62,7 +64,7 @@ def test_all_checks_operational_when_everything_works():
          patch("app.services.triage_service.status", return_value={"model_loaded": True}):
         checks = system_status_service.check_all()
 
-    assert len(checks) == 8
+    assert len(checks) == 9
     assert all(c["status"] == "operational" for c in checks)
 
 
@@ -114,7 +116,7 @@ def test_router_reports_all_operational_flag():
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["all_operational"] is True
-    assert len(body["checks"]) == 8
+    assert len(body["checks"]) == 9
 
 
 # ── /system-status/config ────────────────────────────────────────────────
@@ -158,3 +160,13 @@ def test_config_is_refused_to_an_agency_admin():
     with patch("app.core.dependencies.get_supabase", return_value=db):
         resp = TestClient(app).get("/system-status/config", headers={"Authorization": "Bearer t"})
     assert resp.status_code == 403
+
+
+def test_unconfirmed_audited_changes_are_reported():
+    """Evaluator finding #9: a change whose audit row was never completed shows up."""
+    db = _healthy_db()
+    db.table.return_value.select.return_value.eq.return_value.lt.return_value.limit.return_value         .execute.return_value = MagicMock(count=2)
+    with patch("app.services.system_status_service.get_supabase", return_value=db),          patch("app.services.triage_service.status", return_value={"model_loaded": True}):
+        checks = {c["name"]: c for c in system_status_service.check_all()}
+    assert checks["Audit Trail"]["status"] == "down"
+    assert "never confirmed" in checks["Audit Trail"]["detail"]

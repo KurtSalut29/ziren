@@ -8,7 +8,8 @@
     "start": "next start",
     "start:lan": "next start -H 0.0.0.0 -p 3000",
     "serve": "next build && next start -H 0.0.0.0 -p 3000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.49.4",
@@ -40,6 +41,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

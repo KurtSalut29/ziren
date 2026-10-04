@@ -797,6 +797,8 @@ export function SettingsSearch({
   return (
     <div
       className="relative w-full sm:w-[300px]"
+      // Tells the header's global search that "/" belongs to this box here.
+      data-page-search="true"
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setQuery(''); }}
     >
       <SearchInput

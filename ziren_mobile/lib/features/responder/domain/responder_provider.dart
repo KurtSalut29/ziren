@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../core/errors/failures.dart';
@@ -25,7 +25,7 @@ import 'responder_incident_model.dart';
 /// asking a second agency for help, and the responder's own panic button.
 /// All of them go through the offline queue, because the responder is the
 /// one person in this system guaranteed to lose signal.
-class ResponderProvider extends ChangeNotifier {
+class ResponderProvider extends ChangeNotifier with WidgetsBindingObserver {
   ResponderProvider({
     ResponderRepository? repository,
     ResponderActionQueue? actionQueue,
@@ -75,6 +75,10 @@ class ResponderProvider extends ChangeNotifier {
 
   String get availability => _availability;
   bool get isOnDuty => _availability == 'on_duty';
+
+  /// Bumped on every duty toggle, so a server read that started before the
+  /// tap cannot undo it when it lands.
+  int _dutyVersion = 0;
   bool get togglingAvailability => _togglingAvailability;
   String? get availabilityError => _availabilityError;
 
@@ -312,6 +316,7 @@ class ResponderProvider extends ChangeNotifier {
     try {
       await _repo.setAvailability(newValue);
       _availability = newValue;
+      _dutyVersion++;
       notifyListeners();
       return true;
     } on ServerFailure catch (e) {
@@ -333,6 +338,28 @@ class ResponderProvider extends ChangeNotifier {
     if (_availability != value) {
       _availability = value;
       notifyListeners();
+    }
+  }
+
+  /// Take the duty state the server holds, and start or stop position
+  /// reporting to match.
+  ///
+  /// Evaluator finding #2. Nothing ever read this back: every launch began as
+  /// off duty, so a responder who was on duty when the app was closed came
+  /// back with the switch saying "off", reported no position, and stayed on
+  /// the dispatcher's map as on duty at wherever they had last been. The
+  /// comment in the Home screen's initState promised the opposite.
+  ///
+  /// Ignored while a toggle is in flight (the tap is newer than the read) and
+  /// when the server could not say (null): a failed read must not flip anyone.
+  void _syncDutyFromServer(String? value) {
+    if (_togglingAvailability) return;
+    if (value != 'on_duty' && value != 'off_duty') return;
+    setAvailabilityLocal(value!);
+    if (isOnDuty) {
+      startLocationReporting();
+    } else {
+      stopLocationReporting();
     }
   }
 
@@ -441,8 +468,14 @@ class ResponderProvider extends ChangeNotifier {
     _dashboardError = null;
     notifyListeners();
 
+    // A tap on the duty switch while this was in flight is newer than
+    // whatever the server says now; see _syncDutyFromServer.
+    final dutyVersion = _dutyVersion;
     try {
       _dashboard = await _repo.getDashboard();
+      if (dutyVersion == _dutyVersion) {
+        _syncDutyFromServer(_dashboard?['availability'] as String?);
+      }
     } on NetworkFailure catch (e) {
       _dashboardError = e.message;
     } on ServerFailure catch (e) {
@@ -499,6 +532,8 @@ class ResponderProvider extends ChangeNotifier {
         await loadIncidentDetail(incidentId);
       }
 
+      // En route / arrived are exactly when the dispatcher looks at the map.
+      pingLocationNow();
       notifyListeners();
       return true;
     } on ServerFailure catch (e) {
@@ -800,6 +835,9 @@ class ResponderProvider extends ChangeNotifier {
       await loadIncidentDetail(incidentId);
     }
     await loadQueue();
+    // They have just taken a call: the dispatcher's map should show them now,
+    // not at the next tick.
+    pingLocationNow();
   }
 
   /// Load resolved/cancelled history.
@@ -849,7 +887,20 @@ class ResponderProvider extends ChangeNotifier {
   /// responder whose phone dies is worse than a stale dot.
   static const _locationInterval = Duration(minutes: 2);
 
+  /// While a call is in progress (dispatched, en route, on scene) the
+  /// dispatcher is watching this one person move, and the incident dialog
+  /// re-reads their position every half minute. Two minutes there meant a dot
+  /// that jumped a kilometre at a time.
+  static const _activeCallInterval = Duration(seconds: 30);
+
   Timer? _locationTimer;
+  StreamSubscription<ServiceStatus>? _gpsServiceSub;
+  DateTime? _lastPingAt;
+  bool _pinging = false;
+
+  bool get _hasActiveCall => _queue.any(
+    (i) => i.status == 'dispatched' || i.status == 'en_route' || i.status == 'arrived',
+  );
 
   /// True once a ping has actually landed. Distinct from "on duty": a
   /// responder can be on duty with location permission denied, and the profile
@@ -867,12 +918,44 @@ class ResponderProvider extends ChangeNotifier {
   void startLocationReporting() {
     if (_locationTimer != null) return;
     _pingLocation();
-    _locationTimer = Timer.periodic(_locationInterval, (_) => _pingLocation());
+    // Ticks at the faster rate and decides each time whether a ping is due,
+    // so the cadence follows the call state without restarting timers.
+    _locationTimer = Timer.periodic(_activeCallInterval, (_) {
+      final due = _hasActiveCall ? _activeCallInterval : _locationInterval;
+      final last = _lastPingAt;
+      if (last == null || DateTime.now().difference(last) >= due - const Duration(seconds: 2)) {
+        _pingLocation();
+      }
+    });
+    // Report at once on the two moments a responder expects to be seen:
+    // coming back to the app, and switching location on. Before, both waited
+    // for the next two-minute tick, so a dispatcher who refreshed right after
+    // saw nothing change and reasonably concluded it was broken.
+    WidgetsBinding.instance.addObserver(this);
+    _gpsServiceSub = Geolocator.getServiceStatusStream().listen((status) {
+      if (status == ServiceStatus.enabled) pingLocationNow();
+    }, onError: (_) {});
+  }
+
+  /// Report position now, outside the timer: after an accept or a status
+  /// change, and when the app comes back to the front. No-op off duty.
+  void pingLocationNow() {
+    if (_locationTimer == null) return;
+    _pingLocation();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) pingLocationNow();
   }
 
   void stopLocationReporting() {
     _locationTimer?.cancel();
     _locationTimer = null;
+    _gpsServiceSub?.cancel();
+    _gpsServiceSub = null;
+    WidgetsBinding.instance.removeObserver(this);
+    _lastPingAt = null;
     _locationReported = false;
     // An off-duty responder is not eligible for a nearby alert (the backend
     // returns on_duty: false, items: []), and signing out must not leave the
@@ -881,7 +964,8 @@ class ResponderProvider extends ChangeNotifier {
   }
 
   Future<void> _pingLocation() async {
-    if (!isOnDuty) return;
+    if (!isOnDuty || _pinging) return;
+    _pinging = true;
     try {
       // No permission REQUEST here. This runs on a timer, and a permission
       // dialog appearing unprompted while a responder is reading an incident
@@ -899,6 +983,7 @@ class ResponderProvider extends ChangeNotifier {
         ),
       );
       final ok = await _repo.updateLocation(pos.latitude, pos.longitude);
+      if (ok) _lastPingAt = DateTime.now();
       if (ok != _locationReported) {
         _locationReported = ok;
         notifyListeners();
@@ -912,12 +997,16 @@ class ResponderProvider extends ChangeNotifier {
     } catch (_) {
       // A failed fix is normal indoors and under cover. The next tick tries
       // again; nothing about it is worth telling a responder who is driving.
+    } finally {
+      _pinging = false;
     }
   }
 
   @override
   void dispose() {
     _locationTimer?.cancel();
+    _gpsServiceSub?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 }

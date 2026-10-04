@@ -21,6 +21,7 @@ import {
 } from '@/components/efferd/ui/alert-dialog';
 import { SeverityRationale } from '@/components/ui/severity-rationale';
 import { IncidentVoiceNote } from '@/components/incidents/incident-voice-note';
+import { IncidentAttachments } from '@/components/incidents/incident-attachments';
 import { IncidentChatModal } from '@/components/incidents/incident-chat-modal';
 import { ChatButtonBadge } from '@/components/incidents/chat-button-badge';
 import { useIncidentThread } from '@/lib/hooks/useIncidentThread';
@@ -228,6 +229,7 @@ export default function IncidentDetailPage({ params }: { params: Promise<{ id: s
             incidentId={incident.id}
             token={token}
           />
+          <IncidentAttachments incidentId={incident.id} token={token} />
 
           {reviewStatus === 'rejected' && incident.rejection_reason && (
             <div className="mt-4 flex items-start gap-2.5 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-3.5 py-3">

@@ -76,7 +76,23 @@ export function AuditLogTable({ entries }: { entries: AuditLogEntry[] }) {
                       <span className="ml-1.5 text-[11px] text-muted-foreground">({e.actor_role})</span>
                     )}
                   </td>
-                  <td className="px-4 py-2.5 text-foreground">{e.action.replace(/[._]/g, ' ')}</td>
+                  <td className="px-4 py-2.5 text-foreground">
+                    {e.action.replace(/[._]/g, ' ')}
+                    {/* The action and its record succeed or fail together
+                        (finding #6): a row that did not end in success says so. */}
+                    {e.outcome && e.outcome !== 'succeeded' && (
+                      <span
+                        className="ml-2 rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold uppercase"
+                        style={{
+                          color: 'var(--color-system-warning)',
+                          backgroundColor: 'color-mix(in srgb, var(--color-system-warning) 12%, transparent)',
+                        }}
+                        title={e.error ?? (e.outcome === 'pending' ? 'Started but never confirmed' : undefined)}
+                      >
+                        {e.outcome === 'failed' ? 'Did not go through' : 'Not confirmed'}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-2.5 text-foreground">
                     {e.target_label ?? e.target_id ?? e.target_type}
                     <span className="ml-1.5 text-[11px] text-muted-foreground">({e.target_type})</span>

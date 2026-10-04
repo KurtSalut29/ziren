@@ -64,7 +64,7 @@ Routes:
   GET  /responders                  — Available on_duty responders for an agency
 """
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from typing import Optional
 
 from pydantic import BaseModel
@@ -93,6 +93,10 @@ class AssignRequest(BaseModel):
     suggested_severity: str | None = None
     override_reason:    str | None = None
     notes:              str | None = None
+    # The dispatcher's own statement that they read the severity and the rule
+    # behind it before sending a crew (evaluator finding #4). The severity is a
+    # recommendation; this is where a person takes the decision.
+    severity_confirmed: bool = False
 
 
 class OverrideRequest(BaseModel):
@@ -300,6 +304,26 @@ def get_incident_media(
     )
 
 
+@router.get("/queue/{incident_id}/responder-position")
+def get_responder_position(
+    incident_id: str,
+    current_user: dict = _admin_read,
+):
+    """
+    Where the responder assigned to this incident last reported being.
+
+    {responder_id, full_name, lat, lng, updated_at}, with lat/lng null if they
+    have not reported a position yet, or null overall when nobody is assigned.
+    Small on purpose: the incident dialog asks for it every half minute while
+    a crew is on the way, and re-reading the whole incident for one point
+    would be the expensive way to move a dot.
+    """
+    return dispatch_service.get_responder_position(
+        incident_id=incident_id,
+        dispatcher=current_user,
+    )
+
+
 @router.get("/queue/{incident_id}/feedback")
 def get_incident_feedback(
     incident_id: str,
@@ -376,6 +400,11 @@ def assign_incident(
 
     Every override (chosen != suggested) must include override_reason.
     """
+    if not body.severity_confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Confirm that you have checked the severity and the reason for it before dispatching.",
+        )
     return dispatch_service.assign_responder(
         incident_id=incident_id,
         responder_id=body.responder_id,
@@ -508,6 +537,9 @@ class NarrativeReportRequest(BaseModel):
     # False saves a draft. True marks it finalized without locking it —
     # see incident_narrative_service.save_narrative_report's doc comment.
     finalize: bool = False
+    # Required when changing a report that is already finalized: why. The
+    # previous version is kept beside it (evaluator finding #8).
+    amendment_reason: Optional[str] = None
 
 
 @router.get("/queue/{incident_id}/narrative-report")
@@ -548,7 +580,21 @@ def save_narrative_report(
         reference_no=body.reference_no,
         finalize=body.finalize,
         details=body.details,
+        amendment_reason=body.amendment_reason,
     )
+
+
+@router.get("/queue/{incident_id}/narrative-report/versions")
+def list_narrative_report_versions(
+    incident_id: str,
+    current_user: dict = _admin_read,
+):
+    """
+    Earlier versions of a finalized Narrative Report, newest first: each is the
+    report as it stood before a change, with who changed it, which fields and
+    why. Empty when it was never changed after finalizing.
+    """
+    return incident_narrative_service.list_versions(incident_id=incident_id, actor=current_user)
 
 
 @router.get("/narrative-reports")

@@ -71,6 +71,42 @@ export class ApiError extends Error {
  * instead of starting its own, so there is only ever one refresh_token
  * spent per expiry, however many requests discover the expiry at once.
  */
+/**
+ * What to tell a person when a request never got an answer.
+ *
+ * Evaluator findings #10 / #31 (2026-10-05): offline, the dashboard already
+ * failed safely and kept what had been typed, but the message it showed was
+ * written for a developer — the backend URL, CORS_ORIGINS_RAW and the
+ * browser's "Failed to fetch". A dispatcher cannot act on any of that. The
+ * technical detail still goes to the console, where whoever debugs will look.
+ */
+export function networkErrorMessage(path: string, cause: unknown): string {
+  const detail = cause instanceof Error ? cause.message : String(cause);
+  console.warn(`[api] ${API_BASE_URL}${path} unreachable: ${detail}`);
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return 'No internet connection. Nothing was saved. Reconnect, then try again — what you entered is still here.';
+  }
+  return 'Could not reach the Ziren server. Check your connection and try again in a moment.';
+}
+
+/**
+ * The message for an HTTP error. A server that answered with a reason (a
+ * FastAPI `detail`) is quoted; one that answered with nothing usable — the
+ * proxy's 500/502/504 page when the backend is down — gets a plain sentence
+ * instead of "HTTP 500".
+ */
+export function httpErrorMessage(status: number, body: unknown): string {
+  const detail = (body as { detail?: unknown } | null)?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (status === 502 || status === 503 || status === 504) {
+    return 'The Ziren server is not responding right now. Try again in a moment.';
+  }
+  if (status >= 500) return 'Something went wrong on the server. Try again in a moment.';
+  if (status === 404) return 'That record could not be found. It may have been removed.';
+  if (status === 403) return 'Your account is not allowed to do that.';
+  return `The request could not be completed (error ${status}).`;
+}
+
 let refreshPromise: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -133,17 +169,9 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
     // genuinely different situation from a 4xx/5xx, and the distinction is
     // worth keeping — an HTTP error means the server answered.
     //
-    // The bare `catch {}` that used to be here reported "Is the backend
-    // running?" for every cause, including a CORS preflight rejection against
-    // a perfectly healthy server. That sends whoever is debugging to restart a
-    // process that was never the problem.
-    const detail = cause instanceof Error ? cause.message : String(cause);
-    throw new ApiError(
-      `Could not reach ${API_BASE_URL}${path}. ` +
-        'Check the backend is running and that this origin is allowed in ' +
-        `CORS_ORIGINS_RAW. (${detail})`,
-      0,
-    );
+    // Status 0 marks it as "no answer" for callers that branch on it; the
+    // words are for the person on the screen (see networkErrorMessage).
+    throw new ApiError(networkErrorMessage(path, cause), 0);
   }
 
   if (!response.ok) {
@@ -158,8 +186,8 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
         return request<T>(path, { ...options, token: newToken }, true);
       }
     }
-    const error = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
-    throw new ApiError(error.detail ?? `HTTP ${response.status}`, response.status);
+    const error = await response.json().catch(() => null);
+    throw new ApiError(httpErrorMessage(response.status, error), response.status);
   }
 
   return response.json() as Promise<T>;

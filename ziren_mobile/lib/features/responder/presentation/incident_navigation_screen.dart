@@ -234,10 +234,10 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
   int? get _etaMinutes {
     final metres = _distanceMetres;
     if (metres == null) return null;
-    return ((metres / 1000) / Geodesic.assumedSpeedKmh * 60).ceil().clamp(
-      0,
-      600,
-    );
+    // The shared model (rounded up, never 0, capped at 600), not a local copy:
+    // this screen used ceil() from 0, so it quoted 12 min for a 6 km trip the
+    // backend and dashboard call 13, and "0 min" at the gate (finding #24).
+    return Geodesic.etaMinutes(metres / 1000);
   }
 
   /// Bearing from the crew to the scene, in compass degrees.

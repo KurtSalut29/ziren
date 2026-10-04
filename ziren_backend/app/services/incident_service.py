@@ -32,23 +32,25 @@ from app.models.incident import (
 
 log = structlog.get_logger()
 
-# ── SOS anti-abuse constants ──────────────────────────────────────────────────
-# Server-side cooldown: minimum minutes between SOS submissions per account.
-SOS_COOLDOWN_MINUTES = 30
-
-# Warning threshold: sos_warning_count >= this value flags the report
-# for the dispatcher as "account has prior false SOS history".
-SOS_TRUST_FLAG_THRESHOLD = 1
+# Split by responsibility (evaluator finding #23): these live in their own
+# modules now and are re-exported here, so every existing import keeps working.
+from app.services.incident_rows import (  # noqa: E402,F401
+    _agency_type_of, _coords_of, _distance_km, _lat_of, _lng_of, _parse_dt, _parse_point,
+    _row_to_response,
+)
+from app.services.incident_routing import (  # noqa: E402,F401
+    REPORTER_LOCATION_COLUMNS, _extract_station_tuple, _is_missing_reporter_column,
+    _reporter_location, _resolve_nearest_station, check_coverage,
+)
+from app.services.incident_standing import (  # noqa: E402,F401
+    SOS_COOLDOWN_MINUTES, SOS_SUSPEND_THRESHOLD, SOS_SUSPENSION_DAYS, SOS_TRUST_FLAG_THRESHOLD,
+    _refuse_if_suspended, _update_sos_timestamp, ensure_reporting_allowed,
+)
 
 # How long a withdrawn report stays visible in Trash before it is purged for
 # good. Matches the confirmation copy shown at withdraw time on mobile — if
 # this changes, that copy has to change with it.
 TRASH_RETENTION_DAYS = 30
-
-# Suspension threshold: sos_warning_count >= this triggers automatic
-# SOS access suspension (sos_suspended_until set to +30 days).
-SOS_SUSPEND_THRESHOLD = 3
-SOS_SUSPENSION_DAYS = 30
 
 # Which agency an SOS category should prefer when picking a station.
 # Mirrors NearestStationResolver.agencyFor in the mobile app's
@@ -255,54 +257,6 @@ def submit_sos(
     )
 
 
-def _refuse_if_suspended(suspended_until) -> None:
-    """Raise 403 when this date is a suspension still in force.
-
-    Only a real timestamp string counts. Anything else - None, or whatever a
-    test double hands back - is not a suspension, because the cost of getting
-    this wrong in the other direction is refusing somebody's emergency report.
-    """
-    if not isinstance(suspended_until, str) or not suspended_until:
-        return
-    try:
-        until = _parse_dt(suspended_until)
-    except (ValueError, TypeError):
-        return
-    if until > datetime.now(timezone.utc):
-        from app.services.resident_account_service import suspension_message
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=suspension_message(until),
-        )
-
-
-def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
-    """Refuse a report from a resident whose account is suspended.
-
-    Suspension used to stop only the SOS button, so an account suspended for
-    false reports could go on sending ordinary ones. It now stops every report.
-
-    FAILS OPEN. If the lookup itself fails - the database is slow, the row is
-    missing - the report goes through. A suspension check that can block a real
-    emergency because of an outage is worse than one a suspended account slips
-    past once.
-    """
-    try:
-        result = (
-            db.table("users")
-            .select("sos_suspended_until")
-            .eq("id", reporter_id)
-            .maybe_single()
-            .execute()
-        )
-        row = None if result is None else result.data
-    except Exception:
-        log.warning("incident.suspension_check_failed", reporter_id=reporter_id, exc_info=True)
-        return
-    if isinstance(row, dict):
-        _refuse_if_suspended(row.get("sos_suspended_until"))
-
-
 def record_false_sos(reporter_id: str, acting_dispatcher_id: str) -> dict:
     """
     Called by Agency Admin when marking an SOS report as a confirmed false alarm.
@@ -354,61 +308,6 @@ def record_false_sos(reporter_id: str, acting_dispatcher_id: str) -> dict:
         "reporter_id":     reporter_id,
         "warning_count":   new_count,
         "suspended_until": update_payload.get("sos_suspended_until"),
-    }
-
-
-def check_coverage(
-    station_id: str,
-    lat: float,
-    lng: float,
-    db: "Client",
-) -> dict:
-    """
-    PostGIS check: is (lat, lng) inside the coverage_area polygon of
-    the agency that owns station_id?
-
-    Returns:
-        {
-          "within_coverage": bool,
-          "station_name": str,
-          "agency_type": str,
-          "municipality": str,
-          "distance_km": float | None  — approx distance from station point
-        }
-
-    Used by the mobile app to show a mismatch warning on the report form.
-    Never blocks submission — informational only.
-    """
-    try:
-        # Single query: join station → agency, check ST_Within + get ST_Distance
-        result = db.rpc(
-            "check_station_coverage",
-            {
-                "p_station_id": station_id,
-                "p_lat":        lat,
-                "p_lng":        lng,
-            },
-        ).execute()
-
-        if result.data:
-            row = result.data[0]
-            return {
-                "within_coverage": bool(row.get("within_coverage", False)),
-                "station_name":    row.get("station_name", ""),
-                "agency_type":     row.get("agency_type", ""),
-                "municipality":    row.get("municipality", ""),
-                "distance_km":     row.get("distance_km"),
-            }
-    except Exception as e:
-        log.warning("coverage_check.failed", station_id=station_id, error=str(e))
-
-    # On any error, return within_coverage=True (fail-open — don't block reporter)
-    return {
-        "within_coverage": True,
-        "station_name":    "",
-        "agency_type":     "",
-        "municipality":    "",
-        "distance_km":     None,
     }
 
 
@@ -714,31 +613,6 @@ def confirm_transcript(
 # Internal helpers
 # =============================================================================
 
-# Columns added by migration 042 — where the REPORTER stood when the incident
-# is somewhere else. See IncidentSubmitRequest.reported_from_elsewhere.
-REPORTER_LOCATION_COLUMNS = ("reported_from_elsewhere", "reporter_location", "reporter_address")
-
-
-def _reporter_location(request: IncidentSubmitRequest) -> dict | None:
-    """The reporter's own position, as incident columns — or None when the
-    reporter is at the incident (the usual case), so nothing extra is written."""
-    if not request.reported_from_elsewhere:
-        return None
-    cols: dict = {"reported_from_elsewhere": True}
-    if request.reporter_latitude is not None and request.reporter_longitude is not None:
-        cols["reporter_location"] = f"POINT({request.reporter_longitude} {request.reporter_latitude})"
-    if request.reporter_address:
-        cols["reporter_address"] = request.reporter_address
-    return cols
-
-
-def _is_missing_reporter_column(exc: Exception) -> bool:
-    text = str(exc).lower()
-    return any(c in text for c in REPORTER_LOCATION_COLUMNS) and (
-        "column" in text or "pgrst204" in text or "42703" in text or "schema cache" in text
-    )
-
-
 def _create_incident_row(
     *,
     db: Client,
@@ -908,308 +782,3 @@ def _create_incident_row(
     return row
 
 
-def _resolve_nearest_station(
-    db: Client,
-    latitude: float | None,
-    longitude: float | None,
-    agency_type_hint: str | None = None,
-) -> tuple[str, str, str, str, str]:
-    """
-    Returns (station_id, agency_id, station_name, agency_type, municipality)
-    for the station nearest to the given coordinates.
-
-    If coordinates are unavailable, falls back to the Naval MDRRMO station
-    (closest thing to a provincial-level catch-all).
-
-    agency_type_hint (e.g. "BFP"/"PNP"/"MDRRMO") narrows the candidate pool to
-    that agency before picking nearest, when at least one such station has a
-    known location. Without it — the SOS default before this parameter
-    existed — the nearest station of ANY agency wins, which is how a medical
-    SOS could end up routed to the nearest fire station purely because it was
-    geographically closer than the nearest MDRRMO post. A hint that matches no
-    station falls back to the unfiltered pool rather than failing: a report at
-    the wrong desk still reaches a dispatcher, who can reassign it.
-
-    Phase 9 will replace this with a proper PostGIS coverage-area query
-    (ST_Within / ST_DWithin against agencies.coverage_area).
-    For now: fetches all active stations with known coordinates and picks the
-    closest by geodesic distance in Python - Vincenty's formula on the WGS-84
-    ellipsoid (app.core.geo), not the spherical Haversine this used to be, which
-    is up to half a percent long going north-south at Biliran's latitude.
-    """
-    # NOTE the `agencies!inner(...)` embed. PostgREST does NOT filter parent
-    # rows by a condition on an embedded resource unless the embed is an INNER
-    # join — with a plain `agencies(...)` embed it returns every active station
-    # and merely sets `agencies` to null on the ones that don't match. Combined
-    # with .limit(1) that silently returned an arbitrary station (in practice
-    # "BFP Naval Main Station") with agencies=None, so a GPS-less SOS was
-    # routed to the wrong agency and reported blank agency metadata back to
-    # the reporter. Do not remove the `!inner`.
-    FALLBACK_STATION_QUERY = (
-        db.table("stations")
-        .select("id, agency_id, name, location, agencies!inner(agency_type, municipality, name)")
-        .eq("is_active", True)
-        .eq("agencies.municipality", "Naval")
-        .eq("agencies.agency_type", "MDRRMO")
-        .limit(1)
-    )
-
-    if latitude is None or longitude is None:
-        # No GPS — use Naval MDRRMO as default
-        result = FALLBACK_STATION_QUERY.execute()
-        if result.data:
-            return _extract_station_tuple(result.data[0])
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not resolve a station. No location provided and fallback unavailable.",
-        )
-
-    # Fetch all active stations (PostGIS lookup will replace this in Phase 9)
-    all_stations = (
-        db.table("stations")
-        .select("id, agency_id, name, location, agencies(agency_type, municipality, name)")
-        .eq("is_active", True)
-        .execute()
-    )
-
-    if not all_stations.data:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="No stations available. Please try again.",
-        )
-
-    # Prefer stations of the hinted agency type, same rule the mobile app's
-    # NearestStationResolver.agencyFor already applies client-side for the
-    # category-tile flow — a hint that matches nothing falls through to the
-    # full pool rather than failing (see the docstring above).
-    candidate_pool = all_stations.data
-    if agency_type_hint:
-        scoped = [
-            row for row in candidate_pool
-            if (row.get("agencies") or {}).get("agency_type") == agency_type_hint
-        ]
-        if scoped:
-            candidate_pool = scoped
-
-    # Find nearest by geodesic distance
-    best = None
-    best_dist = float("inf")
-    for row in candidate_pool:
-        loc = row.get("location")
-        if not loc:
-            continue
-        # Supabase returns PostGIS POINT as a WKT or GeoJSON string
-        s_lat, s_lon = _parse_point(loc)
-        if s_lat is None:
-            continue
-        dist = _distance_km(latitude, longitude, s_lat, s_lon)
-        if dist < best_dist:
-            best_dist = dist
-            best = row
-
-    if best is None:
-        # All stations have null location — use Naval MDRRMO fallback
-        result = FALLBACK_STATION_QUERY.execute()
-        if result.data:
-            return _extract_station_tuple(result.data[0])
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not resolve a nearby station.",
-        )
-
-    return _extract_station_tuple(best)
-
-
-def _extract_station_tuple(row: dict) -> tuple[str, str, str, str, str]:
-    """
-    Extract (station_id, agency_id, station_name, agency_type, municipality).
-
-    A missing `agencies` embed is treated as a hard error rather than being
-    coerced to empty strings. The previous `row.get("agencies") or {}` silently
-    turned a mis-built query into agency_type="" / municipality="", which is
-    how a PostgREST embedded-filter bug went unnoticed: the SOS path kept
-    returning 201 while routing the report to the wrong agency and telling the
-    reporter their station had no agency name. Failing loudly here means a
-    query regression surfaces immediately instead of corrupting dispatch data.
-    """
-    agency = row.get("agencies")
-    if not agency:
-        log.error(
-            "station.agency_embed_missing",
-            station_id=row.get("id"),
-            station_name=row.get("name"),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not determine the responding agency for this report. Please try again.",
-        )
-    return (
-        row["id"],
-        row["agency_id"],
-        row["name"],
-        agency.get("agency_type", ""),
-        agency.get("municipality", ""),
-    )
-
-
-def _update_sos_timestamp(db: Client, reporter_id: str) -> None:
-    """Record the time of this SOS submission for cooldown enforcement."""
-    try:
-        db.table("users") \
-          .update({"sos_last_submitted_at": datetime.now(timezone.utc).isoformat()}) \
-          .eq("id", reporter_id) \
-          .execute()
-    except Exception as e:
-        # Non-fatal — cooldown enforcement degrades gracefully if this fails
-        log.warning("sos.timestamp_update_failed", reporter_id=reporter_id, error=str(e))
-
-
-def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Shortest distance in kilometres between two points on the WGS-84 ellipsoid.
-
-    The one distance function the backend's routing, ETA and hazard lookups share
-    (responder_ops_service imports it), so two screens can never disagree about
-    the same trip. It used to be the spherical Haversine, and the name
-    `_haversine` said so; see app.core.geo for why it is not any more.
-    """
-    return geo.geodesic_km(lat1, lon1, lat2, lon2)
-
-
-def _parse_point(location) -> tuple[float | None, float | None]:
-    """
-    Parse a PostGIS POINT value returned by Supabase.
-    Supabase may return WKT ('POINT(lon lat)') or a GeoJSON dict.
-    Returns (latitude, longitude) or (None, None) on failure.
-    """
-    try:
-        if isinstance(location, dict):
-            # GeoJSON: {"type": "Point", "coordinates": [lon, lat]}
-            coords = location.get("coordinates", [])
-            if len(coords) >= 2:
-                return float(coords[1]), float(coords[0])
-        if isinstance(location, str) and location.upper().startswith("POINT"):
-            # WKT: POINT(lon lat)
-            inner = location.strip()[6:-1]   # strip 'POINT(' and ')'
-            parts = inner.split()
-            if len(parts) == 2:
-                return float(parts[1]), float(parts[0])
-    except Exception:
-        pass
-    return None, None
-
-
-def _parse_dt(value: str | None) -> datetime:
-    """Parse an ISO8601 timestamp string into a timezone-aware datetime."""
-    if not value:
-        return datetime.min.replace(tzinfo=timezone.utc)
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt
-
-
-def _row_to_response(row: dict) -> IncidentResponse:
-    return IncidentResponse(
-        id=row["id"],
-        reporter_id=row["reporter_id"],
-        station_id=row.get("station_id"),
-        report_text=row["report_text"],
-        location_address=row.get("location_address"),
-        # WAS HARDCODED None, BOTH OF THEM.
-        #
-        # Every incident this endpoint has ever returned came back with no
-        # coordinates, and the map filters its pins on exactly that:
-        # MapProvider.plottableIncidents keeps only incidents where
-        # latitude != null. So the incident layer has been empty since the
-        # day it was written — on 29 real incidents in this database, zero
-        # had a latitude — and an empty layer looks identical to a quiet
-        # province. Nothing errored, nothing logged, and there was nothing
-        # on the map to tap.
-        latitude=_lat_of(row),
-        longitude=_lng_of(row),
-        status=row["status"],
-        severity=row.get("severity"),
-        suggested_agency_id=row.get("suggested_agency_id"),
-        assigned_agency_id=row.get("assigned_agency_id"),
-        signals=row.get("signals"),
-        signals_confidence=row.get("signals_confidence"),
-        submitted_via=row.get("submitted_via", "internet"),
-        created_at=row["created_at"],
-        updated_at=row["updated_at"],
-        dispatched_at=row.get("dispatched_at"),
-        resolved_at=row.get("resolved_at"),
-        withdrawn_at=row.get("withdrawn_at"),
-        review_status=row.get("review_status"),
-        reviewed_at=row.get("reviewed_at"),
-        rejection_reason=row.get("rejection_reason"),
-        clarification_note=row.get("clarification_note"),
-        clarification_requested_at=row.get("clarification_requested_at"),
-        incident_category=row.get("incident_category"),
-        wizard_answers=row.get("wizard_answers"),
-        overlap_agencies=row.get("overlap_agencies"),
-        landmark_note=row.get("landmark_note"),
-        victim_relationship=row.get("victim_relationship"),
-        nlp_review_needed=row.get("nlp_review_needed", False),
-        # Only meaningful while a crew is actually en route. The column keeps
-        # its last value after they arrive, and showing "about 4 minutes" to
-        # someone the fire truck is already standing in front of would be
-        # worse than showing nothing.
-        eta_minutes=(
-            row.get("eta_minutes") if row.get("status") == "en_route" else None
-        ),
-        eta_updated_at=(
-            row.get("eta_updated_at") if row.get("status") == "en_route" else None
-        ),
-        responding_agency=_agency_type_of(row),
-    )
-
-
-def _coords_of(row: dict) -> tuple[float | None, float | None]:
-    """(lat, lng) from the PostGIS `location` column.
-
-    PostgREST hands geometry back as a GeoJSON object, and GeoJSON orders its
-    pair [LONGITUDE, LATITUDE] — the opposite of how every screen in this
-    product names them. Getting that backwards does not error; it puts the
-    incident in the sea off Somalia, which is at least obvious. Silently
-    dropping the column, which is what used to happen here, is not.
-
-    Falls back to the WKT parser for the shape PostgREST does not normalise.
-    """
-    geo = row.get("location")
-    if isinstance(geo, dict):
-        pair = geo.get("coordinates")
-        if isinstance(pair, (list, tuple)) and len(pair) >= 2:
-            try:
-                return float(pair[1]), float(pair[0])
-            except (TypeError, ValueError):
-                return None, None
-        return None, None
-    if geo:
-        return _parse_point(geo)
-    return None, None
-
-
-def _lat_of(row: dict) -> float | None:
-    return _coords_of(row)[0]
-
-
-def _lng_of(row: dict) -> float | None:
-    return _coords_of(row)[1]
-
-
-def _agency_type_of(row: dict) -> str | None:
-    """The agency attending, as a plain string for the reporter.
-
-    The reporter is told BFP / PNP / MDRRMO and nothing more. Not the
-    responder's name, not their number: a resident does not need a crew
-    member's identity to be reassured that somebody is coming, and handing it
-    out invites direct contact that routes around the dispatcher.
-    """
-    embed = row.get("agencies")
-    if isinstance(embed, dict):
-        return embed.get("agency_type")
-    if isinstance(embed, list) and embed:
-        first = embed[0]
-        if isinstance(first, dict):
-            return first.get("agency_type")
-    return None

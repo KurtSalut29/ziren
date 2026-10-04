@@ -49,8 +49,18 @@ class AnnouncementModel {
   /// The resident is asked "are you safe?".
   final bool asksResponse;
 
-  /// Which provincial office issued it: BFP, PNP or MDRRMO.
+  /// Which provincial office issued it: BFP, PNP or MDRRMO (its agency type).
   final String? issuer;
+
+  /// What that office is called (evaluator finding #35): the provincial
+  /// disaster office is the PDRRMO, not "MDRRMO", which is the municipal one.
+  String? get issuerOffice => switch (issuer?.toUpperCase()) {
+    null => null,
+    'MDRRMO' => 'PDRRMO',
+    'BFP' => 'BFP Provincial Office',
+    'PNP' => 'PNP Provincial Office',
+    final other => other,
+  };
 
   final bool isActive;
 

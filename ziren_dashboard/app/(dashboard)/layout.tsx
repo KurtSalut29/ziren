@@ -18,6 +18,7 @@ import { AssistAlerts } from '@/components/assist/assist-alerts';
 import { ZirenHelp } from '@/components/help/ziren-help';
 import { DemoProvider } from '@/components/help/demo-tour';
 import { getRouteMeta } from '@/lib/utils/route-meta';
+import { provincialAdminLabel } from '@/lib/format/offices';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { token, email, isAdmin, isAgencyAdmin, isProvincialAdmin, agencyType, hydrated } = useAuth();
@@ -136,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     .join('') || '?';
 
   const roleLabel = isProvincialAdmin
-    ? `${agencyType} Provincial Admin`
+    ? provincialAdminLabel(agencyType)
     : agencyType ? `${agencyType} Agency Admin` : 'Agency Admin';
 
   const routeMeta = getRouteMeta(pathname ?? '', isProvincialAdmin, agencyType);

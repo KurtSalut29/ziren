@@ -25,6 +25,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.audit_helpers import patch_audit_action
 
 client = TestClient(app)
 
@@ -85,7 +86,7 @@ def test_create_station_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.stations.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.post(
             "/stations/",
             json={"agency_id": AGENCY_UUID, "name": "BFP Naval Sub-Station"},
@@ -97,7 +98,10 @@ def test_create_station_writes_audit_log():
     kwargs = audit_record.call_args.kwargs
     assert kwargs["action"] == "station.created"
     assert kwargs["target_type"] == "station"
-    assert kwargs["target_id"] == STATION_UUID
+    # The id is chosen before the insert so the audit row (written first) can
+    # name it, and the station is inserted with that same id.
+    inserted = db.table.return_value.insert.call_args.args[0]
+    assert kwargs["target_id"] == inserted["id"]
 
 
 def test_deactivate_station_writes_audit_log():
@@ -115,7 +119,7 @@ def test_deactivate_station_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.stations.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(f"/stations/{STATION_UUID}/deactivate", headers={"Authorization": "Bearer token"})
 
     assert resp.status_code == 200, resp.text
@@ -139,7 +143,7 @@ def test_activate_station_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.stations.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(f"/stations/{STATION_UUID}/activate", headers={"Authorization": "Bearer token"})
 
     assert resp.status_code == 200, resp.text
@@ -158,7 +162,7 @@ def test_activate_already_active_station_is_rejected_and_does_not_audit():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.stations.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(f"/stations/{STATION_UUID}/activate", headers={"Authorization": "Bearer token"})
 
     assert resp.status_code == 422
@@ -189,7 +193,7 @@ def test_create_agency_admin_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.users.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.post(
             "/users/provincial/agency-admins",
             json={"full_name": "New Admin", "email": "new.admin@bfp.gov.ph", "agency_id": AGENCY_UUID},
@@ -199,7 +203,9 @@ def test_create_agency_admin_writes_audit_log():
     assert resp.status_code == 201, resp.text
     kwargs = audit_record.call_args.kwargs
     assert kwargs["action"] == "agency_admin.created"
-    assert kwargs["target_id"] == str(NEW_USER_UUID)
+    # Written before the invite, so the new account's id (which only exists
+    # once Supabase creates it) is filled into the entry afterwards.
+    assert audit_record.entries[0].new["user_id"] == str(NEW_USER_UUID)
 
 
 @pytest.mark.parametrize("is_active,expected_action", [(False, "account.deactivated"), (True, "account.reactivated")])
@@ -215,7 +221,7 @@ def test_update_agency_admin_active_toggle_writes_audit_log(is_active, expected_
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.users.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(
             f"/users/provincial/agency-admins/{TARGET_USER_UUID}",
             json={"is_active": is_active},
@@ -245,7 +251,7 @@ def test_update_agency_admin_reassignment_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.users.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(
             f"/users/provincial/agency-admins/{TARGET_USER_UUID}",
             json={"agency_id": new_agency},
@@ -290,7 +296,7 @@ def test_rubric_activate_writes_general_audit_log_too():
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID)), \
          patch("app.routers.rubric.get_supabase", return_value=MagicMock()), \
          patch("app.routers.rubric.rubric_service.activate_config", return_value=fake_config), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.post(
             f"/rubric/BFP/configs/{config_id}/activate",
             json={"reason": "Quarterly review"},
@@ -301,4 +307,5 @@ def test_rubric_activate_writes_general_audit_log_too():
     kwargs = audit_record.call_args.kwargs
     assert kwargs["action"] == "rubric.activated"
     assert kwargs["target_type"] == "rubric_config"
-    assert kwargs["new"] == {"version": "1.3", "agency_type": "BFP"}
+    # The version is known once the activation has run, so it is filled in.
+    assert audit_record.entries[0].new == {"version": "1.3", "agency_type": "BFP"}

@@ -39,7 +39,7 @@ class AgencyContactRepository {
           .from('agencies')
           .select('agency_type, name, municipality, contact_number')
           .not('contact_number', 'is', null)
-          .order('agency_type');
+          .order('agency_type', ascending: true);
 
       const order = {'BFP': 0, 'PNP': 1, 'MDRRMO': 2};
       final contacts =

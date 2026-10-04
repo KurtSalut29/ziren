@@ -454,7 +454,7 @@ class _AfterActionSheetState extends State<AfterActionSheet> {
                           Text(
                             t.respCloseCasualties,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -537,6 +537,11 @@ class _AfterActionSheetState extends State<AfterActionSheet> {
 }
 
 /// A count that starts at "not recorded" rather than at zero.
+///
+/// Every row has the same height and the same fixed-width control column on
+/// the right, whether it shows "Count" or the minus / number / plus / clear
+/// controls (evaluator finding #36: the rows used to change width with their
+/// state, so the labels and numbers in "Number of people" did not line up).
 class _Counter extends StatelessWidget {
   const _Counter({
     required this.label,
@@ -550,55 +555,90 @@ class _Counter extends StatelessWidget {
   final Color color;
   final ValueChanged<int?> onChanged;
 
+  /// Room for minus + number + plus + clear; "Count" sits right-aligned in it.
+  static const double controlsWidth = 168;
+  static const double rowHeight = 48;
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final recorded = value != null;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: ZirenTokens.space8),
+    const compact = BoxConstraints.tightFor(width: 40, height: 40);
+    // Without shrinkWrap each button pads itself to a 48 px tap target and the
+    // four of them overflow the column they are meant to fill.
+    final tight = IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap);
+    return SizedBox(
+      height: rowHeight,
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ),
-          if (!recorded)
-            OutlinedButton(
-              onPressed: () => onChanged(0),
-              child: Text(t.respCount),
-            )
-          else ...[
-            IconButton(
-              onPressed: value! > 0 ? () => onChanged(value! - 1) : null,
-              icon: const Icon(LucideIcons.circle_minus),
-              color: color,
-            ),
-            SizedBox(
-              width: 36,
-              child: Text(
-                '$value',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ZirenTokens.textPrimary,
               ),
             ),
-            IconButton(
-              onPressed: () => onChanged(value! + 1),
-              icon: const Icon(LucideIcons.circle_plus),
-              color: color,
+          ),
+          SizedBox(
+            width: controlsWidth,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child:
+                  !recorded
+                      ? OutlinedButton(
+                        onPressed: () => onChanged(0),
+                        child: Text(t.respCount),
+                      )
+                      : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            constraints: compact,
+                            padding: EdgeInsets.zero,
+                            style: tight,
+                            onPressed: value! > 0 ? () => onChanged(value! - 1) : null,
+                            icon: const Icon(LucideIcons.circle_minus),
+                            color: color,
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              '$value',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                                color: color,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            constraints: compact,
+                            padding: EdgeInsets.zero,
+                            style: tight,
+                            onPressed: () => onChanged(value! + 1),
+                            icon: const Icon(LucideIcons.circle_plus),
+                            color: color,
+                          ),
+                          IconButton(
+                            constraints: compact,
+                            padding: EdgeInsets.zero,
+                            style: tight,
+                            tooltip: t.respNotCounted,
+                            onPressed: () => onChanged(null),
+                            icon: const Icon(LucideIcons.delete, size: 18),
+                            color: ZirenTokens.textMuted,
+                          ),
+                        ],
+                      ),
             ),
-            IconButton(
-              tooltip: t.respNotCounted,
-              onPressed: () => onChanged(null),
-              icon: const Icon(LucideIcons.delete, size: 18),
-              color: ZirenTokens.textMuted,
-            ),
-          ],
+          ),
         ],
       ),
     );

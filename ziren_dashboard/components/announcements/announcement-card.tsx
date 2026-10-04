@@ -30,6 +30,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/efferd/ui/dropdown-menu';
 import { factChips, kindOf, mayEnd, placeLine, TARGET_LABEL } from './kinds';
+import { provincialOffice } from '@/lib/format/offices';
 
 export type CardState = 'active' | 'ended' | 'expired' | 'inactive';
 
@@ -140,7 +141,7 @@ export function AnnouncementCard({
           </div>
           <p className="mt-0.5 text-[12px] text-[var(--color-text-secondary)]">
             <span title={formatDateTime(a.created_at)}>{relativeTime(a.created_at, now, { absoluteAfterDays: 6 })}</span>
-            {a.issuer_agency_type ? ` · ${a.issuer_agency_type} provincial office` : ''}
+            {a.issuer_agency_type ? ` · ${provincialOffice(a.issuer_agency_type)}` : ''}
           </p>
         </div>
         {(canClear || (canManage && live)) && (

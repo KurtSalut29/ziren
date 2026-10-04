@@ -43,6 +43,12 @@ _admin_only = Depends(require_role("agency_admin", "provincial_admin"))
 _ACTIVE_STATUSES   = ["received", "processing", "dispatched", "en_route", "arrived"]
 _HISTORY_STATUSES  = ["resolved", "cancelled"]
 
+#: Most incident pins one response carries (evaluator finding #17). The
+#: operational view holds only open reports and stays far below it; a year of
+#: history across a whole agency type is what could not grow without bound.
+#: Newest first, and the response says when it was cut.
+MAP_INCIDENT_MAX = 1500
+
 
 @router.get("/data")
 def get_map_data(
@@ -74,7 +80,7 @@ def get_map_data(
 
     responders:
       id, full_name, badge_id, availability, agency_type,
-      lat, lng (null if no location set yet)
+      lat, lng (null if no location set yet), location_updated_at
 
     Agency Admin receives data scoped to their own agency_id, and `view` is
     ignored for them — they always get the operational (active-incidents) map.
@@ -108,6 +114,7 @@ def get_map_data(
 
     # ── 1. Incidents ──────────────────────────────────────────
     incidents = []
+    incidents_total = 0
     if effective_view == "network":
         # The Ziren Network Map is about where the province's registered
         # entities ARE, not what is currently happening — no incidents at all.
@@ -118,7 +125,8 @@ def get_map_data(
             .select(
                 "id, location, severity, status, sos_flagged, created_at, resolved_at, "
                 "report_text, assigned_agency_id, "
-                "stations(agencies(id, agency_type, name))"
+                "stations(agencies(id, agency_type, name))",
+                count="exact",
             )
             .not_.is_("location", "null")   # only incidents with GPS coordinates
         )
@@ -133,7 +141,9 @@ def get_map_data(
         elif is_provincial_admin:
             inc_query = inc_query.in_("assigned_agency_id", own_agency_ids)
 
-        inc_result = inc_query.execute()
+        inc_result = inc_query.order("created_at", desc=True).limit(MAP_INCIDENT_MAX).execute()
+        raw_count = getattr(inc_result, "count", None)
+        incidents_total = raw_count if isinstance(raw_count, int) else len(inc_result.data or [])
         for row in (inc_result.data or []):
             loc = row.get("location") or {}
             coords = loc.get("coordinates") if isinstance(loc, dict) else None
@@ -194,8 +204,8 @@ def get_map_data(
     resp_query = (
         db.table("users")
         .select(
-            "id, full_name, badge_id, availability, location, agency_id, "
-            "agencies(agency_type)"
+            "id, full_name, badge_id, availability, location, location_updated_at, "
+            "agency_id, agencies(agency_type)"
         )
         .eq("role", "responder")
         .eq("approval_status", "approved")
@@ -225,6 +235,9 @@ def get_map_data(
             "agency_type":  agency_info.get("agency_type") if isinstance(agency_info, dict) else None,
             "lat":          lat,
             "lng":          lng,
+            # When that position was reported. Without it a dot from an hour
+            # ago looks exactly like one from a minute ago.
+            "location_updated_at": row.get("location_updated_at"),
         })
 
     # ── 4. Stations ───────────────────────────────────────────
@@ -282,4 +295,10 @@ def get_map_data(
         "coverage_polygons": coverage_polygons,
         "responders":        responders,
         "stations":          stations,
+        # Said out loud when the pins are not every matching report.
+        "limits": {
+            "incidents_max":    MAP_INCIDENT_MAX,
+            "incidents_total":  incidents_total,
+            "truncated":        incidents_total > len(incidents),
+        },
     }

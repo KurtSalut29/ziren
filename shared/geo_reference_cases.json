@@ -1,0 +1,133 @@
+{
+  "_about": "Shared reference for distance (Vincenty on WGS-84) and ETA (30 km/h, rounded up, never 0, max 600). Read by tests in ziren_backend, ziren_dashboard and ziren_mobile so the three implementations stay equal (evaluator finding #24, 2026-10-05). Distances agree to within 1 mm; the first case is Geoscience Australia's published Vincenty example (54,972.271 m).",
+  "assumed_speed_kmh": 30.0,
+  "distance_tolerance_m": 0.001,
+  "distances": [
+    {
+      "name": "Flinders Peak -> Buninyong (Geoscience Australia Vincenty reference)",
+      "from": [
+        -37.95103341666667,
+        144.42486788888888
+      ],
+      "to": [
+        -37.65282113888889,
+        143.92649552777777
+      ],
+      "metres": 54972.271
+    },
+    {
+      "name": "BFP Naval station -> Naval town plaza",
+      "from": [
+        11.5612,
+        124.3963
+      ],
+      "to": [
+        11.5645,
+        124.4031
+      ],
+      "metres": 826.674
+    },
+    {
+      "name": "Naval -> Caibiran",
+      "from": [
+        11.5645,
+        124.4031
+      ],
+      "to": [
+        11.5716,
+        124.5822
+      ],
+      "metres": 19550.75
+    },
+    {
+      "name": "Naval -> Maripipi",
+      "from": [
+        11.5645,
+        124.4031
+      ],
+      "to": [
+        11.7769,
+        124.3497
+      ],
+      "metres": 24206.291
+    },
+    {
+      "name": "Same point",
+      "from": [
+        11.5645,
+        124.4031
+      ],
+      "to": [
+        11.5645,
+        124.4031
+      ],
+      "metres": 0.0
+    },
+    {
+      "name": "Almeria -> Kawayan",
+      "from": [
+        11.6203,
+        124.379
+      ],
+      "to": [
+        11.68,
+        124.355
+      ],
+      "metres": 7103.61
+    }
+  ],
+  "eta": [
+    {
+      "km": 0,
+      "minutes": 1
+    },
+    {
+      "km": 0.01,
+      "minutes": 1
+    },
+    {
+      "km": 0.5,
+      "minutes": 2
+    },
+    {
+      "km": 1,
+      "minutes": 3
+    },
+    {
+      "km": 2.5,
+      "minutes": 6
+    },
+    {
+      "km": 5.99,
+      "minutes": 12
+    },
+    {
+      "km": 6,
+      "minutes": 13
+    },
+    {
+      "km": 10,
+      "minutes": 21
+    },
+    {
+      "km": 29.99,
+      "minutes": 60
+    },
+    {
+      "km": 30,
+      "minutes": 61
+    },
+    {
+      "km": 299.5,
+      "minutes": 600
+    },
+    {
+      "km": 300,
+      "minutes": 600
+    },
+    {
+      "km": 1000,
+      "minutes": 600
+    }
+  ]
+}

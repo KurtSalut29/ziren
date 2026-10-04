@@ -254,7 +254,7 @@ def test_resident_cannot_dispatch():
         r = client.post(
             "/dispatch/queue/some-incident/assign",
             headers={"Authorization": "Bearer mock_token"},
-            json={"responder_id": "x", "chosen_severity": "high"},
+            json={"responder_id": "x", "chosen_severity": "high", "severity_confirmed": True},
         )
     assert r.status_code == 403
 
@@ -267,7 +267,7 @@ def test_pending_responder_cannot_dispatch():
         r = client.post(
             "/dispatch/queue/some-incident/assign",
             headers={"Authorization": "Bearer mock_token"},
-            json={"responder_id": "x", "chosen_severity": "high"},
+            json={"responder_id": "x", "chosen_severity": "high", "severity_confirmed": True},
         )
     assert r.status_code == 403
 
@@ -293,7 +293,7 @@ def test_agency_admin_can_dispatch():
         r = client.post(
             "/dispatch/queue/some-incident/assign",
             headers={"Authorization": "Bearer mock_token"},
-            json={"responder_id": "x", "chosen_severity": "high"},
+            json={"responder_id": "x", "chosen_severity": "high", "severity_confirmed": True},
         )
     # Auth passes — role check allowed it through (200), not blocked (403)
     assert r.status_code == 200
@@ -334,7 +334,7 @@ def test_provincial_admin_cannot_dispatch():
         r = client.post(
             "/dispatch/queue/some-incident/assign",
             headers={"Authorization": "Bearer mock_token"},
-            json={"responder_id": "x", "chosen_severity": "high"},
+            json={"responder_id": "x", "chosen_severity": "high", "severity_confirmed": True},
         )
     assert r.status_code == 403
 
@@ -385,3 +385,20 @@ def test_provincial_admin_still_sees_everything(path):
                return_value={"items": [], "total": 0}):
         r = client.get(path, headers={"Authorization": "Bearer mock_token"})
     assert r.status_code == 200
+
+
+def test_dispatch_requires_the_severity_to_be_confirmed():
+    """Evaluator finding #4: the severity is a recommendation, and a person
+    states they checked it (and its reason) before a crew is sent."""
+    mock_db = _mock_supabase_get_user(
+        AGENCY_ADMIN_UUID, "agency_admin", agency_id=AGENCY_UUID)
+    with patch("app.core.dependencies.get_supabase", return_value=mock_db), \
+         patch("app.services.dispatch_service.assign_responder") as assign:
+        r = client.post(
+            "/dispatch/queue/some-incident/assign",
+            headers={"Authorization": "Bearer mock_token"},
+            json={"responder_id": "x", "chosen_severity": "high"},
+        )
+    assert r.status_code == 422
+    assert "severity" in r.json()["detail"].lower()
+    assert not assign.called

@@ -666,6 +666,14 @@ class _MediaAttachmentSection extends StatelessWidget {
               t.reviewAttachmentsHint,
               style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
             ),
+          // The limits stay in view once files are attached (findings #20, #21).
+          if (media.isNotEmpty) ...[
+            const SizedBox(height: ZirenTokens.space6),
+            Text(
+              t.quickMediaHint,
+              style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
+            ),
+          ],
         ],
       ),
     );

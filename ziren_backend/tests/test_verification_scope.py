@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
+from tests.audit_helpers import patch_audit_action
 from app.services import user_service
 
 AGENCY_ID = "a0000001-0000-0000-0000-000000000001"
@@ -132,12 +133,17 @@ def test_decide_verification_allows_own_municipality():
     }
     db = _db(agency_municipality="Naval", resident_row=resident_row)
     with patch("app.services.user_service.get_supabase", return_value=db), \
-         patch("app.services.geographic_service.get_supabase", return_value=db):
+         patch("app.services.geographic_service.get_supabase", return_value=db), \
+         patch_audit_action() as audit:
         result = user_service.decide_verification(
             NAVAL_RESIDENT, approve=True, method="barangay_official",
             reviewer_id=NAVAL_ADMIN["id"], purge_images=False, current_user=NAVAL_ADMIN,
         )
     assert result["verification_level"] == 2
+    # Finding #7: the decision names who made it, on the resident and in the log.
+    assert result["reviewed_by"] == NAVAL_ADMIN["id"]
+    assert result["decision"] == "approved"
+    assert audit.call_args.kwargs["action"] == "verification.approved"
 
 
 def test_decide_verification_blocks_other_municipality():

@@ -25,6 +25,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from tests.audit_helpers import patch_audit_action
 
 client = TestClient(app)
 
@@ -82,7 +83,7 @@ def test_resident_status_toggle(is_active, expected_action):
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID, "provincial_admin", AGENCY_TYPE)), \
          patch("app.routers.users.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(
             f"/users/provincial/residents/{RESIDENT_UUID}/status",
             json={"is_active": is_active},
@@ -140,7 +141,7 @@ def test_responder_reassignment_writes_audit_log():
 
     with patch("app.core.dependencies.get_supabase", return_value=_auth_db(PROVINCIAL_ADMIN_UUID, "provincial_admin", AGENCY_TYPE)), \
          patch("app.routers.users.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         resp = client.patch(
             f"/users/provincial/responders/{RESPONDER_UUID}/reassign",
             json={"agency_id": NEW_AGENCY_UUID},

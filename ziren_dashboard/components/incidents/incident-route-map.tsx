@@ -45,6 +45,7 @@ import {
   PIN_TIP_RATIO,
   PIN_W,
   RESIDENT_MARKER,
+  RESPONDER_MARKER,
   teardropSvg,
 } from '@/components/map/map-markers';
 import { removeGeoJson, upsertGeoJson, useMapLibre } from '@/components/map/use-maplibre';
@@ -63,6 +64,12 @@ interface Props {
    * The incident detail MODAL's map column never scrolls, so it passes true.
    */
   scrollWheelZoom?: boolean;
+  /**
+   * The assigned responder's last reported position, when there is one. Moves
+   * as new positions arrive; the map is framed to include it the first time it
+   * appears, not on every move, so a dispatcher who has panned is left alone.
+   */
+  responder?: { point: LatLng; label: string } | null;
 }
 
 /** Route colour lives here as a token name, resolved with the rest at paint. */
@@ -79,6 +86,7 @@ export default function IncidentRouteMap({
   severity,
   route,
   scrollWheelZoom = false,
+  responder = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { map, maplibre, styleEpoch } = useMapLibre(containerRef, {
@@ -122,6 +130,24 @@ export default function IncidentRouteMap({
     return () => { for (const m of added) m.remove(); };
   }, [map, maplibre, incident, station, severity, color]);
 
+  // ── The responder, on its own so a moving dot does not redraw the rest ──
+  const responderLat = responder?.point[0];
+  const responderLng = responder?.point[1];
+  const responderLabel = responder?.label;
+  useEffect(() => {
+    if (!map || !maplibre || responderLat == null || responderLng == null) return;
+    const { element, offset } = markerElement(markerHtml({
+      src: RESPONDER_MARKER, w: PERSON_W, h: PERSON_H,
+      label: 'Responder', labelColor: color.route, alwaysLabel: true,
+    }), PERSON_W, PERSON_H, PERSON_TIP_RATIO);
+    element.style.cursor = 'default';
+    element.style.zIndex = '6';
+    element.title = responderLabel ?? 'Responder';
+    const m = new maplibre.Marker({ element, anchor: 'top-left', offset })
+      .setLngLat([responderLng, responderLat]).addTo(map);
+    return () => { m.remove(); };
+  }, [map, maplibre, responderLat, responderLng, responderLabel, color.route]);
+
   // ── The route line ──────────────────────────────────────────────────────
   // Re-added after a basemap swap too (styleEpoch), although use-maplibre
   // carries z- layers across swaps — a belt for the braces.
@@ -157,6 +183,11 @@ export default function IncidentRouteMap({
     ]);
   }, [map, route, color.route, styleEpoch]);
 
+  // Read inside the framing effect without making every move refit the map.
+  const responderRef = useRef<LatLng | null>(null);
+  responderRef.current = responder?.point ?? null;
+  const hasResponder = responder != null;
+
   // ── Frame both ends ─────────────────────────────────────────────────────
   // Padding leaves room for the cards the panel draws over the corners — a
   // pin under the legend is a pin nobody can see. No animation: this map lives
@@ -165,8 +196,11 @@ export default function IncidentRouteMap({
     if (!map || !maplibre) return;
     const frame = () => {
       map.resize();
-      if (station) {
-        const b = new maplibre.LngLatBounds(ll(incident), ll(incident)).extend(ll(station.point));
+      const extra = responderRef.current;
+      if (station || extra) {
+        const b = new maplibre.LngLatBounds(ll(incident), ll(incident));
+        if (station) b.extend(ll(station.point));
+        if (extra) b.extend(ll(extra));
         map.fitBounds(b, { padding: { top: 64, left: 28, right: 28, bottom: 96 }, maxZoom: 16, animate: false });
       } else {
         map.jumpTo({ center: ll(incident), zoom: 15 });
@@ -176,7 +210,7 @@ export default function IncidentRouteMap({
     // The dialog may still be animating in: frame again once it has settled.
     const t = window.setTimeout(frame, 300);
     return () => window.clearTimeout(t);
-  }, [map, maplibre, incident, station]);
+  }, [map, maplibre, incident, station, hasResponder]);
 
   return (
     <>

@@ -277,6 +277,13 @@ export interface OperationalArea {
   readiness: ReadinessCheck[];
   recent: RecentIncident[];
   map: MapData & { incidents_shown: number; incidents_with_coordinates: number };
+  /** How much of the period the figures cover (evaluator finding #16). */
+  data_limits?: {
+    max_rows: number;
+    incident_rows_used: number;
+    incident_rows_matched: number;
+    truncated: boolean;
+  };
   /** Provincial Admin only. */
   comparison?: ComparisonRow[];
 }

@@ -41,6 +41,7 @@ from supabase import Client
 
 from app.core.dependencies import assert_agency_scope
 from app.db.supabase_client import get_supabase
+from app.services import audit_service
 
 log = structlog.get_logger()
 
@@ -247,6 +248,7 @@ def save_narrative_report(
     reference_no: str | None,
     finalize: bool,
     details: dict | None = None,
+    amendment_reason: str | None = None,
 ) -> dict:
     """Create or update the one narrative report an incident may have.
 
@@ -281,9 +283,11 @@ def save_narrative_report(
     now = datetime.now(timezone.utc).isoformat()
     actor_id = str(actor["id"])
 
+    # The whole row, not just its status: when it is finalized, it is the
+    # version that gets kept before it is changed (finding #8).
     existing = (
         db.table("incident_narrative_reports")
-        .select("id, status")
+        .select("*")
         .eq("incident_id", incident_id)
         .maybe_single()
         .execute()
@@ -322,20 +326,60 @@ def save_narrative_report(
         new_row.setdefault("status", "draft")
         return db.table("incident_narrative_reports").insert(new_row).execute()
 
-    details_saved = details is not None
-    try:
-        result = _write(payload)
-    except Exception as exc:
-        if "details" not in payload or not _is_missing_details_column(exc):
-            raise
-        # Migration 040 has not been applied: keep everything the table can
-        # hold and say plainly that the rest was not stored.
-        _probe["ok"] = False
-        _probe["checked_at"] = time.monotonic()
-        payload.pop("details")
-        result = _write(payload)
-        details_saved = False
-        log.warning("narrative_report.details_column_missing", incident_id=incident_id)
+    def _write_with_fallback() -> tuple[object, bool]:
+        try:
+            return _write(payload), details is not None
+        except Exception as exc:
+            if "details" not in payload or not _is_missing_details_column(exc):
+                raise
+            # Migration 040 has not been applied: keep everything the table can
+            # hold and say plainly that the rest was not stored.
+            _probe["ok"] = False
+            _probe["checked_at"] = time.monotonic()
+            payload.pop("details")
+            log.warning("narrative_report.details_column_missing", incident_id=incident_id)
+            return _write(payload), False
+
+    amending = bool(existing_row and existing_row.get("status") == "finalized")
+    if amending:
+        changed = _changed_fields(existing_row, payload)
+        if not changed:
+            # Saving a finalized report with nothing different is not an edit:
+            # no version, no reason asked for, nothing written.
+            row = dict(existing_row)
+            row["details_saved"] = details is not None
+            row["details_supported"] = _details_supported(db)
+            row["unchanged"] = True
+            return row
+        reason = (amendment_reason or "").strip()
+        if len(reason) < 5:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="This report is finalized. Say why you are changing it (at least a few words); "
+                       "the previous version is kept with your reason.",
+            )
+        with audit_service.action(
+            actor=actor,
+            action="narrative_report.amended",
+            target_type="narrative_report",
+            target_id=str(existing_row["id"]),
+            target_label=existing_row.get("reference_no") or incident_id,
+            new={"changed_fields": changed, "reason": reason[:300]},
+        ):
+            _keep_version(db, existing_row, changed=changed, reason=reason, actor=actor)
+            result, details_saved = _write_with_fallback()
+    elif finalize:
+        with audit_service.action(
+            actor=actor,
+            action="narrative_report.finalized",
+            target_type="narrative_report",
+            target_id=str(existing_row["id"]) if existing_row else None,
+            target_label=reference_no or incident_id,
+            new={"incident_id": incident_id},
+        ):
+            result, details_saved = _write_with_fallback()
+    else:
+        result, details_saved = _write_with_fallback()
 
     row = dict((result.data or [payload])[0])
     row["details_saved"] = details_saved
@@ -349,6 +393,80 @@ def save_narrative_report(
         details_saved=details_saved,
     )
     return row
+
+
+# Compared to decide whether a finalized report actually changed.
+_VERSIONED_FIELDS = (
+    "narrative", "reporting_person_name", "incident_occurred_at", "place_of_incident",
+    "prepared_by_name", "investigator_name", "reference_no", "details",
+)
+
+
+def _same(a, b) -> bool:
+    if isinstance(a, str) and isinstance(b, str) and ("T" in a or "T" in b):
+        # Timestamps come back from Postgres with a zone and seconds the client
+        # did not send: compare instants, not spellings.
+        try:
+            return datetime.fromisoformat(a.replace("Z", "+00:00")) == datetime.fromisoformat(b.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+    return (a or None) == (b or None)
+
+
+def _changed_fields(existing: dict, payload: dict) -> list[str]:
+    return [f for f in _VERSIONED_FIELDS if f in payload and not _same(existing.get(f), payload.get(f))]
+
+
+def _keep_version(db: Client, existing: dict, *, changed: list[str], reason: str, actor: dict) -> None:
+    """Store the finalized report as it was, before it is changed (finding #8).
+
+    Refuses the edit when the history cannot be kept: a finalized report that
+    could be overwritten without its previous version is exactly the gap.
+    """
+    try:
+        count = (
+            db.table("incident_narrative_report_versions")
+            .select("id", count="exact")
+            .eq("report_id", str(existing["id"]))
+            .execute()
+        )
+        version_no = int(getattr(count, "count", None) or len(count.data or [])) + 1
+        snapshot = {k: v for k, v in existing.items() if k not in ("created", "updated", "finalized")}
+        db.table("incident_narrative_report_versions").insert({
+            "report_id": str(existing["id"]),
+            "incident_id": str(existing["incident_id"]),
+            "version_no": version_no,
+            "snapshot": snapshot,
+            "changed_fields": changed,
+            "change_reason": reason[:1000],
+            "changed_by": str(actor.get("id")),
+            "changed_by_name": actor.get("full_name"),
+        }).execute()
+    except Exception as exc:
+        log.error("narrative_report.version_write_failed", report_id=existing.get("id"), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="This finalized report was not changed: its previous version could not be saved. "
+                   "If this keeps happening, migration 044 has not been applied yet.",
+        ) from exc
+
+
+def list_versions(incident_id: str, actor: dict) -> list[dict]:
+    """Every kept version of an incident's narrative report, newest first."""
+    db: Client = get_supabase()
+    _load_incident_for_scope(db, incident_id, actor)
+    try:
+        res = (
+            db.table("incident_narrative_report_versions")
+            .select("id, version_no, snapshot, changed_fields, change_reason, changed_by, changed_by_name, changed_at")
+            .eq("incident_id", incident_id)
+            .order("version_no", desc=True)
+            .execute()
+        )
+    except Exception:
+        # Before migration 044 there is no history to show.
+        return []
+    return res.data or []
 
 
 # =============================================================================

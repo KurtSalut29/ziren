@@ -39,6 +39,7 @@
  * the rail still says "something here needs you".
  */
 
+import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import {
@@ -64,6 +65,7 @@ import {
   isItemActive,
   isItemExpanded,
   type NavRole,
+  type ResolvedNavGroup,
   type ResolvedNavItem,
 } from '@/lib/nav/nav-config';
 import { ZirenLogo } from '@/components/brand/ziren-logo';
@@ -122,6 +124,79 @@ function CountPill({ count, active }: { count: number; active: boolean }) {
   );
 }
 
+const GROUP_LABEL =
+  'h-7 px-2.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]';
+
+function readOpen(label: string): boolean | null {
+  try {
+    const v = localStorage.getItem(`ziren.nav.open.${label}`);
+    return v === null ? null : v === '1';
+  } catch {
+    return null;
+  }
+}
+
+function writeOpen(label: string, open: boolean): void {
+  try {
+    localStorage.setItem(`ziren.nav.open.${label}`, open ? '1' : '0');
+  } catch {
+    /* private window or blocked storage: it just will not be remembered */
+  }
+}
+
+/**
+ * One labelled group. A `collapsible` group (the ones used occasionally, not
+ * every shift) folds away to its heading, starts folded for someone who has
+ * never opened it, remembers their choice in this browser, and is always open
+ * while they are on one of its pages (evaluator findings #30 / #33).
+ */
+function NavGroupSection({
+  group,
+  pathname,
+  children,
+}: {
+  group: ResolvedNavGroup;
+  pathname: string;
+  children: React.ReactNode;
+}) {
+  const here = group.items.some(i => isItemActive(i, pathname) || isItemExpanded(i, pathname));
+  const [open, setOpen] = React.useState<boolean>(true);
+  React.useEffect(() => {
+    if (!group.collapsible) return;
+    setOpen(here || (readOpen(group.label) ?? false));
+  }, [group.collapsible, group.label, here]);
+
+  if (!group.collapsible) {
+    return (
+      <SidebarGroup className="py-1.5">
+        <SidebarGroupLabel className={GROUP_LABEL}>{group.label}</SidebarGroupLabel>
+        {children}
+      </SidebarGroup>
+    );
+  }
+
+  return (
+    <Collapsible
+      className="group/navgroup"
+      onOpenChange={o => { setOpen(o); writeOpen(group.label, o); }}
+      open={open}
+    >
+      <SidebarGroup className="py-1.5">
+        <SidebarGroupLabel asChild className={`${GROUP_LABEL} cursor-pointer hover:text-foreground`}>
+          <CollapsibleTrigger className="flex w-full items-center">
+            {group.label}
+            <span className="ml-1.5 text-[10px] font-semibold normal-case tracking-normal text-[var(--color-text-tertiary)] group-data-[state=open]/navgroup:hidden">
+              {group.items.length}
+            </span>
+            <ChevronRight className="ml-auto size-3.5 transition-transform duration-200 group-data-[state=open]/navgroup:rotate-90" />
+          </CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent>{children}</CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
+
 export function ZirenSidebar({
   role,
   pathname,
@@ -161,10 +236,7 @@ export function ZirenSidebar({
 
       <SidebarContent className="scroll-slim">
         {groups.map(group => (
-          <SidebarGroup className="py-1.5" key={group.label}>
-            <SidebarGroupLabel className="h-7 px-2.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-tertiary)]">
-              {group.label}
-            </SidebarGroupLabel>
+          <NavGroupSection group={group} key={group.label} pathname={pathname}>
             <SidebarMenu className="gap-1">
               {group.items.map(item => {
                 const active = isItemActive(item, pathname);
@@ -226,7 +298,7 @@ export function ZirenSidebar({
                 );
               })}
             </SidebarMenu>
-          </SidebarGroup>
+          </NavGroupSection>
         ))}
       </SidebarContent>
 

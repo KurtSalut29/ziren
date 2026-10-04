@@ -365,7 +365,7 @@ def get_incident_media(incident_id: str, responder_id: str) -> list[dict]:
             # it — the crew still gets the report and the other attachments.
             log.warning("responder.media_sign_failed", incident_id=incident_id, path=path)
             url = None
-        items.append({"path": path, "url": url, "kind": _media_kind(path)})
+        items.append({"path": path, "url": url, "kind": _media_kind(path), "source": "reporter"})
 
     return items
 
@@ -454,6 +454,28 @@ def update_location(responder_id: str, lat: float, lng: float) -> dict:
 
 #: How far back the "recent" figures look. A shift, not a career.
 _STATS_DAYS = 30
+
+
+def _own_availability(db: Client, responder_id: str) -> str | None:
+    """on_duty / off_duty as stored, or None if it could not be read.
+
+    None rather than a guess: the app keeps whatever it already shows, which
+    is better than flipping a responder off duty because one read failed.
+    """
+    try:
+        res = (
+            db.table("users")
+            .select("availability")
+            .eq("id", responder_id)
+            .maybe_single()
+            .execute()
+        )
+    except Exception:
+        log.warning("responder.availability_read_failed", responder_id=responder_id)
+        return None
+    row = res.data if res is not None and isinstance(res.data, dict) else {}
+    value = row.get("availability")
+    return value if value in _VALID_AVAILABILITY else None
 
 
 def get_dashboard(responder_id: str) -> dict:
@@ -547,6 +569,12 @@ def get_dashboard(responder_id: str) -> dict:
     )
 
     return {
+        # The duty state the server holds. The app never read it back: it
+        # started every launch as off duty, so a responder who was on duty when
+        # the app was closed came back with the switch showing "off", position
+        # reporting never resumed, and the dispatcher's map kept showing them
+        # on duty at wherever they had last been.
+        "availability": _own_availability(db, responder_id),
         "active_count": len(active),
         "active_critical": sum(1 for r in active if r.get("severity") == "critical"),
         "en_route_count": sum(1 for r in active if r.get("status") == "en_route"),

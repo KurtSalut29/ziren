@@ -6,6 +6,7 @@ import '../../../shared/theme/app_tokens.dart';
 import 'wizard_shared.dart';
 import '../domain/incident_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import 'widgets/spoken_language_chip.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 /// Step 2 of the 5W1H wizard — category-specific questions.
@@ -430,6 +431,16 @@ class _CatchAllField extends StatelessWidget {
                 );
               }
             },
+          ),
+          const SizedBox(height: ZirenTokens.space8),
+          // Which language the phone listens for (evaluator finding #22).
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SpokenLanguageChip(provider: provider),
+          ),
+          SpokenLanguageCheckNote(
+            provider: provider,
+            hasText: controller.text.trim().isNotEmpty,
           ),
         ],
       ],

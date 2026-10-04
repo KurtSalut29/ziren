@@ -1383,7 +1383,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickAttachPhotoVideo => 'Attach photo or video (optional)';
 
   @override
-  String get quickMediaHint => 'Add photos or videos as evidence (max 5, 50MB each)';
+  String get quickMediaHint => 'Photos or videos as evidence: up to 5 files, 50 MB each, videos up to 2 minutes.';
 
   @override
   String get quickTakePhoto => 'Take a photo';
@@ -3112,7 +3112,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewAddAttachment => 'Add';
 
   @override
-  String get reviewAttachmentsHint => 'Optional — add a photo or video as evidence (max 5, 50MB each)';
+  String get reviewAttachmentsHint => 'Optional: add photos or videos as evidence. Up to 5 files, 50 MB each, videos up to 2 minutes.';
 
   @override
   String get sosAddDetailsExample => 'e.g. \"3 people trying to escape, fire on the ground floor, no more visible flames outside…\"';
@@ -4530,5 +4530,55 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String welcomeDemoHint(String button) {
     return 'You can watch it anytime: tap \"$button\" on Home, then Demo.';
+  }
+
+  @override
+  String get respAttachmentsTitle => 'Photos and videos from the caller';
+
+  @override
+  String get respAttachmentsLoadFailed => 'Could not load the attachments. Pull down to try again.';
+
+  @override
+  String get respAttachmentUnavailable => 'Could not open this file.';
+
+  @override
+  String get respAttachmentPlayVideo => 'Play video';
+
+  @override
+  String get respAttachmentVideoFailed => 'This video could not be opened on this phone.';
+
+  @override
+  String get respPhotoViewerClose => 'Close';
+
+  @override
+  String mediaTooLarge(String size, String max) {
+    return 'This file is $size MB. Each photo or video can be up to $max MB. Record a shorter video or choose a smaller file.';
+  }
+
+  @override
+  String get mediaMaxFiles => 'You can attach up to 5 files.';
+
+  @override
+  String speakingLanguageLabel(String language) {
+    return 'Speaking: $language';
+  }
+
+  @override
+  String get speakingLanguageTitle => 'Which language will you speak?';
+
+  @override
+  String get speakingLanguageMessage => 'This tells the phone which language to listen for. It does not change the app\'s language.';
+
+  @override
+  String speakingLanguageFallback(String language, String fallback) {
+    return 'No $language recogniser on this phone. It will listen in $fallback.';
+  }
+
+  @override
+  String get speakingLanguageNone => 'This phone has no speech recogniser for it. Type instead.';
+
+  @override
+  String speakingLanguageCheck(String language) {
+    return 'Check the words: the phone may mishear $language. Fix anything wrong before sending.';
   }
 }

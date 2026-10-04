@@ -25,7 +25,8 @@
  */
 
 import dynamic from 'next/dynamic';
-import { Building2, Car, Clock, Info, MapPin, Navigation } from 'lucide-react';
+import { Building2, Car, Clock, Info, MapPin, Navigation, UserRound } from 'lucide-react';
+import type { ResponderPosition } from '@/lib/api/dispatch';
 import type { IncidentDetail } from '@/lib/api/dispatch';
 import {
   formatDistance,
@@ -33,6 +34,8 @@ import {
   type ResponseRoute,
 } from '@/lib/incidents/response-route';
 import { useResponseRoute } from '@/lib/hooks/useResponseRoute';
+import { useResponderPosition } from '@/lib/hooks/useResponderPosition';
+import { useAuth } from '@/lib/hooks/useAuth';
 import {
   agencyVar,
   severityVar,
@@ -73,6 +76,14 @@ export function IncidentLocationPanel({
   ) as AgencyKey | null;
 
   const { route, loading } = useResponseRoute(stationPoint, incidentPoint);
+
+  // Where the assigned crew member is, kept current while they are on the way.
+  const { token } = useAuth();
+  const responder = useResponderPosition(detail, token);
+  const responderPoint: [number, number] | null =
+    responder && responder.lat != null && responder.lng != null
+      ? [responder.lat, responder.lng]
+      : null;
 
   // On duty, at the agency this incident was routed to. Not "how many
   // responders exist" — a station whose whole crew is off shift cannot answer
@@ -137,6 +148,7 @@ export function IncidentLocationPanel({
             scrollWheelZoom={scrollWheelZoom}
             severity={severity}
             station={stationPoint ? { point: stationPoint, agencyType } : null}
+            responder={responderPoint ? { point: responderPoint, label: responder?.full_name ?? 'Responder' } : null}
           />
 
           <_Legend
@@ -163,6 +175,8 @@ export function IncidentLocationPanel({
           </p>
         </div>
       )}
+
+      {responder && <_ResponderStrip position={responder} />}
 
       <_StationStrip
         agencyType={agencyType}
@@ -399,6 +413,62 @@ function _Cell({
       <div className="truncate text-[13px] font-semibold tabular-nums text-foreground">
         {children}
       </div>
+    </div>
+  );
+}
+
+/** A position older than this is shown as possibly out of date. */
+const STALE_MIN = 10;
+
+function minutesAgo(iso: string | null): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : Math.max(0, Math.round((Date.now() - t) / 60_000));
+}
+
+/**
+ * Who is assigned, and how fresh their position is.
+ *
+ * The age is the point: a dot from forty minutes ago looks exactly like one
+ * from a minute ago, and a dispatcher deciding whether to ring the crew needs
+ * to know which it is. No position at all is said in words, with the likely
+ * reason, rather than leaving the map silently without them.
+ */
+function _ResponderStrip({ position }: { position: ResponderPosition }) {
+  const name = position.full_name ?? 'The assigned responder';
+  const located = position.lat != null && position.lng != null;
+  const age = minutesAgo(position.updated_at);
+  const stale = located && age != null && age > STALE_MIN;
+
+  let detail: string;
+  if (!located) {
+    detail = 'No location from their phone yet. It appears once their app is open, on duty, with location on.';
+  } else if (age == null) {
+    detail = 'Location received; the time it was sent is unknown.';
+  } else if (age === 0) {
+    detail = 'Location updated just now.';
+  } else {
+    detail = `Location updated ${age} min ago${stale ? ' and may be out of date. Call them to confirm.' : '.'}`;
+  }
+
+  return (
+    <div
+      className="flex shrink-0 items-start gap-2 rounded-[var(--radius-md)] border px-3 py-2"
+      data-testid="responder-position"
+      style={{
+        borderColor: stale || !located
+          ? 'color-mix(in srgb, var(--color-system-warning) 45%, transparent)'
+          : 'var(--color-surface-border)',
+        backgroundColor: stale || !located
+          ? 'color-mix(in srgb, var(--color-system-warning) 8%, transparent)'
+          : 'var(--color-surface-raised)',
+      }}
+    >
+      <UserRound className="mt-0.5 shrink-0 text-muted-foreground" size={15} />
+      <p className="text-[13px] leading-snug text-foreground">
+        <span className="font-semibold">{name}</span>
+        <span className="text-muted-foreground"> · {detail}</span>
+      </p>
     </div>
   );
 }

@@ -15,6 +15,7 @@ from supabase import Client
 
 from app.db.supabase_client import get_supabase
 from app.models.user import UserProfile, UpdateProfileRequest
+from app.services import audit_service
 
 log = structlog.get_logger()
 
@@ -534,6 +535,7 @@ def get_verification_detail(user_id: str, *, current_user: dict | None = None) -
 
     row["id_image_url"] = _signed_url("resident-ids", row.get("valid_id_image_path"))
     row["selfie_url"] = _signed_url("resident-ids", row.get("selfie_image_path"))
+    row["last_review"] = _last_review(db, user_id)
 
     # The reviewer's actual job is comparing the typed name to the card, so
     # spell out what to compare rather than making them assemble it.
@@ -547,6 +549,33 @@ def get_verification_detail(user_id: str, *, current_user: dict | None = None) -
     ) or row.get("full_name")
 
     return row
+
+
+_REVIEW_COLUMNS = (
+    "verification_decision, verification_reviewed_by, "
+    "verification_reviewed_by_name, verification_reviewed_at"
+)
+
+
+def _last_review(db: Client, user_id: str) -> dict | None:
+    """Who made the latest identity decision on this resident, and what it was.
+
+    Evaluator finding #7. Read on its own so a database without migration 044
+    (no such columns yet) still shows the rest of the review screen.
+    """
+    try:
+        res = db.table("users").select(_REVIEW_COLUMNS).eq("id", user_id).maybe_single().execute()
+    except Exception:
+        return None
+    row = res.data if res is not None and isinstance(res.data, dict) else None
+    if not row or not row.get("verification_decision"):
+        return None
+    return {
+        "decision": row.get("verification_decision"),
+        "reviewed_by": row.get("verification_reviewed_by"),
+        "reviewed_by_name": row.get("verification_reviewed_by_name"),
+        "reviewed_at": row.get("verification_reviewed_at"),
+    }
 
 
 def _signed_url(bucket: str, path: str | None, expires: int = 300) -> str | None:
@@ -587,7 +616,7 @@ def decide_verification(
 
     current = (
         db.table("users")
-        .select("id, role, valid_id_image_path, selfie_image_path, municipality_address")
+        .select("id, role, full_name, valid_id_image_path, selfie_image_path, municipality_address")
         .eq("id", user_id)
         .single()
         .execute()
@@ -604,10 +633,20 @@ def decide_verification(
         )
     _assert_verification_scope(current.data, current_user)
 
+    now = datetime.now(timezone.utc).isoformat()
+    reviewer_name = (current_user or {}).get("full_name")
     payload: dict = {
         "verification_level": 2 if approve else 0,
         "verification_method": method if approve else None,
-        "verified_at": datetime.now(timezone.utc).isoformat() if approve else None,
+        "verified_at": now if approve else None,
+    }
+    # Finding #7: the decision used to keep no trace of who made it. Stored on
+    # the resident (latest decision) and in the audit log (every decision).
+    review = {
+        "verification_decision": "approved" if approve else "rejected",
+        "verification_reviewed_by": reviewer_id,
+        "verification_reviewed_by_name": reviewer_name,
+        "verification_reviewed_at": now,
     }
 
     if purge_images:
@@ -627,12 +666,30 @@ def decide_verification(
                 pass
             payload[key] = None
 
-    updated = db.table("users").update(payload).eq("id", user_id).execute()
-    if not updated.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not record the decision.",
-        )
+    reviewer = current_user or {"id": reviewer_id}
+    with audit_service.action(
+        actor=reviewer,
+        action="verification.approved" if approve else "verification.rejected",
+        target_type="user",
+        target_id=user_id,
+        target_label=current.data.get("full_name"),
+        new={"verification_level": payload["verification_level"], "method": payload["verification_method"],
+             "images_purged": purge_images},
+    ):
+        try:
+            updated = db.table("users").update({**payload, **review}).eq("id", user_id).execute()
+        except Exception as exc:
+            if not _missing_review_columns(exc):
+                raise
+            # Migration 044 not applied: the decision still stands and the audit
+            # row above names the reviewer; only the copy on the resident waits.
+            log.warning("verification.review_columns_missing", user_id=user_id)
+            updated = db.table("users").update(payload).eq("id", user_id).execute()
+        if not updated.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not record the decision.",
+            )
 
     return {
         "id": user_id,
@@ -641,7 +698,15 @@ def decide_verification(
         "verified_at": payload["verified_at"],
         "images_purged": purge_images,
         "reviewed_by": reviewer_id,
+        "reviewed_by_name": reviewer_name,
+        "reviewed_at": now,
+        "decision": review["verification_decision"],
     }
+
+
+def _missing_review_columns(exc: Exception) -> bool:
+    text = str(exc)
+    return "verification_review" in text or "verification_decision" in text
 
 
 # Batch ceiling. One HTTP request should not be able to sit in a loop for

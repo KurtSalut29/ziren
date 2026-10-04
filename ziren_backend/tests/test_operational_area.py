@@ -1006,3 +1006,41 @@ def test_route_days_zero_means_all_time():
          patch("app.routers.geographic.operational_area_service.get_operational_area", return_value={"stub": 1}) as get:
         assert client.get("/geographic/operational-area?days=0", headers=AUTH).status_code == 200
     assert get.call_args.kwargs["days"] == 0
+
+
+# ── Evaluator #16: paged reads in parallel, and the limit said out loud ──
+
+class _FakeQuery:
+    """Answers .range(a, b).execute() from a list of `total` numbered rows."""
+
+    def __init__(self, total, calls):
+        self.total, self.calls = total, calls
+
+    def range(self, a, b):
+        self.calls.append((a, b))
+        self._slice = (a, b)
+        return self
+
+    def execute(self):
+        from unittest.mock import MagicMock as _M
+        a, b = self._slice
+        data = [{"n": i} for i in range(a, min(b + 1, self.total))]
+        return _M(data=data, count=self.total)
+
+
+def test_fetch_counted_reads_every_row_below_the_limit():
+    from app.services import operational_area_service as oas
+    calls = []
+    rows, total = oas._fetch_counted(lambda: _FakeQuery(2500, calls))
+    assert total == 2500 and len(rows) == 2500
+    assert sorted(r["n"] for r in rows) == list(range(2500))
+
+
+def test_fetch_counted_stops_at_the_limit_and_reports_the_true_total():
+    from app.services import operational_area_service as oas
+    calls = []
+    with patch.object(oas, "_MAX_ROWS", 2000):
+        rows, total = oas._fetch_counted(lambda: _FakeQuery(5000, calls))
+    assert len(rows) == 2000
+    assert total == 5000, "the caller must be able to say the figures are partial"
+    assert max(b for _, b in calls) < 2000

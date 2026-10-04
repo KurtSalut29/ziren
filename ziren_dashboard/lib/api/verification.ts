@@ -116,6 +116,14 @@ export interface VerificationDetail extends VerificationSummary {
   /** Null when the object is missing or the signature could not be minted. */
   id_image_url: string | null;
   selfie_url: string | null;
+  /** The latest identity decision and who made it (evaluator finding #7).
+   *  Null when no decision has been recorded since migration 044. */
+  last_review?: {
+    decision: 'approved' | 'rejected';
+    reviewed_by: string | null;
+    reviewed_by_name: string | null;
+    reviewed_at: string | null;
+  } | null;
 }
 
 /**
@@ -135,6 +143,9 @@ export interface VerificationDecisionResult {
   verified_at: string | null;
   images_purged: boolean;
   reviewed_by: string;
+  reviewed_by_name?: string | null;
+  reviewed_at?: string;
+  decision?: 'approved' | 'rejected';
 }
 
 export interface BulkDecisionResult {

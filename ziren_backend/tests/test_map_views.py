@@ -77,6 +77,8 @@ def _empty_data_db():
     incident_chain.in_.return_value = incident_chain
     incident_chain.gte.return_value = incident_chain
     incident_chain.eq.return_value = incident_chain
+    incident_chain.order.return_value = incident_chain
+    incident_chain.limit.return_value = incident_chain
     incident_chain.execute.return_value = empty
 
     eq_chain = db.table.return_value.select.return_value.eq.return_value
@@ -147,3 +149,25 @@ def test_history_view_incidents_never_carry_a_route():
     incidents = resp.json()["incidents"]
     assert len(incidents) == 1
     assert incidents[0]["route"] is None
+
+
+def test_incident_pins_are_capped_newest_first_and_the_cut_is_reported():
+    """Evaluator finding #17: the map never returns an unbounded list."""
+    from app.routers import map as map_router
+    db, incident_chain = _empty_data_db()
+    result = MagicMock()
+    result.data = [{
+        "id": f"inc-{i}", "location": {"coordinates": [124.4, 11.5]},
+        "severity": "low", "status": "resolved", "sos_flagged": False,
+        "created_at": "2026-01-01T00:00:00Z", "resolved_at": None, "report_text": "x",
+        "assigned_agency_id": AGENCY_UUID, "stations": None,
+    } for i in range(3)]
+    result.count = 4000
+    incident_chain.execute.return_value = result
+
+    resp = _call("provincial_admin", None, "?view=history", db, agency_type=PROVINCIAL_ADMIN_AGENCY_TYPE)
+    assert resp.status_code == 200, resp.text
+    incident_chain.order.assert_called_with("created_at", desc=True)
+    incident_chain.limit.assert_called_with(map_router.MAP_INCIDENT_MAX)
+    limits = resp.json()["limits"]
+    assert limits["truncated"] is True and limits["incidents_total"] == 4000

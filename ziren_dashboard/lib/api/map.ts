@@ -51,6 +51,8 @@ export interface MapResponder {
   agency_type:  AgencyType | null;
   lat:          number | null;
   lng:          number | null;
+  /** When the phone last reported that position. */
+  location_updated_at?: string | null;
 }
 
 /**
@@ -80,6 +82,8 @@ export interface MapData {
   responders:        MapResponder[];
   /** Only stations with coordinates. One without is counted, never pinned. */
   stations:          MapStation[];
+  /** Incident pins are capped, newest first (evaluator finding #17). */
+  limits?: { incidents_max: number; incidents_total: number; truncated: boolean };
 }
 
 export async function fetchMapData(token: string, view: MapView = 'operational'): Promise<MapData> {

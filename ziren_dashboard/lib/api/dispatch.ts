@@ -3,7 +3,7 @@
  * All functions require an access token — never call without auth.
  */
 
-import { apiClient, ApiError } from './client';
+import { apiClient, ApiError, networkErrorMessage, httpErrorMessage } from './client';
 
 /**
  * Below this, the model's guess at the incident type is not worth trusting on
@@ -98,6 +98,8 @@ export interface IncidentMedia {
   path: string;
   url: string | null;
   kind: 'audio' | 'video' | 'image';
+  /** Whose it is: the resident's report, or the crew's photos from the scene. */
+  source?: 'reporter' | 'scene';
 }
 
 /**
@@ -108,6 +110,30 @@ export interface IncidentMedia {
  * transcription is the weakest link in the pipeline, and a dispatcher who
  * speaks the language can settle in ten seconds what the model guessed at.
  */
+/** The assigned responder's last reported position (evaluator finding #2). */
+export interface ResponderPosition {
+  responder_id: string;
+  full_name: string | null;
+  /** Null until the responder's phone has reported a position. */
+  lat: number | null;
+  lng: number | null;
+  updated_at: string | null;
+}
+
+/**
+ * Small on purpose: the incident dialog asks for it every half minute while a
+ * crew is on the way. Null when nobody is assigned.
+ */
+export async function fetchResponderPosition(
+  incidentId: string,
+  token: string,
+): Promise<ResponderPosition | null> {
+  return apiClient.get<ResponderPosition | null>(
+    `/dispatch/queue/${incidentId}/responder-position`,
+    token,
+  );
+}
+
 export async function fetchIncidentMedia(
   incidentId: string,
   token: string,
@@ -378,6 +404,9 @@ export interface NarrativeReportInput {
   reference_no?: string | null;
   details?: NarrativeDetails;
   finalize?: boolean;
+  /** Required when the report is already finalized: why it is being changed.
+   *  The previous version is kept with it (evaluator finding #8). */
+  amendment_reason?: string;
 }
 
 /** What GET returns: the report (null until one is started) and whether this database can hold `details`. */
@@ -402,6 +431,22 @@ export async function fetchNarrativeReport(
 }
 
 /** Create or update the Narrative Report. 409s if the incident isn't resolved yet. */
+/** One kept version of a finalized narrative report: how it read before a change. */
+export interface NarrativeVersion {
+  id: string;
+  version_no: number;
+  snapshot: Partial<NarrativeReport> & { narrative?: string };
+  changed_fields: string[];
+  change_reason: string;
+  changed_by: string;
+  changed_by_name: string | null;
+  changed_at: string;
+}
+
+export async function fetchNarrativeVersions(incidentId: string, token: string): Promise<NarrativeVersion[]> {
+  return apiClient.get<NarrativeVersion[]>(`/dispatch/queue/${incidentId}/narrative-report/versions`, token);
+}
+
 export async function saveNarrativeReport(
   incidentId: string,
   body: NarrativeReportInput,
@@ -483,12 +528,18 @@ export async function downloadNarrativeReportPdf(
   token: string,
 ): Promise<void> {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
-  const response = await fetch(`${API_BASE_URL}/dispatch/queue/${incidentId}/narrative-report/pdf`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const path = `/dispatch/queue/${incidentId}/narrative-report/pdf`;
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (cause) {
+    throw new ApiError(networkErrorMessage(path, cause), 0);
+  }
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
-    throw new ApiError(body.detail ?? `HTTP ${response.status}`, response.status);
+    const body = await response.json().catch(() => null);
+    throw new ApiError(httpErrorMessage(response.status, body), response.status);
   }
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
@@ -948,6 +999,9 @@ export interface IncidentDetail extends QueueIncident, Partial<AfterAction> {
   /** The assigned crew member, joined by name for the record panel. Null when
    *  nobody was assigned or the account was later deleted. */
   responder?: { full_name: string | null; badge_id: string | null } | null;
+  /** Where the assigned crew member last reported being, and when. Null when
+   *  nobody is assigned or they have not reported a position yet. */
+  responder_position?: { lat: number; lng: number; updated_at: string | null } | null;
   /** PostGIS point, as GeoJSON: `{ type: 'Point', coordinates: [lon, lat] }`.
    *
    *  Detail only — the queue's select does not ask for it, so declaring it on
@@ -1007,6 +1061,8 @@ export interface AssignRequest {
   suggested_severity?: SeverityLevel | null;
   override_reason?: string | null;
   notes?: string | null;
+  /** The dispatcher read the severity and its reason (evaluator #4). Required. */
+  severity_confirmed: boolean;
 }
 
 export interface AssignResponse {

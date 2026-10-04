@@ -43,9 +43,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Iterable
+from uuid import uuid4
 
 import structlog
 
+from app.core.agency_names import provincial_office_name
 from app.db.supabase_client import get_supabase
 from app.services import audit_service, notification_service
 
@@ -115,10 +117,10 @@ def may_issue(category: str, agency_type: str | None) -> bool:
 
 def _assert_may_issue(category: str, actor: dict) -> None:
     if not may_issue(category, actor.get("agency_type")):
-        owners = " or ".join(sorted(KIND_OWNERS[category]))
-        raise PermissionError(
-            f"Only the {owners} provincial office issues a {LABELS.get(category, category).lower()}."
-        )
+        owners = " or the ".join(provincial_office_name(o) for o in sorted(KIND_OWNERS[category]))
+        kind = LABELS.get(category, category).lower()
+        article = "an" if kind[:1] in "aeiou" else "a"
+        raise PermissionError(f"Only the {owners} issues {article} {kind}.")
 
 
 def _assert_issuer(row: dict, actor: dict, doing: str) -> None:
@@ -127,7 +129,7 @@ def _assert_issuer(row: dict, actor: dict, doing: str) -> None:
     no issuer on record, and any Provincial Admin may act on it."""
     issuer = (row.get("issuer_agency_type") or "").upper()
     if issuer and issuer != (actor.get("agency_type") or "").upper():
-        raise PermissionError(f"Only the {issuer} provincial office, which issued it, can {doing} it.")
+        raise PermissionError(f"Only the {provincial_office_name(issuer)}, which issued it, can {doing} it.")
 
 MUNICIPALITIES = ("Almeria", "Biliran", "Cabucgayan", "Caibiran", "Culaba", "Kawayan", "Maripipi", "Naval")
 
@@ -587,7 +589,7 @@ def _uses_new_fields(draft: dict) -> bool:
     )
 
 
-_LEGACY_KEYS = ("title", "body", "category", "target_type", "target_agency_id", "created_by", "expires_at", "is_active")
+_LEGACY_KEYS = ("id", "title", "body", "category", "target_type", "target_agency_id", "created_by", "expires_at", "is_active")
 
 
 def _insert(db, draft: dict) -> dict:
@@ -668,38 +670,41 @@ def publish(
         target_municipalities=target_municipalities, target_barangay_ids=target_barangay_ids,
         asks_response=asks_response, ends_announcement_id=ends_announcement_id,
     )
-    row = _insert(db, draft)
-
-    if draft.get("ends_announcement_id"):
-        db.table("announcements").update({
-            "is_active": False,
-            "ended_at": _now().isoformat(),
-            "ended_by_announcement_id": str(row["id"]),
-        }).eq("id", draft["ends_announcement_id"]).execute()
-
-    # Who it reaches is worked out from what was STORED, so the fan-out and the
-    # feeds can never disagree about the audience.
-    stored = {**draft, **row}
-    recipients = [u for u in _recipients(db, stored) if str(u.get("id")) != str(actor.get("id"))]
-    _notify_published(stored, recipients)
-    reach = _reach(recipients)
-
-    audit_service.record(
+    # The id is chosen here so the audit row, written first, can name it (#6).
+    draft["id"] = str(uuid4())
+    summary = {
+        "category": draft["category"],
+        "target_type": draft["target_type"],
+        "municipalities": draft.get("target_municipalities"),
+        "barangays": [b["name"] for b in draft.get("target_barangays") or []],
+        "asks_response": draft.get("asks_response"),
+        "ends": draft.get("ends_announcement_id"),
+    }
+    with audit_service.action(
         actor=actor,
         action="announcement.published",
         target_type="announcement",
-        target_id=row["id"],
-        target_label=row.get("title"),
-        new={
-            "category": draft["category"],
-            "target_type": draft["target_type"],
-            "municipalities": draft.get("target_municipalities"),
-            "barangays": [b["name"] for b in draft.get("target_barangays") or []],
-            "asks_response": draft.get("asks_response"),
-            "ends": draft.get("ends_announcement_id"),
-            "reach": reach,
-        },
-    )
+        target_id=draft["id"],
+        target_label=draft.get("title"),
+        new=summary,
+    ) as entry:
+        row = _insert(db, draft)
+
+        if draft.get("ends_announcement_id"):
+            db.table("announcements").update({
+                "is_active": False,
+                "ended_at": _now().isoformat(),
+                "ended_by_announcement_id": str(row["id"]),
+            }).eq("id", draft["ends_announcement_id"]).execute()
+
+        # Who it reaches is worked out from what was STORED, so the fan-out and
+        # the feeds can never disagree about the audience.
+        stored = {**draft, **row}
+        recipients = [u for u in _recipients(db, stored) if str(u.get("id")) != str(actor.get("id"))]
+        _notify_published(stored, recipients)
+        reach = _reach(recipients)
+        entry.new = {**summary, "reach": reach}
+
     return {**stored, "reach": reach}
 
 
@@ -1162,10 +1167,18 @@ def mark_reached(announcement_id: str, resident_id: str, actor: dict, *, reached
 
     now = _now().isoformat()
     fields = {"handled_at": now if reached else None, "handled_by": actor.get("id") if reached else None}
-    db.table("announcement_responses").update(fields).eq("announcement_id", announcement_id).eq("user_id", resident_id).execute()
+    with audit_service.action(
+        actor=actor,
+        action="announcement.help_reached" if reached else "announcement.help_reopened",
+        target_type="announcement",
+        target_id=str(announcement_id),
+        target_label=row.get("title"),
+        new={"resident_id": resident_id},
+    ):
+        db.table("announcement_responses").update(fields).eq("announcement_id", announcement_id).eq("user_id", resident_id).execute()
 
     if reached:
-        by = agency_name or (f"{actor.get('agency_type')} provincial office" if actor.get("agency_type") else "The station")
+        by = agency_name or (provincial_office_name(actor.get("agency_type")) if actor.get("agency_type") else "The station")
         try:
             notification_service.create_for_user(
                 resident_id,
@@ -1184,14 +1197,6 @@ def mark_reached(announcement_id: str, resident_id: str, actor: dict, *, reached
             )
         except Exception:
             log.error("announcement.ack_notify_failed", announcement_id=announcement_id, exc_info=True)
-    audit_service.record(
-        actor=actor,
-        action="announcement.help_reached" if reached else "announcement.help_reopened",
-        target_type="announcement",
-        target_id=str(announcement_id),
-        target_label=row.get("title"),
-        new={"resident_id": resident_id},
-    )
     return {**answer, **fields}
 
 
@@ -1204,21 +1209,20 @@ def deactivate(announcement_id: str, actor: dict) -> dict:
         raise ValueError("Announcement not found.")
     _assert_issuer(check.data, actor, "take down")
 
-    result = (
-        db.table("announcements")
-        .update({"is_active": False})
-        .eq("id", announcement_id)
-        .execute()
-    )
-    if not result.data:
-        raise RuntimeError("Failed to deactivate announcement.")
-
-    audit_service.record(
+    with audit_service.action(
         actor=actor,
         action="announcement.deactivated",
         target_type="announcement",
         target_id=announcement_id,
         target_label=check.data.get("title"),
-    )
+    ):
+        result = (
+            db.table("announcements")
+            .update({"is_active": False})
+            .eq("id", announcement_id)
+            .execute()
+        )
+        if not result.data:
+            raise RuntimeError("Failed to deactivate announcement.")
 
     return result.data[0]

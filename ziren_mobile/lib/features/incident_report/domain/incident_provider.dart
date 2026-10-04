@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -468,6 +469,67 @@ class IncidentProvider extends ChangeNotifier {
   double get speechConfidence => _speechConfidence;
   List<LocaleName> get speechLocales => _speechLocales;
   String? get activeSpeechLocale => _activeSpeechLocale;
+
+  // ── The language the resident SPEAKS ──────────────────────
+  //
+  // Evaluator finding #22 (2026-10-05): Bisaya voice-to-text came out wrong.
+  // The cause was not the recogniser: no report screen ever said which
+  // language was being spoken, so every report was heard by the Filipino
+  // (Tagalog) recogniser, and SpeechLocaleResolver's Cebuano path for Bisaya
+  // was never reached. The app's display language cannot carry it either -
+  // it offers only Filipino and English - so this is its own setting, chosen
+  // beside the microphone and remembered on the phone.
+
+  static const spokenLanguages = <String>['Filipino', 'Bisaya', 'Waray', 'English'];
+  static const _spokenKey = 'ziren.spoken_language';
+  String _spokenLanguage = LocaleProvider.languageFilipino;
+  String get spokenLanguage => _spokenLanguage;
+
+  /// Whether this phone has a recogniser for the spoken language itself, not
+  /// only a fallback. When false the words on screen deserve a second look.
+  bool get spokenLanguageNative => SpeechLocaleResolver.hasNativeSupport(
+    languageName: _spokenLanguage,
+    available: _speechLocales,
+  );
+
+  /// The recogniser that will actually be used for [language] on this phone,
+  /// as a language code ('ceb', 'fil'...), or null if the phone has none.
+  String? recogniserFor(String language) {
+    final codes = SpeechLocaleResolver.availableCandidates(
+      languageName: language,
+      available: _speechLocales,
+    );
+    return codes.isEmpty ? null : codes.first;
+  }
+
+  Future<void> loadSpokenLanguage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_spokenKey);
+      if (saved != null && spokenLanguages.contains(saved)) {
+        _spokenLanguage = saved;
+      } else {
+        // First time: whatever the app is displayed in is the best guess.
+        _spokenLanguage = LocaleProvider.current.languageCode == 'en'
+            ? LocaleProvider.languageEnglish
+            : LocaleProvider.languageFilipino;
+      }
+    } catch (_) {
+      // Storage unavailable: keep the default; dictation still works.
+    }
+  }
+
+  Future<void> setSpokenLanguage(String language) async {
+    if (!spokenLanguages.contains(language) || language == _spokenLanguage) return;
+    _spokenLanguage = language;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_spokenKey, language);
+    } catch (_) {
+      // Not remembered across launches, but used for this session.
+    }
+  }
   String? get speechError => _speechError;
 
   // ── Media attachments ────────────────────────────────────
@@ -481,14 +543,35 @@ class IncidentProvider extends ChangeNotifier {
   bool get hasMedia => _selectedMedia.isNotEmpty;
 
   void addMedia(File file) {
-    if (_selectedMedia.length >= 5) {
-      _mediaError = 'Maximum 5 attachments per report.';
+    final t = LocaleProvider.strings;
+    if (_selectedMedia.length >= MediaUploadService.maxFiles) {
+      _mediaError = t.mediaMaxFiles;
+      notifyListeners();
+      return;
+    }
+    // Checked the moment the file is chosen (evaluator findings #20 and #21).
+    // It used to be checked only by the upload, after Submit, so a resident
+    // who recorded a long video learned it was too big at the worst moment.
+    final bytes = _fileSize(file);
+    if (bytes != null && MediaUploadService.exceedsLimit(bytes)) {
+      _mediaError = t.mediaTooLarge(
+        (bytes / (1024 * 1024)).toStringAsFixed(0),
+        MediaUploadService.maxSizeMb.toString(),
+      );
       notifyListeners();
       return;
     }
     _selectedMedia.add(file);
     _mediaError = null;
     notifyListeners();
+  }
+
+  static int? _fileSize(File file) {
+    try {
+      return file.lengthSync();
+    } catch (_) {
+      return null; // the upload will report it if it really cannot be read
+    }
   }
 
   void removeMedia(int index) {
@@ -823,6 +906,7 @@ class IncidentProvider extends ChangeNotifier {
         _speechLocales = const [];
       }
     }
+    await loadSpokenLanguage();
     notifyListeners();
   }
 
@@ -840,10 +924,10 @@ class IncidentProvider extends ChangeNotifier {
   /// may well read the app in Filipino and speak Waray.
   Future<void> startListening({
     required ValueSetter<String> onResult,
-    String spokenLanguage = LocaleProvider.languageFilipino,
+    String? spokenLanguage,
   }) {
     final resolved = SpeechLocaleResolver.resolve(
-      languageName: spokenLanguage,
+      languageName: spokenLanguage ?? _spokenLanguage,
       available: _speechLocales,
     );
     return _listen(localeId: resolved, onResult: onResult);

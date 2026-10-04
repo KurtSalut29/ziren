@@ -89,13 +89,14 @@ class MediaAttachmentField extends StatelessWidget {
             error!,
             style: const TextStyle(fontSize: 12, color: ZirenTokens.systemError),
           ),
-        ] else if (media.isEmpty) ...[
-          const SizedBox(height: ZirenTokens.space6),
-          Text(
-            hint,
-            style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
-          ),
         ],
+        // Always on screen, before and after a file is added: the limits are
+        // what a resident needs to know BEFORE recording (findings #20, #21).
+        const SizedBox(height: ZirenTokens.space6),
+        Text(
+          hint,
+          style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
+        ),
       ],
     );
   }

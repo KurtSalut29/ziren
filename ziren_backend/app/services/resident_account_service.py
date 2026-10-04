@@ -430,9 +430,8 @@ def _suspend_row(
     actor: dict, automatic: bool, incident_id: str | None = None,
 ) -> dict:
     indefinite = until.year >= 9000
-    db.table("users").update({"sos_suspended_until": until.isoformat()}).eq("id", str(row["id"])).execute()
-    at = _now().isoformat()
-    audit_service.record(
+    # Recorded first: no audit row, no suspension (finding #6).
+    with audit_service.action(
         actor=actor, action=SUSPENDED, target_type="user", target_id=str(row["id"]),
         target_label=row.get("full_name"),
         previous={"sos_suspended_until": row.get("sos_suspended_until")},
@@ -441,7 +440,9 @@ def _suspend_row(
             "suspended_until": None if indefinite else until.isoformat(),
             "indefinite": indefinite, "automatic": automatic,
         },
-    )
+    ):
+        db.table("users").update({"sos_suspended_until": until.isoformat()}).eq("id", str(row["id"])).execute()
+    at = _now().isoformat()
     when = "until further notice" if indefinite else f"until {until.strftime('%B %d, %Y')}"
     _tell(
         str(row["id"]),
@@ -479,14 +480,14 @@ def warn(
         _assert_scope(db, row, actor)
 
     count = int(row.get("sos_warning_count") or 0) + 1
-    db.table("users").update({"sos_warning_count": count}).eq("id", user_id).execute()
-    at = _now().isoformat()
-    audit_service.record(
+    with audit_service.action(
         actor=actor, action=WARNED, target_type="user", target_id=user_id,
         target_label=row.get("full_name"),
         previous={"sos_warning_count": count - 1},
         new={"violation": violation, "note": note, "incident_id": incident_id, "warning_count": count},
-    )
+    ):
+        db.table("users").update({"sos_warning_count": count}).eq("id", user_id).execute()
+    at = _now().isoformat()
     left = AUTO_SUSPEND_AT - count
     _tell(
         user_id,
@@ -553,14 +554,14 @@ def reinstate(user_id: str, *, note: str | None, clear_warnings: bool, actor: di
     payload: dict = {"sos_suspended_until": None}
     if clear_warnings:
         payload["sos_warning_count"] = 0
-    db.table("users").update(payload).eq("id", user_id).execute()
     new_count = 0 if clear_warnings else count
-    audit_service.record(
+    with audit_service.action(
         actor=actor, action=REINSTATED, target_type="user", target_id=user_id,
         target_label=row.get("full_name"),
         previous={"sos_suspended_until": row.get("sos_suspended_until"), "sos_warning_count": count},
         new={"note": note, "warning_count": new_count, "cleared_warnings": clear_warnings},
-    )
+    ):
+        db.table("users").update(payload).eq("id", user_id).execute()
     _tell(
         user_id,
         type_="account.reinstated",

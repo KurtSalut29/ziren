@@ -24,8 +24,10 @@ Routes:
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
+from contextlib import ExitStack
+
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 
@@ -57,6 +59,47 @@ def _agency_ids_for_type(db, agency_type: str | None) -> list[str]:
 
 
 # ── Self-service profile ──────────────────────────────────────
+
+class PushTokenRequest(BaseModel):
+    token: str
+    platform: str = "android"
+
+
+@router.post("/me/push-token", status_code=204)
+def register_push_token(
+    body: PushTokenRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Register this phone for push notifications (evaluator findings #11 / #12),
+    so notices reach it while the app is closed. Idempotent; a phone that
+    changes accounts moves to the newest one.
+    """
+    from app.services import push_service
+    try:
+        push_service.register_token(str(current_user["id"]), body.token, body.platform)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    except Exception:
+        # Before migration 046 there is nowhere to keep it: the app carries on
+        # with in-app notices, exactly as before.
+        log.warning("push.register_failed", user_id=str(current_user["id"]), exc_info=True)
+    return Response(status_code=204)
+
+
+@router.delete("/me/push-token", status_code=204)
+def forget_push_token(
+    token: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """Sign-out: stop pushing to this phone (or, with no token, to all of this account's)."""
+    from app.services import push_service
+    try:
+        push_service.forget_token(str(current_user["id"]), token)
+    except Exception:
+        log.warning("push.forget_failed", user_id=str(current_user["id"]), exc_info=True)
+    return Response(status_code=204)
+
 
 @router.get("/me", response_model=UserProfile)
 def get_my_profile(
@@ -829,88 +872,103 @@ def create_agency_admin(
             ),
         )
 
-    # Send invite email via Supabase Auth
-    try:
-        auth_response = db.auth.admin.invite_user_by_email(
-            body.email,
-            options={
-                "data": {
-                    "full_name": body.full_name,
-                    "role": "agency_admin",
-                    "agency_id": body.agency_id,
+    # Recorded before the invite goes out: no audit row, no account (#6).
+    # The new account's id only exists once Supabase creates it, so it is
+    # carried in new_value rather than target_id.
+    with audit_service.action(
+        actor=current_user,
+        action="agency_admin.created",
+        target_type="user",
+        target_label=body.full_name,
+        new={"email": body.email, "agency_id": body.agency_id, "role": "agency_admin"},
+        metadata={"notify_body": f"{body.full_name} invited as Agency Admin for {agency_check.data['name']}."},
+        agency_type=agency_check.data["agency_type"],
+    ) as entry:
+        # Send invite email via Supabase Auth
+        try:
+            auth_response = db.auth.admin.invite_user_by_email(
+                body.email,
+                options={
+                    "data": {
+                        "full_name": body.full_name,
+                        "role": "agency_admin",
+                        "agency_id": body.agency_id,
+                    },
+                    # Configurable — see Settings.dashboard_base_url. Hardcoding
+                    # this sent invitees to a port the dashboard does not serve,
+                    # and to "localhost" as resolved by whatever device opened the
+                    # email (a phone, in practice).
+                    "redirect_to": settings.accept_invite_url,
                 },
-                # Configurable — see Settings.dashboard_base_url. Hardcoding
-                # this sent invitees to a port the dashboard does not serve,
-                # and to "localhost" as resolved by whatever device opened the
-                # email (a phone, in practice).
-                "redirect_to": settings.accept_invite_url,
-            },
-        )
-    except Exception as e:
-        detail = str(e)
-        # An auth.users row can exist without a public.users profile — the
-        # insert below runs after this call, so any earlier failure between the
-        # two leaves exactly that orphan. The pre-check above reads profiles,
-        # so it cannot see one, and the invite is where it surfaces.
-        if "already been registered" in detail:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    f"{body.email} already exists in Supabase Auth but has no "
-                    "Ziren profile. This is a half-provisioned account from an "
-                    "interrupted invite. A Provincial Admin must delete the auth "
-                    "user in the Supabase dashboard before this address can be "
-                    "invited again."
-                ),
             )
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Could not send invite: {detail}",
-        )
+        except Exception as e:
+            detail = str(e)
+            # An auth.users row can exist without a public.users profile — the
+            # insert below runs after this call, so any earlier failure between the
+            # two leaves exactly that orphan. The pre-check above reads profiles,
+            # so it cannot see one, and the invite is where it surfaces.
+            if "already been registered" in detail:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"{body.email} already exists in Supabase Auth but has no "
+                        "Ziren profile. This is a half-provisioned account from an "
+                        "interrupted invite. A Provincial Admin must delete the auth "
+                        "user in the Supabase dashboard before this address can be "
+                        "invited again."
+                    ),
+                )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not send invite: {detail}",
+            )
 
-    new_uid = auth_response.user.id
+        new_uid = auth_response.user.id
 
-    # UPSERT, not INSERT — and the distinction is the whole bug this replaced.
-    #
-    # invite_user_by_email() above created the auth.users row, which fires the
-    # AFTER INSERT trigger public.handle_new_auth_user(). That trigger has
-    # ALREADY written the public.users profile by the time we get here. The
-    # original plain .insert() therefore hit the same primary key and died:
-    #
-    #     23505  duplicate key value violates unique constraint "users_pkey"
-    #
-    # which escaped as an unhandled 500, so approving an access request failed
-    # every time for any address not already in public.users.
-    #
-    # There is a second half to it. The trigger enforces a role allow-list —
-    # anything outside ('resident','responder') is forced to 'resident' — so
-    # the row it just created says 'resident', not 'agency_admin'. That
-    # allow-list is a deliberate security control and the ONLY chokepoint
-    # shared by the FastAPI and mobile registration paths, so it stays exactly
-    # as it is: it exists to stop CLIENT-supplied roles. This endpoint is
-    # server-side, already gated behind require_role("provincial_admin"), and is
-    # the sanctioned provisioning path — so it corrects the row afterwards
-    # rather than weakening the trigger. Without this the account would be
-    # created, but as a resident, and the applicant would accept an invite
-    # into an account with none of the access they were approved for.
-    profile_row = {
-        "id": str(new_uid),
-        "email": body.email,
-        "full_name": body.full_name,
-        "role": "agency_admin",
-        "agency_id": body.agency_id,
-        "approval_status": "not_required",
-        "is_verified": False,   # until they accept the invite
-    }
+        # UPSERT, not INSERT — and the distinction is the whole bug this replaced.
+        #
+        # invite_user_by_email() above created the auth.users row, which fires the
+        # AFTER INSERT trigger public.handle_new_auth_user(). That trigger has
+        # ALREADY written the public.users profile by the time we get here. The
+        # original plain .insert() therefore hit the same primary key and died:
+        #
+        #     23505  duplicate key value violates unique constraint "users_pkey"
+        #
+        # which escaped as an unhandled 500, so approving an access request failed
+        # every time for any address not already in public.users.
+        #
+        # There is a second half to it. The trigger enforces a role allow-list —
+        # anything outside ('resident','responder') is forced to 'resident' — so
+        # the row it just created says 'resident', not 'agency_admin'. That
+        # allow-list is a deliberate security control and the ONLY chokepoint
+        # shared by the FastAPI and mobile registration paths, so it stays exactly
+        # as it is: it exists to stop CLIENT-supplied roles. This endpoint is
+        # server-side, already gated behind require_role("provincial_admin"), and is
+        # the sanctioned provisioning path — so it corrects the row afterwards
+        # rather than weakening the trigger. Without this the account would be
+        # created, but as a resident, and the applicant would accept an invite
+        # into an account with none of the access they were approved for.
+        profile_row = {
+            "id": str(new_uid),
+            "email": body.email,
+            "full_name": body.full_name,
+            "role": "agency_admin",
+            "agency_id": body.agency_id,
+            "approval_status": "not_required",
+            "is_verified": False,   # until they accept the invite
+        }
 
-    upsert_result = db.table("users").upsert(profile_row).execute()
+        upsert_result = db.table("users").upsert(profile_row).execute()
 
-    if not upsert_result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Invite sent but profile write failed.",
-        )
-    insert_result = upsert_result
+        if not upsert_result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invite sent but profile write failed.",
+            )
+        insert_result = upsert_result
+
+        entry.new = {"user_id": str(new_uid), "email": body.email,
+                     "agency_id": body.agency_id, "role": "agency_admin"}
 
     log.info(
         "provincial_admin.agency_admin_invited",
@@ -919,16 +977,6 @@ def create_agency_admin(
         acting_provincial_admin=str(current_user["id"]),
     )
 
-    audit_service.record(
-        actor=current_user,
-        action="agency_admin.created",
-        target_type="user",
-        target_id=str(new_uid),
-        target_label=body.full_name,
-        new={"agency_id": body.agency_id, "role": "agency_admin"},
-        metadata={"notify_body": f"{body.full_name} invited as Agency Admin for {agency_check.data['name']}."},
-        agency_type=agency_check.data["agency_type"],
-    )
 
     return {**insert_result.data[0], "invite_sent": True}
 
@@ -951,7 +999,7 @@ def update_agency_admin(
     # Verify target is an agency_admin
     check = (
         db.table("users")
-        .select("id, role, agency_id")
+        .select("id, role, agency_id, full_name")
         .eq("id", user_id)
         .single()
         .execute()
@@ -998,18 +1046,43 @@ def update_agency_admin(
             detail="No updatable fields provided.",
         )
 
-    result = (
-        db.table("users")
-        .update(updates)
-        .eq("id", user_id)
-        .execute()
-    )
-
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Update failed.",
+    # One audit row per kind of change, all written before the update runs.
+    target_label = check.data.get("full_name") or user_id
+    with ExitStack() as audits:
+        if "is_verified" in updates:
+            audits.enter_context(audit_service.action(
+                actor=current_user,
+                action="account.reactivated" if updates["is_verified"] else "account.deactivated",
+                target_type="user",
+                target_id=user_id,
+                target_label=target_label,
+                previous={"is_verified": not updates["is_verified"]},
+                new={"is_verified": updates["is_verified"]},
+                agency_type=current_user.get("agency_type"),
+            ))
+        if "agency_id" in updates:
+            audits.enter_context(audit_service.action(
+                actor=current_user,
+                action="agency_admin.assigned",
+                target_type="user",
+                target_id=user_id,
+                target_label=target_label,
+                previous={"agency_id": check.data.get("agency_id")},
+                new={"agency_id": updates["agency_id"]},
+                agency_type=current_user.get("agency_type"),
+            ))
+        result = (
+            db.table("users")
+            .update(updates)
+            .eq("id", user_id)
+            .execute()
         )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Update failed.",
+            )
 
     log.info(
         "provincial_admin.agency_admin_updated",
@@ -1017,30 +1090,6 @@ def update_agency_admin(
         updates=updates,
         acting_provincial_admin=str(current_user["id"]),
     )
-
-    target_label = result.data[0].get("full_name") or user_id
-    if "is_verified" in updates:
-        audit_service.record(
-            actor=current_user,
-            action="account.reactivated" if updates["is_verified"] else "account.deactivated",
-            target_type="user",
-            target_id=user_id,
-            target_label=target_label,
-            previous={"is_verified": not updates["is_verified"]},
-            new={"is_verified": updates["is_verified"]},
-            agency_type=current_user.get("agency_type"),
-        )
-    if "agency_id" in updates:
-        audit_service.record(
-            actor=current_user,
-            action="agency_admin.assigned",
-            target_type="user",
-            target_id=user_id,
-            target_label=target_label,
-            previous={"agency_id": check.data.get("agency_id")},
-            new={"agency_id": updates["agency_id"]},
-            agency_type=current_user.get("agency_type"),
-        )
 
     return result.data[0]
 
@@ -1583,16 +1632,7 @@ def update_resident_status(
             detail="Only resident accounts can be updated via this endpoint.",
         )
 
-    result = (
-        db.table("users")
-        .update({"is_verified": body.is_active})
-        .eq("id", user_id)
-        .execute()
-    )
-    if not result.data:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Update failed.")
-
-    audit_service.record(
+    with audit_service.action(
         actor=current_user,
         action="account.reactivated" if body.is_active else "account.suspended",
         target_type="user",
@@ -1600,7 +1640,15 @@ def update_resident_status(
         target_label=check.data.get("full_name"),
         previous={"is_verified": not body.is_active},
         new={"is_verified": body.is_active},
-    )
+    ):
+        result = (
+            db.table("users")
+            .update({"is_verified": body.is_active})
+            .eq("id", user_id)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Update failed.")
 
     return result.data[0]
 
@@ -1663,16 +1711,7 @@ def reassign_responder(
             detail="You can only reassign Responders within your own agency type.",
         )
 
-    result = (
-        db.table("users")
-        .update({"agency_id": body.agency_id})
-        .eq("id", user_id)
-        .execute()
-    )
-    if not result.data:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Update failed.")
-
-    audit_service.record(
+    with audit_service.action(
         actor=current_user,
         action="responder.reassigned",
         target_type="user",
@@ -1681,6 +1720,14 @@ def reassign_responder(
         previous={"agency_id": check.data.get("agency_id")},
         new={"agency_id": body.agency_id},
         agency_type=current_user.get("agency_type"),
-    )
+    ):
+        result = (
+            db.table("users")
+            .update({"agency_id": body.agency_id})
+            .eq("id", user_id)
+            .execute()
+        )
+        if not result.data:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Update failed.")
 
     return result.data[0]

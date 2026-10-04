@@ -232,6 +232,23 @@ export default function OperationalAreaPage() {
         ) : (
           // The previous figures stay put, dimmed, while a new period loads.
           <div aria-busy={loading} className={loading ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
+            {/* Never a silent cut-off: when a period holds more reports than the
+                figures can use, the page says how many it covers (finding #16). */}
+            {data.data_limits?.truncated && (
+              <p
+                className="mb-3 rounded-[var(--radius-md)] border px-3 py-2 text-[12.5px]"
+                data-testid="area-data-limit"
+                role="status"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--color-system-warning) 45%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-system-warning) 8%, transparent)',
+                }}
+              >
+                These figures use the newest {data.data_limits.incident_rows_used.toLocaleString()} of{' '}
+                {data.data_limits.incident_rows_matched.toLocaleString()} reports in this period. Choose a
+                shorter period to include every report.
+              </p>
+            )}
             {tab === 'overview' && <OverviewTab data={data} onOpenIncident={setOpenId} onTab={selectTab} />}
             {tab === 'map' && <MapTab data={data} onOpenIncident={setOpenId} />}
             {tab === 'barangays' && <BarangaysTab data={data} focused={barangay} onFocus={setBarangay} />}

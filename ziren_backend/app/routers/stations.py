@@ -16,6 +16,7 @@ Routes:
 
 import re
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -524,7 +525,10 @@ def create_station(
             detail="You can only add stations to your own agency type.",
         )
 
+    # The id is chosen here so the audit row can name the station before it
+    # exists: the record is written first, and no record means no station.
     payload: dict = {
+        "id": str(uuid4()),
         "agency_id": body.agency_id,
         "name": body.name,
         "address": body.address,
@@ -534,34 +538,33 @@ def create_station(
     if body.latitude is not None and body.longitude is not None:
         payload["location"] = f"SRID=4326;POINT({body.longitude} {body.latitude})"
 
-    result = (
-        db.table("stations")
-        .insert(payload)
-        .execute()
-    )
-
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create station.",
+    with audit_service.action(
+        actor=current_user,
+        action="station.created",
+        target_type="station",
+        target_id=payload["id"],
+        target_label=body.name,
+        new=payload,
+        metadata={"notify_body": f"New station '{body.name}' added to {agency_check.data['name']}."},
+        agency_type=agency_check.data["agency_type"],
+    ):
+        result = (
+            db.table("stations")
+            .insert(payload)
+            .execute()
         )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create station.",
+            )
 
     log.info(
         "provincial_admin.station_created",
         station_id=result.data[0].get("id"),
         agency_id=body.agency_id,
         acting_provincial_admin=str(current_user["id"]),
-    )
-
-    audit_service.record(
-        actor=current_user,
-        action="station.created",
-        target_type="station",
-        target_id=result.data[0]["id"],
-        target_label=body.name,
-        new=payload,
-        metadata={"notify_body": f"New station '{body.name}' added to {agency_check.data['name']}."},
-        agency_type=agency_check.data["agency_type"],
     )
 
     return result.data[0]
@@ -637,17 +640,27 @@ def update_station_location(
 
     _assert_agency_write_scope(current_user, str(station.data["agency_id"]))
 
-    result = (
-        db.table("stations")
-        .update({"location": f"SRID=4326;POINT({body.longitude} {body.latitude})"})
-        .eq("id", station_id)
-        .execute()
-    )
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update the station location.",
+    # Moving a station moves which incidents route to it, so it is recorded
+    # like the other station changes (it was the one that was not).
+    with audit_service.action(
+        actor=current_user,
+        action="station.location_updated",
+        target_type="station",
+        target_id=station_id,
+        target_label=station.data.get("name"),
+        new={"latitude": body.latitude, "longitude": body.longitude},
+    ):
+        result = (
+            db.table("stations")
+            .update({"location": f"SRID=4326;POINT({body.longitude} {body.latitude})"})
+            .eq("id", station_id)
+            .execute()
         )
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update the station location.",
+            )
 
     log.info(
         "admin.station_location_updated",
@@ -702,27 +715,7 @@ def deactivate_station(
             detail="Station is already deactivated.",
         )
 
-    result = (
-        db.table("stations")
-        .update({"is_active": False})
-        .eq("id", station_id)
-        .execute()
-    )
-
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to deactivate station.",
-        )
-
-    log.info(
-        "provincial_admin.station_deactivated",
-        station_id=station_id,
-        agency_id=check.data["agency_id"],
-        acting_provincial_admin=str(current_user["id"]),
-    )
-
-    audit_service.record(
+    with audit_service.action(
         actor=current_user,
         action="station.deactivated",
         target_type="station",
@@ -731,7 +724,27 @@ def deactivate_station(
         previous={"is_active": True},
         new={"is_active": False},
         agency_type=station_agency_type,
+    ):
+        result = (
+            db.table("stations")
+            .update({"is_active": False})
+            .eq("id", station_id)
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to deactivate station.",
+            )
+
+    log.info(
+        "provincial_admin.station_deactivated",
+        station_id=station_id,
+        agency_id=check.data["agency_id"],
+        acting_provincial_admin=str(current_user["id"]),
     )
+
 
     return {"station_id": station_id, "is_active": False, "deactivated": True}
 
@@ -773,27 +786,7 @@ def activate_station(
             detail="Station is already active.",
         )
 
-    result = (
-        db.table("stations")
-        .update({"is_active": True})
-        .eq("id", station_id)
-        .execute()
-    )
-
-    if not result.data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to activate station.",
-        )
-
-    log.info(
-        "provincial_admin.station_activated",
-        station_id=station_id,
-        agency_id=check.data["agency_id"],
-        acting_provincial_admin=str(current_user["id"]),
-    )
-
-    audit_service.record(
+    with audit_service.action(
         actor=current_user,
         action="station.activated",
         target_type="station",
@@ -802,7 +795,27 @@ def activate_station(
         previous={"is_active": False},
         new={"is_active": True},
         agency_type=station_agency_type,
+    ):
+        result = (
+            db.table("stations")
+            .update({"is_active": True})
+            .eq("id", station_id)
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to activate station.",
+            )
+
+    log.info(
+        "provincial_admin.station_activated",
+        station_id=station_id,
+        agency_id=check.data["agency_id"],
+        acting_provincial_admin=str(current_user["id"]),
     )
+
 
     return {"station_id": station_id, "is_active": True, "activated": True}
 

@@ -12,6 +12,7 @@ from typing import Iterable
 import structlog
 
 from app.db.supabase_client import get_supabase
+from app.services import push_service
 
 log = structlog.get_logger()
 
@@ -42,6 +43,16 @@ def _insert_for_recipients(
         for rid in recipient_ids
     ]
     db.table("notifications").insert(rows).execute()
+
+    # The same notice to the phone, even when the app is closed (evaluator
+    # findings #11 / #12). A no-op until push is configured; never raises.
+    push_service.send_to_users(
+        recipient_ids,
+        title=title,
+        body=body,
+        data={"type": type_, "link": link, **(metadata or {})},
+        important=is_important,
+    )
 
 
 def create_for_roles(

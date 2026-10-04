@@ -58,6 +58,7 @@ import { Alert } from '@/components/ui/alert';
 import { SeverityRationale } from '@/components/ui/severity-rationale';
 import { IncidentFeedbackPanel } from '@/components/incidents/incident-feedback-panel';
 import { IncidentVoiceNote } from '@/components/incidents/incident-voice-note';
+import { IncidentAttachments } from '@/components/incidents/incident-attachments';
 import { IncidentLocationPanel } from '@/components/incidents/incident-location-panel';
 import { NearbyResponders } from '@/components/incidents/nearby-responders';
 import { ReportedFromElsewhere } from '@/components/incidents/reported-from-elsewhere';
@@ -700,6 +701,8 @@ export function IncidentDetailModal({
                       token={token}
                     />
                   )}
+                  {/* Not gated on showRecording: a typed report can carry photos. */}
+                  <IncidentAttachments incidentId={detail.id} token={token} />
 
                   {hasFacts ? (
                     <div className="grid grid-cols-2 gap-2 xl:grid-cols-3" data-testid="incident-facts">

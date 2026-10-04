@@ -99,7 +99,7 @@ export default function HelpPage() {
             <Keyboard aria-hidden="true" className="size-4 text-muted-foreground" /> Shortcuts
           </p>
           <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 text-[12.5px]">
-            <dt><Kbd>Ctrl</Kbd> + <Kbd>K</Kbd></dt><dd className="text-[var(--color-text-secondary)]">Search everything</dd>
+            <dt><Kbd>/</Kbd></dt><dd className="text-[var(--color-text-secondary)]">Search everything</dd>
             <dt><Kbd>Ctrl</Kbd> + <Kbd>B</Kbd></dt><dd className="text-[var(--color-text-secondary)]">Show or hide the sidebar</dd>
             <dt><Kbd>Esc</Kbd></dt><dd className="text-[var(--color-text-secondary)]">Close a panel or dialog</dd>
           </dl>

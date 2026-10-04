@@ -1212,11 +1212,21 @@ def clear_distress(distress_id: str, staff: dict, note: str | None = None) -> di
         return {"id": distress_id, "cleared_at": row["cleared_at"], "already_cleared": True}
 
     now = _now()
-    db.table("responder_distress").update({
-        "cleared_at": now,
-        "cleared_by": str(staff["id"]),
-        "clear_note": (note or "").strip() or None,
-    }).eq("id", distress_id).execute()
+    # Closing a crew's distress signal is recorded first, like every other
+    # state change an admin makes (evaluator finding #6).
+    from app.services import audit_service
+    with audit_service.action(
+        actor=staff,
+        action="responder.distress_cleared",
+        target_type="responder_distress",
+        target_id=distress_id,
+        new={"note": (note or "").strip() or None},
+    ):
+        db.table("responder_distress").update({
+            "cleared_at": now,
+            "cleared_by": str(staff["id"]),
+            "clear_note": (note or "").strip() or None,
+        }).eq("id", distress_id).execute()
 
     log.info("responder.distress_cleared", distress_id=distress_id, cleared_by=str(staff["id"]))
     return {"id": distress_id, "cleared_at": now, "already_cleared": False}

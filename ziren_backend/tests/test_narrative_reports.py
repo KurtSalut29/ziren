@@ -27,6 +27,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services import incident_narrative_service as svc
+from tests.audit_helpers import patch_audit_action
 
 AGENCY_ADMIN = {"id": "u1", "role": "agency_admin", "agency_id": "ag-1", "full_name": "Admin"}
 PROVINCIAL = {"id": "u3", "role": "provincial_admin", "agency_type": "BFP", "full_name": "Provincial"}
@@ -129,7 +130,25 @@ def _save_db(*, incident_status="resolved", existing=None, write_error=None):
     reports.insert.side_effect = _write("insert")
     reports.update.side_effect = _write("update")
 
-    db.table.side_effect = lambda name: {"incidents": incidents, "incident_narrative_reports": reports}[name]
+    # Migration 044's history table: count of kept versions, and the insert.
+    versions = MagicMock()
+    versions.select.return_value = versions
+    versions.eq.return_value = versions
+    versions.execute.return_value = MagicMock(data=[], count=0)
+
+    def _version(body):
+        writes.append(("version", dict(body)))
+        b = MagicMock()
+        b.execute.return_value = MagicMock(data=[body])
+        return b
+
+    versions.insert.side_effect = _version
+
+    db.table.side_effect = lambda name: {
+        "incidents": incidents,
+        "incident_narrative_reports": reports,
+        "incident_narrative_report_versions": versions,
+    }[name]
     return db, writes
 
 
@@ -141,7 +160,8 @@ def _save(db, **overrides):
     )
     kwargs.update(overrides)
     with patch.object(svc, "get_supabase", return_value=db), \
-         patch.object(svc, "assert_agency_scope"):
+         patch.object(svc, "assert_agency_scope"), \
+         patch_audit_action():
         return svc.save_narrative_report("i1", AGENCY_ADMIN, **kwargs)
 
 
@@ -483,3 +503,47 @@ def test_save_route_accepts_an_empty_draft_with_details():
     assert res.status_code == 200
     assert fn.call_args.kwargs["narrative"] == ""
     assert fn.call_args.kwargs["details"] == {"offense": "Fire"}
+
+
+# ── 4. finalized reports keep their previous version (evaluator #8) ─────────
+
+_FINAL = {
+    "id": "r1", "incident_id": "i1", "status": "finalized", "narrative": "It happened.",
+    "reporting_person_name": None, "incident_occurred_at": None, "place_of_incident": None,
+    "prepared_by_name": None, "investigator_name": None, "reference_no": None,
+}
+
+
+def test_changing_a_finalized_report_needs_a_reason():
+    db, writes = _save_db(existing=dict(_FINAL))
+    with pytest.raises(HTTPException) as exc:
+        _save(db, narrative="It happened differently.")
+    assert exc.value.status_code == 422
+    assert writes == [], "nothing is written without the reason"
+
+
+def test_the_previous_version_is_kept_before_the_change():
+    db, writes = _save_db(existing=dict(_FINAL))
+    _save(db, narrative="It happened differently.", amendment_reason="Corrected the order of events")
+    assert [k for k, _ in writes] == ["version", "update"], "history first, then the change"
+    version = writes[0][1]
+    assert version["snapshot"]["narrative"] == "It happened."
+    assert version["changed_fields"] == ["narrative"]
+    assert version["change_reason"] == "Corrected the order of events"
+    assert version["changed_by"] == "u1" and version["version_no"] == 1
+
+
+def test_saving_a_finalized_report_unchanged_writes_nothing():
+    db, writes = _save_db(existing=dict(_FINAL))
+    row = _save(db, narrative="It happened.")
+    assert writes == [] and row["unchanged"] is True
+
+
+def test_no_change_when_the_history_cannot_be_kept():
+    db, writes = _save_db(existing=dict(_FINAL))
+    versions = db.table("incident_narrative_report_versions")
+    versions.insert.side_effect = Exception("relation does not exist")
+    with pytest.raises(HTTPException) as exc:
+        _save(db, narrative="Changed", amendment_reason="Corrected the narrative")
+    assert exc.value.status_code == 503
+    assert not any(k == "update" for k, _ in writes)

@@ -232,6 +232,55 @@ export interface IncidentAlert {
   filedAt: Date;
 }
 
+/**
+ * Which reports in a queue poll are new to this console, and which of those
+ * may interrupt the dispatcher. Pure apart from adding the new ids to `seen`.
+ *
+ * Kept out of the hook so the rule a dispatcher depends on — what sounds the
+ * alarm — is unit-tested (evaluator finding #25), not only clicked through.
+ */
+export function decideAlerts(
+  queue: QueueIncident[],
+  seen: Set<string>,
+  rules: NotificationRules,
+): { fresh: IncidentAlert[]; arrived: string[] } {
+  const fresh: IncidentAlert[] = [];
+  // Every report new to this console, whether or not the agency's rules let
+  // it interrupt. The lists behind the popup refresh on it: a low-severity
+  // report that was (rightly) not announced must still show up.
+  const arrived: string[] = [];
+  for (const inc of queue) {
+    if (seen.has(inc.id)) continue;
+    seen.add(inc.id);
+    arrived.push(inc.id);
+
+    const scored = inc.suggested_severity ?? inc.severity ?? null;
+
+    // An unscored report ALWAYS alerts, whatever the rules say. The rules
+    // let an agency opt out of severities it has judged not worth an
+    // interruption; nobody has judged this one, so there is nothing to
+    // opt out of. Testing it against `rules[undefined]` is what used to
+    // make exactly these reports vanish.
+    const severity: AlertSeverity = scored ? (scored as AlertSeverity) : 'untriaged';
+    if (severity !== 'untriaged' && !rules[severity as keyof NotificationRules]) continue;
+
+    fresh.push({
+      id: inc.id,
+      severity,
+      reportText: inc.report_text,
+      address: inc.location_address,
+      category: inc.incident_category,
+      agencyType: inc.stations?.agencies?.agency_type ?? null,
+      sosFlagged: Boolean(inc.sos_flagged),
+      // The resident's clock, not ours. A report can already be a minute
+      // old by the time a 10s poll and a slow upload have run their
+      // course, and "filed 2m ago" is the number a dispatcher acts on.
+      filedAt: new Date(inc.created_at),
+    });
+  }
+  return { fresh, arrived };
+}
+
 export function useIncidentAlerts({
   token,
   isProvincialAdmin,
@@ -748,40 +797,7 @@ export function useIncidentAlerts({
         seenRef.current = restored;
       }
 
-      const fresh: IncidentAlert[] = [];
-      // Every report new to this console, whether or not the agency's rules let
-      // it interrupt. The lists behind the popup refresh on it: a low-severity
-      // report that was (rightly) not announced must still show up.
-      const arrived: string[] = [];
-      for (const inc of queue) {
-        if (seenRef.current.has(inc.id)) continue;
-        seenRef.current.add(inc.id);
-        arrived.push(inc.id);
-
-        const scored = inc.suggested_severity ?? inc.severity ?? null;
-
-        // An unscored report ALWAYS alerts, whatever the rules say. The rules
-        // let an agency opt out of severities it has judged not worth an
-        // interruption; nobody has judged this one, so there is nothing to
-        // opt out of. Testing it against `rules[undefined]` is what used to
-        // make exactly these reports vanish.
-        const severity: AlertSeverity = scored ? (scored as AlertSeverity) : 'untriaged';
-        if (severity !== 'untriaged' && !active[severity as keyof NotificationRules]) continue;
-
-        fresh.push({
-          id: inc.id,
-          severity,
-          reportText: inc.report_text,
-          address: inc.location_address,
-          category: inc.incident_category,
-          agencyType: inc.stations?.agencies?.agency_type ?? null,
-          sosFlagged: Boolean(inc.sos_flagged),
-          // The resident's clock, not ours. A report can already be a minute
-          // old by the time a 10s poll and a slow upload have run their
-          // course, and "filed 2m ago" is the number a dispatcher acts on.
-          filedAt: new Date(inc.created_at),
-        });
-      }
+      const { fresh, arrived } = decideAlerts(queue, seenRef.current, active);
 
       saveSeen(seenRef.current, queue.map(i => i.id));
       announceArrivals(arrived);

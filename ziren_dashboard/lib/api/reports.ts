@@ -6,7 +6,7 @@
  * API requires.
  */
 
-import { ApiError } from './client';
+import { ApiError, httpErrorMessage, networkErrorMessage } from './client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
@@ -28,12 +28,17 @@ export interface ReportFile {
 }
 
 async function fetchFile(path: string, token: string, fallbackName: string): Promise<ReportFile> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (cause) {
+    throw new ApiError(networkErrorMessage(path, cause), 0);
+  }
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
-    throw new ApiError(typeof body.detail === 'string' ? body.detail : `HTTP ${response.status}`, response.status);
+    const body = await response.json().catch(() => null);
+    throw new ApiError(httpErrorMessage(response.status, body), response.status);
   }
   const blob = await response.blob();
   const match = (response.headers.get('content-disposition') ?? '').match(/filename="([^"]+)"/);

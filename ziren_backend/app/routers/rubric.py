@@ -256,24 +256,39 @@ def activate_config(
     _assert_agency_scope(current_user, agency_type)
     db = get_supabase()
 
-    try:
-        config = rubric_service.activate_config(
-            agency_type=agency_type,
-            config_id=str(config_id),
-            actor_id=str(current_user["id"]),
-            reason=body.reason,
-            db=db,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
-        )
-    except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(exc),
-        )
+    # In addition to rubric_audit_log (rubric_service.activate_config below),
+    # this also lands in the general audit_logs table so System Governance's
+    # Configuration History and Audit Logs (that agency's Provincial Admin)
+    # show rubric activations alongside every other administrative action.
+    # Written before the activation: no record, no activation (finding #6).
+    with audit_service.action(
+        actor=current_user,
+        action="rubric.activated",
+        target_type="rubric_config",
+        target_id=str(config_id),
+        agency_type=agency_type.value,
+    ) as entry:
+        try:
+            config = rubric_service.activate_config(
+                agency_type=agency_type,
+                config_id=str(config_id),
+                actor_id=str(current_user["id"]),
+                reason=body.reason,
+                db=db,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            )
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(exc),
+            )
+        entry.target_label = f"{agency_type.value} v{config.version}"
+        entry.new = {"version": config.version, "agency_type": agency_type.value}
+        entry.metadata = {"notify_body": f"{agency_type.value} severity rules activated: v{config.version}."}
 
     log.info(
         "rubric.router.config_activated",
@@ -281,21 +296,6 @@ def activate_config(
         version=config.version,
         config_id=str(config_id),
         actor_id=current_user["id"],
-    )
-
-    # In addition to rubric_audit_log (rubric_service.activate_config above),
-    # this also lands in the general audit_logs table so System Governance's
-    # Configuration History and Audit Logs (that agency's Provincial Admin)
-    # show rubric activations alongside every other administrative action.
-    audit_service.record(
-        actor=current_user,
-        action="rubric.activated",
-        target_type="rubric_config",
-        target_id=str(config_id),
-        target_label=f"{agency_type.value} v{config.version}",
-        new={"version": config.version, "agency_type": agency_type.value},
-        metadata={"notify_body": f"{agency_type.value} severity rules activated: v{config.version}."},
-        agency_type=agency_type.value,
     )
 
     return _config_to_detail_response(config)

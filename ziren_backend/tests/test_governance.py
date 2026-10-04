@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.incident import IncidentCategory, IncidentStatus
 from app.services import governance_service
+from tests.audit_helpers import patch_audit_action
 
 client = TestClient(app)
 
@@ -73,7 +74,7 @@ def test_update_policy_writes_audit_entry_with_previous_value():
     actor = {"id": PROVINCIAL_ADMIN_UUID, "role": "provincial_admin", "full_name": "Test Admin"}
 
     with patch("app.services.governance_service.get_supabase", return_value=db), \
-         patch("app.services.audit_service.record") as audit_record:
+         patch_audit_action() as audit_record:
         result = governance_service.update_policy(
             "account_policies", {"require_id_verification": False}, actor,
         )

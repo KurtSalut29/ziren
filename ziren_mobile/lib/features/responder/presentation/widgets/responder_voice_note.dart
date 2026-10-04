@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/theme/app_tokens.dart';
@@ -26,22 +27,35 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 /// The links are signed and expire in five minutes, so they are fetched when
 /// this widget is built rather than cached with the incident.
 class ResponderVoiceNote extends StatefulWidget {
-  const ResponderVoiceNote({super.key, required this.incidentId});
+  const ResponderVoiceNote({super.key, required this.incidentId, this.repository});
 
   final String incidentId;
+
+  /// For tests; the app uses the real repository.
+  final ResponderRepository? repository;
 
   @override
   State<ResponderVoiceNote> createState() => _ResponderVoiceNoteState();
 }
 
 class _ResponderVoiceNoteState extends State<ResponderVoiceNote> {
-  final _repo = ResponderRepository();
+  late final ResponderRepository _repo = widget.repository ?? ResponderRepository();
   final _player = AudioPlayer();
 
   List<Map<String, dynamic>> _media = const [];
   bool _loading = true;
   bool _failed = false;
   String? _playingUrl;
+
+  /// Signed links last five minutes. A photo that fails to load after that
+  /// fetches fresh links once; never a loop.
+  bool _refreshedLinks = false;
+
+  void _onLinkExpired() {
+    if (_refreshedLinks || !mounted) return;
+    _refreshedLinks = true;
+    _load();
+  }
 
   @override
   void initState() {
@@ -94,19 +108,23 @@ class _ResponderVoiceNoteState extends State<ResponderVoiceNote> {
   Widget build(BuildContext context) {
     if (_loading) return const SizedBox.shrink();
 
+    final t = AppLocalizations.of(context);
     if (_failed) {
       return _Note(
         icon: LucideIcons.cloud_off,
         tint: ZirenTokens.systemWarning,
-        text: 'Could not load the attachments. Pull down to try again.',
+        text: t.respAttachmentsLoadFailed,
       );
     }
 
     final audio = _media.where((m) => m['kind'] == 'audio').toList();
-    final others = _media.where((m) => m['kind'] != 'audio').length;
+    // Photos and videos. These used to be counted and answered with "view it
+    // in the dashboard": a crew on the road has no dashboard, and the
+    // dashboard did not show them either (evaluator findings #1 and #3).
+    final visual = _media.where((m) => m['kind'] != 'audio').toList();
 
     // Nothing recorded — a typed report. No empty player, no placeholder.
-    if (audio.isEmpty && others == 0) return const SizedBox.shrink();
+    if (audio.isEmpty && visual.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,18 +138,211 @@ class _ResponderVoiceNoteState extends State<ResponderVoiceNote> {
               if (url != null) _toggle(url);
             },
           ),
-        if (others > 0) ...[
-          if (audio.isNotEmpty) const SizedBox(height: ZirenTokens.space8),
-          _Note(
-            icon: LucideIcons.images,
-            tint: ZirenTokens.textSecondary,
-            text:
-                others == 1
-                    ? '1 photo or video attached — view it in the dashboard.'
-                    : '$others photos or videos attached — view them in the dashboard.',
-          ),
+        if (visual.isNotEmpty) ...[
+          const SizedBox(height: ZirenTokens.space12),
+          _AttachmentGrid(items: visual, onLinkExpired: _onLinkExpired),
         ],
       ],
+    );
+  }
+}
+
+/// The caller's photos and videos as thumbnails. A photo opens full screen
+/// with pinch-to-zoom; a video opens in the phone's own player.
+class _AttachmentGrid extends StatelessWidget {
+  const _AttachmentGrid({required this.items, required this.onLinkExpired});
+
+  final List<Map<String, dynamic>> items;
+  final VoidCallback onLinkExpired;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(LucideIcons.images, size: 15, color: ZirenTokens.textSecondary),
+            const SizedBox(width: ZirenTokens.space8),
+            Expanded(
+              child: Text(
+                t.respAttachmentsTitle,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: ZirenTokens.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: ZirenTokens.space8),
+        GridView.count(
+          crossAxisCount: 3,
+          mainAxisSpacing: ZirenTokens.space8,
+          crossAxisSpacing: ZirenTokens.space8,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            for (final m in items)
+              _AttachmentTile(
+                url: m['url'] as String?,
+                isVideo: m['kind'] == 'video',
+                onLinkExpired: onLinkExpired,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _AttachmentTile extends StatelessWidget {
+  const _AttachmentTile({
+    required this.url,
+    required this.isVideo,
+    required this.onLinkExpired,
+  });
+
+  final String? url;
+  final bool isVideo;
+  final VoidCallback onLinkExpired;
+
+  Future<void> _openVideo(BuildContext context, String url) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    var opened = false;
+    try {
+      opened = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened) {
+      messenger.showSnackBar(SnackBar(content: Text(t.respAttachmentVideoFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final radius = BorderRadius.circular(ZirenTokens.radius12);
+    final link = url;
+
+    if (link == null) {
+      return Semantics(
+        label: t.respAttachmentUnavailable,
+        child: Container(
+          decoration: BoxDecoration(
+            color: ZirenTokens.surfaceRaised,
+            borderRadius: radius,
+            border: Border.all(color: ZirenTokens.surfaceBorder),
+          ),
+          alignment: Alignment.center,
+          child: Icon(LucideIcons.image_off, size: 22, color: ZirenTokens.textMuted),
+        ),
+      );
+    }
+
+    if (isVideo) {
+      return Semantics(
+        button: true,
+        label: t.respAttachmentPlayVideo,
+        child: Material(
+          color: Colors.black,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => _openVideo(context, link),
+            child: const Center(
+              child: Icon(LucideIcons.circle_play, size: 34, color: Colors.white),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Semantics(
+      button: true,
+      image: true,
+      child: Material(
+        color: ZirenTokens.surfaceRaised,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              fullscreenDialog: true,
+              builder: (_) => _PhotoViewer(url: link),
+            ),
+          ),
+          child: Image.network(
+            link,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            loadingBuilder: (context, child, progress) => progress == null
+                ? child
+                : const Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+            errorBuilder: (context, error, stack) {
+              // Most likely the five-minute link lapsed while the screen was
+              // open: fetch fresh ones (once) after this frame.
+              WidgetsBinding.instance.addPostFrameCallback((_) => onLinkExpired());
+              return Center(
+                child: Icon(LucideIcons.image_off, size: 22, color: ZirenTokens.textMuted),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen photo with pinch-to-zoom: a thumbnail is too small to read a
+/// house number or a plate from.
+class _PhotoViewer extends StatelessWidget {
+  const _PhotoViewer({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        leading: IconButton(
+          tooltip: t.respPhotoViewerClose,
+          icon: const Icon(LucideIcons.x),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: InteractiveViewer(
+        minScale: 1,
+        maxScale: 5,
+        child: Center(
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stack) => Padding(
+              padding: const EdgeInsets.all(ZirenTokens.space24),
+              child: Text(
+                t.respAttachmentUnavailable,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

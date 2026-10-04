@@ -20,6 +20,19 @@ class AppConfig {
     defaultValue: 'http://localhost:8000',
   );
 
+  // Firebase Cloud Messaging (push notifications with the app closed;
+  // evaluator findings #11 / #12). From the Firebase console: Project
+  // settings -> General -> Your apps (Android). All four optional: without
+  // them push stays off and notices arrive in the app as before.
+  static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
+  static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
+  static const String firebaseSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
+  static const String firebaseProjectId = String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '');
+
+  static bool get pushConfigured =>
+      firebaseApiKey.isNotEmpty && firebaseAppId.isNotEmpty &&
+      firebaseSenderId.isNotEmpty && firebaseProjectId.isNotEmpty;
+
   /// Sanity-check at startup — call this in main() before runApp().
   /// Prints a masked diagnostic so you can confirm keys are loaded.
   static void validate() {

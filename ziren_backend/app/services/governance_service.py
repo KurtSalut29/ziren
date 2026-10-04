@@ -46,16 +46,7 @@ def update_policy(key: str, value: dict[str, Any], actor: dict) -> dict[str, Any
 
     previous = get_policy(key)
 
-    result = (
-        db.table("system_config")
-        .update({"value": value, "updated_by": actor.get("id")})
-        .eq("key", key)
-        .execute()
-    )
-    if not result.data:
-        raise RuntimeError(f"Failed to update {key}.")
-
-    audit_service.record(
+    with audit_service.action(
         actor=actor,
         action="system_config.updated",
         target_type="system_config",
@@ -63,7 +54,15 @@ def update_policy(key: str, value: dict[str, Any], actor: dict) -> dict[str, Any
         target_label=key.replace("_", " "),
         previous={"value": previous.get("value")},
         new={"value": value},
-    )
+    ):
+        result = (
+            db.table("system_config")
+            .update({"value": value, "updated_by": actor.get("id")})
+            .eq("key", key)
+            .execute()
+        )
+        if not result.data:
+            raise RuntimeError(f"Failed to update {key}.")
 
     return result.data[0]
 

@@ -15,14 +15,26 @@ import '../../../core/errors/failures.dart';
 ///
 /// Media is optional evidence — it is NOT fed into the NLP pipeline.
 class MediaUploadService {
-  MediaUploadService({SupabaseClient? client})
-    : _client = client ?? Supabase.instance.client;
+  MediaUploadService({SupabaseClient? client}) : _injected = client;
 
-  final SupabaseClient _client;
+  // Looked up when first used, not when constructed: the report provider
+  // builds one of these up front, and an eager lookup made that provider
+  // impossible to create in a unit test (no Supabase there).
+  final SupabaseClient? _injected;
+  SupabaseClient get _client => _injected ?? Supabase.instance.client;
   final ImagePicker _picker = ImagePicker();
 
   static const String _bucket = 'incident-media';
-  static const int _maxSizeMb = 50;
+
+  /// Shown on the form and checked when a file is chosen, not only here.
+  static const int maxSizeMb = 50;
+  static const int maxBytes = maxSizeMb * 1024 * 1024;
+  static const int maxFiles = 5;
+  static const Duration maxVideoLength = Duration(minutes: 2);
+  static const int _maxSizeMb = maxSizeMb;
+
+  /// Whether a file of [bytes] is over the per-file limit.
+  static bool exceedsLimit(int bytes) => bytes > maxBytes;
 
   /// Pick a photo from gallery or camera.
   Future<File?> pickPhoto({required ImageSource source}) async {
@@ -44,7 +56,7 @@ class MediaUploadService {
     try {
       final picked = await _picker.pickVideo(
         source: source,
-        maxDuration: const Duration(minutes: 2),
+        maxDuration: maxVideoLength,
       );
       return picked != null ? File(picked.path) : null;
     } catch (_) {

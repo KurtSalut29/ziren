@@ -862,6 +862,27 @@ function ReviewModal({
 
         <div className="scroll-slim min-h-0 flex-1 overflow-y-auto bg-[var(--color-surface-raised)]/40 px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-3.5">
+            {/* Who decided last, and what. A resident can be submitted again
+                after a rejection; the reviewer should see the earlier call
+                and whose it was (evaluator finding #7). */}
+            {detail.last_review && (
+              <p
+                className="rounded-[var(--radius-md)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-3 py-2 text-[12.5px] text-[var(--color-text-secondary)]"
+                data-testid="last-review"
+              >
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  {detail.last_review.decision === 'approved' ? 'Approved' : 'Rejected'}
+                </span>
+                {' by '}
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  {detail.last_review.reviewed_by_name ?? 'an administrator'}
+                </span>
+                {detail.last_review.reviewed_at && (
+                  <> on {new Date(detail.last_review.reviewed_at).toLocaleString()}</>
+                )}
+              </p>
+            )}
+
             {/* Step 1: the two photographs, side by side and whole. They were
                 cropped to fill their boxes, which cut the number off a card
                 photographed at an angle - the one thing being compared. */}

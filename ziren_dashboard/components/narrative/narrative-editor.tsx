@@ -42,6 +42,7 @@ import {
   downloadNarrativeReportPdf, fetchIncidentDetail, fetchNarrativeReport, saveNarrativeReport,
   type IncidentDetail, type NarrativeDetails, type NarrativeReport,
 } from '@/lib/api/dispatch';
+import { NarrativeVersions } from './narrative-versions';
 import { signOut, useAuth } from '@/lib/hooks/useAuth';
 import { toast } from '@/lib/toast';
 import { formatDateTime } from '@/lib/format/datetime';
@@ -95,6 +96,11 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
   const [details, setDetails] = useState<NarrativeDetails>(() => mergeDetails(null));
 
   const [saving, setSaving] = useState<'draft' | 'finalize' | null>(null);
+  // Changing a FINALIZED report asks why first; the server keeps the previous
+  // version with that reason (evaluator finding #8).
+  const [amendOpen, setAmendOpen] = useState(false);
+  const [amendReason, setAmendReason] = useState('');
+  const [versionsKey, setVersionsKey] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [removal, setRemoval] = useState<Removal>(null);
@@ -166,7 +172,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
   }, [incidentId, token]);
 
   // ── Save ────────────────────────────────────────────────────────────────
-  const save = useCallback(async (finalize: boolean, opts: { silent?: boolean } = {}) => {
+  const save = useCallback(async (finalize: boolean, opts: { silent?: boolean; reason?: string } = {}) => {
     if (!token || readOnly) return false;
     if (finalize && !narrative.trim()) {
       toast.error('Write the narrative of the incident before finalizing.');
@@ -189,7 +195,9 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
         reference_no: referenceNo.trim() || null,
         details,
         finalize,
+        ...(opts.reason ? { amendment_reason: opts.reason } : {}),
       }, token);
+      if (opts.reason) setVersionsKey(k => k + 1);
       setExisting(saved);
       setDetailsSupported(saved.details_supported);
       setSavedAt(new Date(saved.updated_at));
@@ -396,7 +404,7 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
               <>
                 <Button
                   disabled={busy || (!dirty && !!existing)}
-                  onClick={() => void save(false)}
+                  onClick={() => (finalized ? setAmendOpen(true) : void save(false))}
                   size="sm"
                   variant="outline"
                 >
@@ -758,11 +766,11 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-surface-border)] bg-[var(--color-surface-raised)] px-5 py-4">
                 <p className="max-w-[60ch] text-[12.5px] text-[var(--color-text-secondary)]">
                   {finalized
-                    ? 'This report is finalized. You can still correct it - save your changes and download a fresh PDF.'
+                    ? 'This report is finalized. You can still correct it: you will be asked why, and the previous version is kept.'
                     : 'A draft can be saved with parts still empty. Finalize when the narrative is written and the people are named.'}
                 </p>
                 <div className="flex gap-2">
-                  <Button disabled={busy || (!dirty && !!existing)} onClick={() => void save(false)} size="sm" variant="outline">
+                  <Button disabled={busy || (!dirty && !!existing)} onClick={() => (finalized ? setAmendOpen(true) : void save(false))} size="sm" variant="outline">
                     {finalized ? 'Save changes' : 'Save draft'}
                   </Button>
                   {!finalized && (
@@ -778,6 +786,43 @@ export function NarrativeEditor({ incidentId }: { incidentId: string }) {
                 </div>
               </div>
             )}
+
+            {finalized && token && (
+              <NarrativeVersions incidentId={incidentId} refreshKey={versionsKey} token={token} />
+            )}
+
+            <AlertDialog onOpenChange={o => { if (!o) setAmendOpen(false); }} open={amendOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Change a finalized report</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Say why it is being changed. The report as it reads now is kept as an earlier
+                    version, with your name and this reason.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <textarea
+                  aria-label="Reason for the change"
+                  className="min-h-[88px] w-full rounded-[var(--radius-md)] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] p-2.5 text-[13.5px]"
+                  maxLength={1000}
+                  onChange={e => setAmendReason(e.target.value)}
+                  placeholder="e.g. Corrected the time the crew arrived"
+                  value={amendReason}
+                />
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={amendReason.trim().length < 5 || !!saving}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      const ok = await save(false, { reason: amendReason.trim() });
+                      if (ok) { setAmendOpen(false); setAmendReason(''); }
+                    }}
+                  >
+                    Save the change
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </fieldset>
       </div>

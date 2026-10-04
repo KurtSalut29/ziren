@@ -23,7 +23,7 @@ class StationRepository {
             'id, agency_id, name, address, location, agencies(name, agency_type, municipality)',
           )
           .eq('is_active', true)
-          .order('name');
+          .order('name', ascending: true);
 
       final stations =
           (result as List<dynamic>)

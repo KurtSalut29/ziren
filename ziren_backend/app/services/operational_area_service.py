@@ -42,6 +42,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from collections import Counter, defaultdict
+from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Callable, Iterable
@@ -169,8 +170,14 @@ def vulnerability(user: dict, today: datetime) -> dict[str, bool]:
 _PREFIX_RE = re.compile(r"^(?:brgy|barangay|bgy|brg)\.?\s+", re.IGNORECASE)
 
 
+@lru_cache(maxsize=16384)
 def normalise_place(text: str) -> str:
-    """Lower-case, accent-free, prefix-free ('Brgy. San Roque' -> 'san roque')."""
+    """Lower-case, accent-free, prefix-free ('Brgy. San Roque' -> 'san roque').
+
+    Cached: the same few hundred place names recur across every report in a
+    window, and this ran for each of them on every pass (it was half the time
+    of the whole statistics build at 20,000 reports; evaluator finding #16).
+    """
     folded = unicodedata.normalize("NFKD", text or "")
     folded = "".join(c for c in folded if not unicodedata.combining(c)).strip().lower()
     folded = re.sub(r"\s+", " ", folded)
@@ -208,15 +215,49 @@ def _fetch_all(build: Callable[[], Any]) -> list[dict[str, Any]]:
     Every row of a query, paged. `build` returns a FRESH query each call —
     PostgREST builders are mutated by .range(), so one builder cannot be reused.
     """
-    rows: list[dict[str, Any]] = []
-    start = 0
-    while start < _MAX_ROWS:
-        page = build().range(start, start + _PAGE - 1).execute().data or []
-        rows.extend(page)
-        if len(page) < _PAGE:
-            break
-        start += _PAGE
-    return rows
+    return _fetch_counted(build)[0]
+
+
+#: Pages fetched at once once the size is known.
+_PAGE_WORKERS = 6
+
+
+def _fetch_counted(build: Callable[[], Any]) -> tuple[list[dict[str, Any]], int]:
+    """
+    (rows, total) for a query: up to _MAX_ROWS rows, and how many matched.
+
+    Evaluator finding #16. The pages used to be read one after another, so a
+    period with 18,000 reports cost twenty round trips in a row, and a period
+    with more than 20,000 was cut off without a word. Now the first page also
+    asks for the exact count, the remaining pages are read together, and the
+    caller is told when the figures do not cover everything (the query orders
+    newest first, so what is kept is the most recent).
+    """
+    first = build().range(0, _PAGE - 1).execute()
+    rows: list[dict[str, Any]] = list(getattr(first, "data", None) or [])
+    raw_total = getattr(first, "count", None)
+    total = raw_total if isinstance(raw_total, int) else None
+    if len(rows) < _PAGE:
+        return rows, total if total is not None else len(rows)
+
+    wanted = min(total, _MAX_ROWS) if total is not None else _MAX_ROWS
+    starts = list(range(_PAGE, wanted, _PAGE))
+    if total is None:
+        # No count came back: fall back to reading until a short page.
+        for start in starts:
+            page = build().range(start, start + _PAGE - 1).execute().data or []
+            rows.extend(page)
+            if len(page) < _PAGE:
+                break
+        return rows, len(rows)
+
+    def _page(start: int) -> list[dict[str, Any]]:
+        return build().range(start, min(start + _PAGE, wanted) - 1).execute().data or []
+
+    with ThreadPoolExecutor(max_workers=_PAGE_WORKERS) as pool:
+        for page in pool.map(_page, starts):
+            rows.extend(page)
+    return rows[:_MAX_ROWS], total
 
 
 def _coords(loc: Any) -> tuple[float, float] | None:
@@ -869,7 +910,7 @@ def get_operational_area(
     barangay_ids = [b["id"] for b in barangays]
 
     def _incident_query():
-        q = db.table("incidents").select(_INCIDENT_COLS).in_("assigned_agency_id", scope_list)
+        q = db.table("incidents").select(_INCIDENT_COLS, count="exact").in_("assigned_agency_id", scope_list)
         if fetch_since:
             q = q.gte("created_at", fetch_since)
         if until:
@@ -906,14 +947,15 @@ def get_operational_area(
     def _none(empty):
         return lambda: empty
 
-    all_rows, awaiting_rows, active_now, residents_all, station_rows, responder_rows = _parallel(
-        (lambda: _fetch_all(_incident_query)) if scope_list else _none([]),
+    incident_fetch, awaiting_rows, active_now, residents_all, station_rows, responder_rows = _parallel(
+        (lambda: _fetch_counted(_incident_query)) if scope_list else _none(([], 0)),
         _awaiting if scope_list else _none([]),
         _active_count if scope_list else _none(0),
         _residents if barangays else _none([]),
         _stations if agencies_by_id else _none([]),
         _responders if scope_list else _none([]),
     )
+    all_rows, incident_total = incident_fetch
 
     def _in_window(r: dict) -> bool:
         if since is None:
@@ -1058,6 +1100,14 @@ def get_operational_area(
         "agencies": agencies_out,
         "readiness": readiness,
         "recent": build_recent(rows, barangay_names, exclude),
+        # Said out loud when the figures do not cover every report (finding
+        # #16): the newest _MAX_ROWS reports are used and the page says so.
+        "data_limits": {
+            "max_rows": _MAX_ROWS,
+            "incident_rows_used": len(all_rows),
+            "incident_rows_matched": incident_total,
+            "truncated": incident_total > len(all_rows),
+        },
         "map": {"incidents": map_incidents, "coverage_polygons": [], "responders": map_responders,
                 "stations": map_stations, "incidents_shown": len(map_incidents),
                 "incidents_with_coordinates": sum(1 for r in rows if _coords(r.get("location")))},

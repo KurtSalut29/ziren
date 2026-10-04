@@ -1371,7 +1371,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get quickAttachPhotoVideo => 'Maglagay ng larawan o video (opsyonal)';
 
   @override
-  String get quickMediaHint => 'Maglagay ng litrato o video bilang ebidensya (max 5, 50MB bawat isa)';
+  String get quickMediaHint => 'Litrato o video bilang ebidensya: hanggang 5 file, 50 MB bawat isa, video na hanggang 2 minuto.';
 
   @override
   String get quickTakePhoto => 'Kumuha ng litrato';
@@ -3100,7 +3100,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reviewAddAttachment => 'Magdagdag';
 
   @override
-  String get reviewAttachmentsHint => 'Opsyonal — magdagdag ng litrato o video bilang ebidensya (max 5, 50MB bawat isa)';
+  String get reviewAttachmentsHint => 'Opsyonal: magdagdag ng litrato o video bilang ebidensya. Hanggang 5 file, 50 MB bawat isa, video na hanggang 2 minuto.';
 
   @override
   String get sosAddDetailsExample => 'hal. \"May 3 na tao na nagtatakas, sunog sa ground floor, wala nang nakikitang apoy sa labas…\"';
@@ -4518,5 +4518,55 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String welcomeDemoHint(String button) {
     return 'Mapapanood mo ito anumang oras: pindutin ang \"$button\" sa Home, tapos Demo.';
+  }
+
+  @override
+  String get respAttachmentsTitle => 'Mga larawan at video mula sa nag-report';
+
+  @override
+  String get respAttachmentsLoadFailed => 'Hindi ma-load ang mga attachment. Hilahin pababa para subukan ulit.';
+
+  @override
+  String get respAttachmentUnavailable => 'Hindi mabuksan ang file na ito.';
+
+  @override
+  String get respAttachmentPlayVideo => 'I-play ang video';
+
+  @override
+  String get respAttachmentVideoFailed => 'Hindi mabuksan ang video na ito sa phone na ito.';
+
+  @override
+  String get respPhotoViewerClose => 'Isara';
+
+  @override
+  String mediaTooLarge(String size, String max) {
+    return 'Ang file na ito ay $size MB. Hanggang $max MB lang bawat litrato o video. Mag-record ng mas maikling video o pumili ng mas maliit na file.';
+  }
+
+  @override
+  String get mediaMaxFiles => 'Hanggang 5 file lang ang puwedeng ilagay.';
+
+  @override
+  String speakingLanguageLabel(String language) {
+    return 'Wika: $language';
+  }
+
+  @override
+  String get speakingLanguageTitle => 'Anong wika ang gagamitin mo sa pagsasalita?';
+
+  @override
+  String get speakingLanguageMessage => 'Sinasabi nito sa phone kung anong wika ang pakikinggan. Hindi nito binabago ang wika ng app.';
+
+  @override
+  String speakingLanguageFallback(String language, String fallback) {
+    return 'Walang $language recogniser ang phone na ito. $fallback ang gagamitin sa pakikinig.';
+  }
+
+  @override
+  String get speakingLanguageNone => 'Walang speech recogniser ang phone para dito. Mag-type na lang.';
+
+  @override
+  String speakingLanguageCheck(String language) {
+    return 'Tingnan ang mga salita: puwedeng mali ang dinig ng phone sa $language. Ayusin bago ipadala.';
   }
 }

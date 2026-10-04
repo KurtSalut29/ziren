@@ -450,61 +450,138 @@ def get_incident_history(
     # `critical`/`resolved`/`cancelled` are HEAD requests: count="exact" puts
     # the number in the Content-Range header and `head=True` returns no rows
     # at all, so each is a count, not a page fetch.
-    def _window_count(build) -> int:
-        q = _scoped(db.table("incidents").select("id", count="exact", head=True))
-        return build(q).execute().count or 0
-
     total = resp.count if resp.count is not None else len(rows)
-
-    # avg_response_minutes: created_at -> dispatched_at, the same "time to
-    # dispatch" the queue and history cards already show per row (see
-    # dispatchLatency in incident-row.tsx) — NOT time to resolve. It needs the
-    # actual timestamps, not just a count, so this is one real data fetch
-    # rather than a HEAD request — narrowed to the two columns it needs and to
-    # rows that have a dispatched_at at all, since undispatched incidents have
-    # no response time to average in.
-    response_query = _scoped(
-        db.table("incidents")
-        .select("created_at, dispatched_at")
-        .not_.is_("dispatched_at", "null")
+    counts = _window_counts_rpc(
+        db, since=since, until=until, status=status, severity=severity, category=category,
+        station_id=station_id, record_no=record_no,
+        agency_ids=([str(dispatcher.get("agency_id"))] if role == "agency_admin" else agency_ids),
     )
-    response_rows = response_query.execute().data or []
-
-    response_minutes: list[float] = []
-    for row in response_rows:
-        created = _parse_dt(row.get("created_at"))
-        dispatched = _parse_dt(row.get("dispatched_at"))
-        if created and dispatched:
-            response_minutes.append((dispatched - created).total_seconds() / 60)
-
-    avg_response_minutes = (
-        round(sum(response_minutes) / len(response_minutes), 1) if response_minutes else None
-    )
-
-    # Distinct stations represented in the window — only meaningful for a
-    # Provincial Admin, whose scope spans several (an Agency Admin's is
-    # always 0 or 1). Needs the actual station_id column, not a head count,
-    # since a count can't tell two rows at the same station from two at
-    # different ones — so this is one more real fetch, same reasoning as
-    # response_query above, narrowed to the one column it needs.
-    stations_query = _scoped(db.table("incidents").select("station_id"))
-    stations_rows = stations_query.execute().data or []
-    stations_with_incidents = len({r["station_id"] for r in stations_rows if r.get("station_id")})
-
-    counts = {
-        "total":                  total,
-        "critical":               _window_count(lambda q: q.eq("severity", "critical")),
-        "resolved":               _window_count(lambda q: q.eq("status", "resolved")),
-        "cancelled":              _window_count(lambda q: q.eq("status", "cancelled")),
-        "avg_response_minutes":   avg_response_minutes,
-        "stations_with_incidents": stations_with_incidents,
-    }
+    if counts is None:
+        counts = _window_counts_fallback(db, _scoped, total)
 
     return {
         "items": rows,
         "total": total,
         "counts": counts,
     }
+
+
+def _window_counts_rpc(
+    db: Client, *, since, until, status, severity, category, station_id, record_no, agency_ids,
+) -> dict | None:
+    """Incident Records' summary tiles in one query (migration 045).
+
+    Evaluator finding #18. The tiles used to cost five more queries per page,
+    and the two that fetched rows had no range, so PostgREST's 1,000-row cap
+    applied: on a busier window the average response time and the station
+    tally were computed from an arbitrary first thousand rows. The database
+    function counts the whole filtered window at once. None when the function
+    is not there yet (migration 045 unapplied), and the caller falls back.
+    """
+    params = {
+        "p_since": since, "p_until": until, "p_status": status, "p_severity": severity,
+        "p_category": category, "p_station_id": station_id, "p_record_prefix": record_no,
+        "p_agency_ids": agency_ids,
+    }
+    try:
+        res = db.rpc("incident_window_counts", params).execute()
+    except Exception:
+        log.info("dispatch.window_counts_rpc_unavailable")
+        return None
+    data = getattr(res, "data", None)
+    if isinstance(data, list):
+        data = data[0] if data else None
+    if not isinstance(data, dict) or "total" not in data:
+        return None
+    avg = data.get("avg_response_minutes")
+    return {
+        "total":                   int(data.get("total") or 0),
+        "critical":                int(data.get("critical") or 0),
+        "resolved":                int(data.get("resolved") or 0),
+        "cancelled":               int(data.get("cancelled") or 0),
+        "avg_response_minutes":    float(avg) if avg is not None else None,
+        "stations_with_incidents": int(data.get("stations_with_incidents") or 0),
+    }
+
+
+#: Rows read per request on the fallback path: PostgREST answers at most 1,000.
+_FALLBACK_PAGE = 1000
+_FALLBACK_MAX = 50_000
+
+
+def _window_counts_fallback(db: Client, scoped, total: int) -> dict:
+    """The pre-045 path: head counts plus paged reads, run together.
+
+    Paged now, so the average and the tally cover the whole window rather
+    than the first 1,000 rows the unranged reads used to stop at.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _head(apply) -> int:
+        q = scoped(db.table("incidents").select("id", count="exact", head=True))
+        return apply(q).execute().count or 0
+
+    def _paged(columns: str, extra=lambda q: q) -> list[dict]:
+        out: list[dict] = []
+        start = 0
+        while start < _FALLBACK_MAX:
+            page = (extra(scoped(db.table("incidents").select(columns)))
+                    .range(start, start + _FALLBACK_PAGE - 1).execute().data or [])
+            out.extend(page)
+            if len(page) < _FALLBACK_PAGE:
+                break
+            start += _FALLBACK_PAGE
+        return out
+
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        f_crit = pool.submit(_head, lambda q: q.eq("severity", "critical"))
+        f_res = pool.submit(_head, lambda q: q.eq("status", "resolved"))
+        f_can = pool.submit(_head, lambda q: q.eq("status", "cancelled"))
+        f_resp = pool.submit(_paged, "created_at, dispatched_at", lambda q: q.not_.is_("dispatched_at", "null"))
+        f_st = pool.submit(_paged, "station_id")
+
+    minutes: list[float] = []
+    for row in f_resp.result():
+        created = _parse_dt(row.get("created_at"))
+        dispatched = _parse_dt(row.get("dispatched_at"))
+        if created and dispatched:
+            minutes.append((dispatched - created).total_seconds() / 60)
+
+    return {
+        "total":                   total,
+        "critical":                f_crit.result(),
+        "resolved":                f_res.result(),
+        "cancelled":               f_can.result(),
+        "avg_response_minutes":    round(sum(minutes) / len(minutes), 1) if minutes else None,
+        "stations_with_incidents": len({r["station_id"] for r in f_st.result() if r.get("station_id")}),
+    }
+
+
+#: A report a reviewer may still decide on.
+_UNDECIDED = ["pending", "clarification_requested"]
+
+
+def _claim_review(db: Client, incident_id: str, payload: dict) -> None:
+    """Apply a review decision only if nobody has decided in the meantime.
+
+    Evaluator finding #13: two admins with the same report open could accept
+    and reject it at the same moment; both passed the "not yet reviewed"
+    check, both wrote, and the report kept whichever landed last while the
+    log held both. The update is now conditional on the report still being
+    undecided, and the slower of the two is told what happened.
+    """
+    res = (
+        db.table("incidents")
+        .update(payload)
+        .eq("id", incident_id)
+        .in_("review_status", _UNDECIDED)
+        .execute()
+    )
+    if not getattr(res, "data", None):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Another admin decided on this report a moment ago. Refresh to see their decision.",
+        )
 
 
 def get_incident_queue(dispatcher: dict) -> list[dict]:
@@ -774,7 +851,7 @@ def get_incident_media(incident_id: str, dispatcher: dict) -> list[dict]:
 
     result = (
         db.table("incidents")
-        .select("id, media_urls, assigned_agency_id")
+        .select("id, media_urls, scene_media_urls, assigned_agency_id")
         .eq("id", incident_id)
         .single()
         .execute()
@@ -790,24 +867,82 @@ def get_incident_media(incident_id: str, dispatcher: dict) -> list[dict]:
     if dispatcher.get("role") in ("agency_admin", "provincial_admin"):
         assert_agency_scope(dispatcher, str(row.get("assigned_agency_id") or ""))
 
+    # Both sets, told apart by `source`. The resident's photos (media_urls)
+    # were signed here all along but the dashboard only ever drew the voice
+    # note, so a photo a resident attached reached no one. The crew's scene
+    # photos (scene_media_urls) were not signed at all.
     items: list[dict] = []
-    for path in row.get("media_urls") or []:
-        if not path:
-            continue
-        try:
-            signed = db.storage.from_(_MEDIA_BUCKET).create_signed_url(
-                path, _MEDIA_URL_TTL
-            )
-            url = signed.get("signedURL") or signed.get("signedUrl")
-        except Exception:
-            # One unreadable object must not take the whole incident down with
-            # it. The dispatcher still gets the report and the other
-            # attachments, and a null url renders as "unavailable".
-            log.warning("dispatch.media_sign_failed", incident_id=incident_id, path=path)
-            url = None
-        items.append({"path": path, "url": url, "kind": _media_kind(path)})
+    for source, paths in (
+        ("reporter", row.get("media_urls")),
+        ("scene", row.get("scene_media_urls")),
+    ):
+        for path in paths or []:
+            if not path:
+                continue
+            try:
+                signed = db.storage.from_(_MEDIA_BUCKET).create_signed_url(
+                    path, _MEDIA_URL_TTL
+                )
+                url = signed.get("signedURL") or signed.get("signedUrl")
+            except Exception:
+                # One unreadable object must not take the whole incident down
+                # with it. The dispatcher still gets the report and the other
+                # attachments, and a null url renders as "unavailable".
+                log.warning("dispatch.media_sign_failed", incident_id=incident_id, path=path)
+                url = None
+            items.append({"path": path, "url": url, "kind": _media_kind(path), "source": source})
 
     return items
+
+
+def _responder_position(responder: dict | None) -> dict | None:
+    """{lat, lng, updated_at} from the embedded responder row, or None.
+
+    The raw geometry is taken off the row: the client needs a point and its
+    age, not a GeoJSON object it would have to unpack.
+    """
+    if not isinstance(responder, dict):
+        return None
+    loc = responder.pop("location", None)
+    updated_at = responder.pop("location_updated_at", None)
+    coords = loc.get("coordinates") if isinstance(loc, dict) else None
+    if not coords or len(coords) < 2:
+        return None
+    return {"lat": coords[1], "lng": coords[0], "updated_at": updated_at}
+
+
+def get_responder_position(incident_id: str, dispatcher: dict) -> dict | None:
+    """The assigned responder's last position for one incident, or None.
+
+    Same scope rule as the media and the detail: an Agency Admin sees their
+    own agency's incidents, a Provincial Admin their agency type's.
+    """
+    db: Client = get_supabase()
+    result = (
+        db.table("incidents")
+        .select(
+            "id, assigned_agency_id, assigned_responder_id, "
+            "responder:users!incidents_assigned_responder_id_fkey("
+            "  full_name, location, location_updated_at"
+            ")"
+        )
+        .eq("id", incident_id)
+        .maybe_single()
+        .execute()
+    )
+    if result is None or not result.data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found.")
+
+    row = result.data
+    if dispatcher.get("role") in ("agency_admin", "provincial_admin"):
+        assert_agency_scope(dispatcher, str(row.get("assigned_agency_id") or ""))
+
+    responder = row.get("responder")
+    if not row.get("assigned_responder_id") or not isinstance(responder, dict):
+        return None
+    name = responder.get("full_name")
+    pos = _responder_position(responder) or {"lat": None, "lng": None, "updated_at": None}
+    return {"responder_id": row["assigned_responder_id"], "full_name": name, **pos}
 
 
 def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
@@ -826,7 +961,9 @@ def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
             # The crew member's name, for the record panel. Named by
             # constraint and aliased for the same reason as in
             # get_incident_history: incidents has three foreign keys to users.
-            "responder:users!incidents_assigned_responder_id_fkey(full_name, badge_id), "
+            "responder:users!incidents_assigned_responder_id_fkey("
+            "  full_name, badge_id, location, location_updated_at"
+            "), "
             "users!incidents_reporter_id_fkey("
             "  id, full_name, phone_number, is_verified, sos_warning_count, "
             "  sos_suspended_until, created_at, "
@@ -860,6 +997,11 @@ def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only view incidents assigned to your own agency type.",
             )
+
+    # Where the assigned crew member last reported being, and when. The modal's
+    # map showed only the station and the incident, so a dispatcher watching a
+    # responder drive there had no way to see them move.
+    row["responder_position"] = _responder_position(row.get("responder"))
 
     # Attach severity suggestion from rubric
     if not row.get("severity"):
@@ -1094,37 +1236,12 @@ def assign_responder(
 
     was_override = suggested_severity is not None and chosen_severity != suggested_severity
 
-    # Write dispatch_log row (immutable audit trail)
-    _write_dispatch_log(
-        db=db,
-        incident_id=incident_id,
-        dispatcher_id=dispatcher_id,
-        agency_id=str(incident.get("assigned_agency_id") or agency_id),
-        suggested_severity=suggested_severity,
-        chosen_severity=chosen_severity,
-        suggested_agency_id=None,
-        chosen_agency_id=str(incident.get("assigned_agency_id") or agency_id),
-        was_override=was_override,
-        override_reason=override_reason if was_override else None,
-        action="dispatched",
-        notes=notes,
-    )
-
-    # Update incident
     now = datetime.now(timezone.utc).isoformat()
     update_payload = {
         "status": "dispatched",
         "severity": chosen_severity,
         "assigned_responder_id": responder_id,
         "dispatched_at": now,
-        # A fresh assignment starts a fresh acceptance clock. Without
-        # this, an incident a previous crew declined would arrive on the
-        # new responder's phone already marked DECLINED, and the board
-        # would keep showing the old refusal next to the new assignment.
-        #
-        # decline_count is untouched on purpose — it counts the incident's
-        # whole history. Three refusals is a coverage problem, and it has
-        # to survive the fourth assignment to be visible as one.
         "accepted_at": None,
         "declined_at": None,
         "declined_reason": None,
@@ -1139,11 +1256,70 @@ def assign_responder(
         update_payload["review_status"] = "accepted"
         update_payload["reviewed_at"] = now
         update_payload["reviewed_by"] = dispatcher_id
-    db.table("incidents").update(update_payload).eq("id", incident_id).execute()
 
-    # The resident is told the moment help is sent, in those words. `at` is the
-    # dispatch time the row itself carries (`dispatched_at`), which is what lets
-    # the phone recognise this and the live update as one event.
+    # CLAIMED, not just written (evaluator finding #13, simultaneous use). The
+    # status check above and this update used to be two separate steps, so two
+    # dispatchers opening the same report and pressing Dispatch together both
+    # passed the check, both wrote, and two responders were sent while the
+    # record kept only the last. The update now only applies while the report
+    # is still undispatched; whoever is second is told so instead.
+    claimed = (
+        db.table("incidents")
+        .update(update_payload)
+        .eq("id", incident_id)
+        .in_("status", ["received", "processing"])
+        .execute()
+    )
+    if not getattr(claimed, "data", None):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This report was just dispatched by someone else. Refresh to see who is on it.",
+        )
+
+    try:
+        _write_dispatch_log(
+            db=db,
+            incident_id=incident_id,
+            dispatcher_id=dispatcher_id,
+            agency_id=str(incident.get("assigned_agency_id") or agency_id),
+            suggested_severity=suggested_severity,
+            chosen_severity=chosen_severity,
+            suggested_agency_id=None,
+            chosen_agency_id=str(incident.get("assigned_agency_id") or agency_id),
+            was_override=was_override,
+            override_reason=override_reason if was_override else None,
+            action="dispatched",
+            notes=notes,
+        )
+    except Exception as exc:
+        # No dispatch without its record (finding #6): put the report back the
+        # way it was and say so, rather than leave a crew sent with no trace.
+        db.table("incidents").update({
+            "status": incident["status"],
+            "assigned_responder_id": incident.get("assigned_responder_id"),
+            "dispatched_at": None,
+            **({"review_status": incident.get("review_status") or "pending", "reviewed_at": None,
+                "reviewed_by": None} if "review_status" in update_payload else {}),
+        }).eq("id", incident_id).execute()
+        log.error("dispatch.log_failed_rolled_back", incident_id=incident_id, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The dispatch was not made because it could not be recorded. Try again.",
+        ) from exc
+
+    # The crew hears about it even with the app closed (evaluator finding #12):
+    # the realtime alarm only reaches a phone with Ziren open.
+    if not is_self_assign:
+        from app.services import push_service
+        push_service.send_to_users(
+            [responder_id],
+            title="New assignment",
+            body=f"{(chosen_severity or '').upper()} incident. Open Ziren to accept.",
+            data={"type": "responder.assigned", "incident_id": incident_id, "severity": chosen_severity},
+            important=True,
+            channel="ziren_responder_dispatch_v2",
+        )
+
     _tell_reporter(
         incident,
         type_="incident.dispatched",
@@ -1349,11 +1525,11 @@ def accept_report(incident_id: str, dispatcher: dict) -> dict:
         )
 
     now = datetime.now(timezone.utc).isoformat()
-    db.table("incidents").update({
+    _claim_review(db, incident_id, {
         "review_status": "accepted",
         "reviewed_at": now,
         "reviewed_by": str(dispatcher["id"]),
-    }).eq("id", incident_id).execute()
+    })
 
     _write_dispatch_log(
         db=db, incident_id=incident_id, dispatcher_id=str(dispatcher["id"]),
@@ -1404,13 +1580,13 @@ def reject_report(incident_id: str, reason: str, dispatcher: dict) -> dict:
         )
 
     now = datetime.now(timezone.utc).isoformat()
-    db.table("incidents").update({
+    _claim_review(db, incident_id, {
         "review_status": "rejected",
         "reviewed_at": now,
         "reviewed_by": str(dispatcher["id"]),
         "rejection_reason": reason.strip(),
         "status": "cancelled",
-    }).eq("id", incident_id).execute()
+    })
 
     _write_dispatch_log(
         db=db, incident_id=incident_id, dispatcher_id=str(dispatcher["id"]),
@@ -1458,11 +1634,11 @@ def request_clarification(incident_id: str, note: str, dispatcher: dict) -> dict
         )
 
     now = datetime.now(timezone.utc).isoformat()
-    db.table("incidents").update({
+    _claim_review(db, incident_id, {
         "review_status": "clarification_requested",
         "clarification_note": note.strip(),
         "clarification_requested_at": now,
-    }).eq("id", incident_id).execute()
+    })
 
     _write_dispatch_log(
         db=db, incident_id=incident_id, dispatcher_id=str(dispatcher["id"]),
@@ -1676,10 +1852,23 @@ def flag_false_sos(
         assert_agency_scope(dispatcher, str(incident.get("assigned_agency_id") or ""))
 
     from app.services.incident_service import record_false_sos
-    result = record_false_sos(
-        reporter_id=str(incident["reporter_id"]),
-        acting_dispatcher_id=dispatcher_id,
-    )
+    from app.services import audit_service
+    # The flag raises the reporter's warning count and can suspend their SOS:
+    # recorded before it is applied, and refused if it cannot be (finding #6).
+    with audit_service.action(
+        actor=dispatcher,
+        action="incident.false_sos_flagged",
+        target_type="incident",
+        target_id=incident_id,
+        new={"reporter_id": str(incident["reporter_id"])},
+    ) as entry:
+        result = record_false_sos(
+            reporter_id=str(incident["reporter_id"]),
+            acting_dispatcher_id=dispatcher_id,
+        )
+        entry.new = {"reporter_id": str(incident["reporter_id"]), **{
+            k: result.get(k) for k in ("warning_count", "suspended_until") if isinstance(result, dict)
+        }}
     # The flag used to change the resident's record without a word to them, and
     # without an audit entry. Both now happen; neither can undo the flag.
     from app.services import resident_account_service
