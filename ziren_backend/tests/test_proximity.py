@@ -409,6 +409,25 @@ def test_notify_nearby_records_who_was_told_with_distance_and_state():
     assert rows["R3"]["is_important"] is False                      # advisories never ring
 
 
+def test_notify_nearby_reaches_closed_phones_alarm_as_alert_advisory_as_notice():
+    """Tester report 2026-10-05: a closed app heard nothing about a nearby
+    incident - the rows were only read by an open app's own poll."""
+    from unittest.mock import patch
+    from app.services import push_service
+
+    db = world()
+    with patch.object(push_service, "send_alert_to_users") as alert,          patch.object(push_service, "send_to_users") as notice:
+        px.notify_nearby(db, db.rows("incidents")[1], lat=SCENE_LAT, lng=SCENE_LNG, now=NOW)
+
+    alerted = {c.args[0][0]: c.kwargs for c in alert.call_args_list}
+    assert set(alerted) == {"R1", "R2"}                              # the alarm-level units
+    assert alerted["R1"]["kind"] == "nearby" and alerted["R1"]["data"]["incident_id"] == "I1"
+    assert alerted["R1"]["title"] == "New HIGH incident near you"
+    noticed = {c.args[0][0] for c in notice.call_args_list}
+    assert noticed == {"R3"}                                          # advisory: never the alarm
+    assert notice.call_args.kwargs["channel"] == "ziren_responder_updates_v1"
+
+
 def test_notify_nearby_says_so_when_a_responders_position_is_not_known():
     db = world()
     for u in db.rows("users"):

@@ -51,6 +51,25 @@ const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
 /** Beyond this the dispatcher has waited long enough — draw the line instead. */
 const ROUTE_TIMEOUT_MS = 6000;
 
+/** Within this, no road path is drawn: the two points are joined directly. */
+export const NEARBY_KM = 0.15;
+
+/**
+ * Whether a road path is worth drawing between two points `straightKm` apart,
+ * when following it (joined back onto both real points) is `pathKm` long.
+ *
+ * OSRM starts and ends on the nearest ROAD. Two points close to each other but
+ * not to a road get a "route" down to the road and straight back up - a V,
+ * labelled as a road, several times the walk between them (a responder 11 m
+ * from the scene saw this in the app, 2026-10-05). Same rule as the mobile
+ * RoadRoute.worthDrawing.
+ */
+export function roadWorthDrawing(straightKm: number, pathKm: number): boolean {
+  if (straightKm <= NEARBY_KM) return false;
+  if (straightKm < 0.5 && pathKm > straightKm * 3) return false;
+  return true;
+}
+
 /** Straight line, assumed speed, rounded up. The honest floor on a journey. */
 export function straightLineRoute(from: LatLng, to: LatLng): ResponseRoute {
   const distanceKm = geodesicKm(from, to);
@@ -97,9 +116,16 @@ export async function fetchResponseRoute(
     const line = route?.geometry?.coordinates;
     if (!route || !Array.isArray(line) || line.length < 2) return fallback;
 
+    // Back from GeoJSON [lng, lat] to this module's [lat, lng].
+    const road = line.map(([lng, lat]) => [lat, lng] as LatLng);
+    // OSRM's path stops on the nearest road at both ends; the real points are
+    // joined back on so the line starts at the station and ends on the scene.
+    const pathKm =
+      geodesicKm(from, road[0]) + route.distance / 1000 + geodesicKm(road[road.length - 1], to);
+    if (!roadWorthDrawing(fallback.distanceKm, pathKm)) return fallback;
+
     return {
-      // Back from GeoJSON [lng, lat] to this module's [lat, lng].
-      path: line.map(([lng, lat]) => [lat, lng] as LatLng),
+      path: [from, ...road, to],
       distanceKm: route.distance / 1000,
       minutes: Math.max(1, Math.ceil(route.duration / 60)),
       via: longestNamedStep(route),

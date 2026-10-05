@@ -236,7 +236,7 @@ void main() {
   });
 
   group('guidance panel', () {
-    Future<void> pumpPanel(WidgetTester tester, {required bool byRoad}) =>
+    Future<void> pumpPanel(WidgetTester tester, {required bool byRoad, bool nearby = false}) =>
         tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: const [
@@ -254,6 +254,7 @@ void main() {
                 etaMinutes: 5,
                 bearing: 45,
                 byRoad: byRoad,
+                nearby: nearby,
                 onOpenExternal: () {},
               ),
             ),
@@ -273,6 +274,49 @@ void main() {
       await pumpPanel(tester, byRoad: false);
       expect(find.textContaining('straight-line distance'), findsOneWidget);
       expect(find.textContaining('not a road'), findsOneWidget);
+    });
+
+    testWidgets('close to the scene it says so and points on foot', (tester) async {
+      await pumpPanel(tester, byRoad: false, nearby: true);
+      expect(find.textContaining('almost there'), findsOneWidget);
+      expect(find.textContaining('on foot'), findsOneWidget);
+      expect(find.textContaining('by road'), findsNothing);
+    });
+  });
+
+  // Tester screenshot 2026-10-05: a responder 11 m from the scene got a "by
+  // road" line down to the nearest road and back up - OSRM snaps both ends to
+  // a road.
+  group('road path only when it helps', () {
+    test('close pairs are joined directly', () {
+      expect(RoadRoute.worthDrawing(straightMetres: 11, pathMetres: 250), isFalse);
+      expect(RoadRoute.worthDrawing(straightMetres: 150, pathMetres: 160), isFalse);
+    });
+
+    test('a short hop the road snap makes several times longer is not drawn', () {
+      expect(RoadRoute.worthDrawing(straightMetres: 300, pathMetres: 1200), isFalse);
+    });
+
+    test('a real road route is kept, detours included', () {
+      expect(RoadRoute.worthDrawing(straightMetres: 300, pathMetres: 600), isTrue);
+      expect(RoadRoute.worthDrawing(straightMetres: 2000, pathMetres: 14000), isTrue);
+    });
+
+    test('the drawn path length includes both joins back to the real points', () {
+      const route = RoadRoute(
+        coordinates: [[124.4045, 11.5640], [124.4045, 11.5641]],
+        metres: 11,
+        seconds: 2,
+      );
+      final path = route.pathMetresBetween(11.5645, 124.4031, 11.5646, 124.4031);
+      expect(path, greaterThan(300));
+      expect(
+        RoadRoute.worthDrawing(
+          straightMetres: RoadRoute.metresBetween(11.5645, 124.4031, 11.5646, 124.4031),
+          pathMetres: path,
+        ),
+        isFalse,
+      );
     });
   });
 }

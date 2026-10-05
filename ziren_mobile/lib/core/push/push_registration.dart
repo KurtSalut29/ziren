@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_config.dart';
+import 'responder_alert_push.dart';
+import '../../features/weather/data/weather_reminders.dart';
 
 /// Push notifications that reach the phone with Ziren closed.
 ///
@@ -29,6 +31,38 @@ class PushRegistration {
   static bool _firebaseReady = false;
   static String? _token;
   static StreamSubscription<String>? _refreshSub;
+  static StreamSubscription<RemoteMessage>? _foregroundSub;
+
+  /// A responder alert (assignment / nearby) that arrived while the app is
+  /// OPEN. The full-screen notification is the closed-app path; open, the app
+  /// just has to look now instead of on its next two-minute poll. Wired in
+  /// main.dart to reload the queue or the nearby list.
+  static void Function(String kind, Map<String, dynamic> data)? onAlert;
+
+  /// Before runApp: register the handler that raises a responder's alarm while
+  /// the app is closed, and listen for alerts while it is open.
+  ///
+  /// The background handler has to be registered on every launch, signed in or
+  /// not, or a push that arrives after the next cold start finds nobody to
+  /// handle it. Never throws; with Firebase not configured it does nothing.
+  static Future<void> initEarly() async {
+    if (!await _ensureFirebase()) return;
+    try {
+      FirebaseMessaging.onBackgroundMessage(zirenFirebaseBackgroundHandler);
+      await _foregroundSub?.cancel();
+      _foregroundSub = FirebaseMessaging.onMessage.listen((m) {
+        final kind = m.data['ziren_alert'];
+        if (kind is String) onAlert?.call(kind, m.data);
+        // Weather reminder with the app open: still a notification, so it
+        // is there after the resident leaves Home.
+        if (m.data['ziren_weather'] != null) {
+          WeatherReminders.showFromPush(m.data);
+        }
+      });
+    } catch (e) {
+      debugPrint('[PushRegistration] alert handlers not registered: $e');
+    }
+  }
 
   /// Residents' channels. A responder's assignment uses the responder alert
   /// service's own dispatch channel, created by that service.
@@ -49,6 +83,10 @@ class PushRegistration {
     if (!AppConfig.pushConfigured) return false;
     if (_firebaseReady) return true;
     try {
+      if (Firebase.apps.isNotEmpty) {
+        _firebaseReady = true;
+        return true;
+      }
       await Firebase.initializeApp(
         options: const FirebaseOptions(
           apiKey: AppConfig.firebaseApiKey,
@@ -94,10 +132,13 @@ class PushRegistration {
     try {
       final access = Supabase.instance.client.auth.currentSession?.accessToken;
       if (access != null) {
+        // In the body, not the query: a query parameter is written into the
+        // server's access log on every sign-out.
         await http
-            .delete(
-              Uri.parse('${AppConfig.apiBaseUrl}/users/me/push-token?token=${Uri.encodeQueryComponent(token)}'),
-              headers: {'Authorization': 'Bearer $access'},
+            .post(
+              Uri.parse('${AppConfig.apiBaseUrl}/users/me/push-token/forget'),
+              headers: {'Authorization': 'Bearer $access', 'Content-Type': 'application/json'},
+              body: jsonEncode({'token': token}),
             )
             .timeout(const Duration(seconds: 8));
       }

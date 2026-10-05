@@ -112,6 +112,67 @@ def test_a_dead_token_is_forgotten(service_account):
     db.table.return_value.delete.return_value.eq.assert_called_with("token", "tok-deadxxxxxxxxxxxxxxxxxxxx")
 
 
+def test_a_responder_alert_is_data_only_so_the_app_can_raise_the_full_screen_alarm(service_account):
+    """An FCM `notification` block is drawn by Android as a plain banner; the
+    full-screen, over-the-lock-screen alarm needs the app to draw it."""
+    msg = push_service._message("tok", "New assignment", "HIGH incident", {"ziren_alert": "assignment"},
+                                True, None, True, 600)
+    assert "notification" not in msg and "notification" not in msg["android"]
+    assert msg["android"] == {"priority": "HIGH", "ttl": "600s"}
+    assert msg["data"]["ziren_alert"] == "assignment"
+
+    with patch.object(push_service, "_pool") as pool:
+        push_service.send_alert_to_users(["r1"], kind="nearby", title="New HIGH incident near you",
+                                         body="Brgy X - 1.0 km", data={"incident_id": "inc-1", "distance_m": 1000})
+    args = pool.submit.call_args.args
+    payload = args[4]
+    assert payload["ziren_alert"] == "nearby" and payload["incident_id"] == "inc-1"
+    assert payload["title"] == "New HIGH incident near you" and payload["body"] == "Brgy X - 1.0 km"
+    assert args[7] is True                                            # alert
+
+
+def test_an_unknown_alert_kind_is_refused():
+    with pytest.raises(ValueError):
+        push_service.send_alert_to_users(["r1"], kind="party", title="x")
+
+
+def test_a_dispatch_alerts_the_responder_with_the_full_screen_alarm():
+    import inspect
+    from app.services import dispatch_service
+
+    src = inspect.getsource(dispatch_service.assign_responder)
+    assert "send_alert_to_users" in src and 'kind="assignment"' in src
+
+
+def test_requirements_install_what_rs256_signing_needs():
+    """The first live push failed with "Algorithm 'RS256' could not be found":
+    PyJWT came in through supabase without its crypto extra, and only the dev
+    venv happened to have `cryptography`. The test above signs with RS256 and
+    passed locally, so pin the dependency itself."""
+    from pathlib import Path
+
+    reqs = (Path(__file__).resolve().parents[1] / "requirements.txt").read_text(encoding="utf-8").lower()
+    lines = [ln.split("#")[0].strip() for ln in reqs.splitlines()]
+    assert any(ln.startswith("cryptography") for ln in lines)
+    assert any(ln.startswith("pyjwt[crypto]") for ln in lines)
+
+
 def test_registering_a_token_validates_it():
     with pytest.raises(ValueError):
         push_service.register_token("u1", "short")
+
+
+def test_sign_out_forgets_the_token_sent_in_the_body_not_the_url():
+    """The DELETE ?token= form wrote every phone's token into the access log."""
+    from fastapi.testclient import TestClient
+    from app.core.dependencies import get_current_user
+    from app.main import app
+
+    app.dependency_overrides[get_current_user] = lambda: {"id": "u1", "role": "resident"}
+    try:
+        with patch.object(push_service, "forget_token") as forget:
+            r = TestClient(app).post("/users/me/push-token/forget", json={"token": "tok-" + "x" * 30})
+        assert r.status_code == 204
+        forget.assert_called_once_with("u1", "tok-" + "x" * 30)
+    finally:
+        app.dependency_overrides.clear()

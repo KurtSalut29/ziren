@@ -87,18 +87,37 @@ def register_push_token(
     return Response(status_code=204)
 
 
-@router.delete("/me/push-token", status_code=204)
-def forget_push_token(
-    token: Optional[str] = None,
-    current_user: dict = Depends(get_current_user),
-):
-    """Sign-out: stop pushing to this phone (or, with no token, to all of this account's)."""
+class ForgetPushTokenRequest(BaseModel):
+    token: Optional[str] = None
+
+
+def _forget(current_user: dict, token: Optional[str]) -> Response:
     from app.services import push_service
     try:
         push_service.forget_token(str(current_user["id"]), token)
     except Exception:
         log.warning("push.forget_failed", user_id=str(current_user["id"]), exc_info=True)
     return Response(status_code=204)
+
+
+@router.post("/me/push-token/forget", status_code=204)
+def forget_push_token_body(
+    body: ForgetPushTokenRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Sign-out: stop pushing to this phone (or, with no token, to all of this
+    account's). The token travels in the body: as a query parameter (the DELETE
+    below) it was written into the server's access log on every sign-out."""
+    return _forget(current_user, body.token)
+
+
+@router.delete("/me/push-token", status_code=204)
+def forget_push_token(
+    token: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """Kept for APKs up to 1.0.0+14, which send the token in the query."""
+    return _forget(current_user, token)
 
 
 @router.get("/me", response_model=UserProfile)

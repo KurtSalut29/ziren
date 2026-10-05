@@ -35,13 +35,13 @@ class IncidentAlarm {
   IncidentAlarm();
 
   /// audioplayers resolves [AssetSource] against `assets/`, so this is
-  /// `assets/sounds/dispatch_alarm.wav` on disk. Registered in pubspec.yaml
-  /// under `assets/sounds/`.
+  /// `assets/sounds/alert_sound.mp3` on disk (registered under `assets/sounds/`).
   ///
-  /// Three short beeps and a rest, built to loop without a click. It is the
-  /// phone's own sound: the dashboard's alert file is for a dispatcher's desk,
-  /// and a crew member's phone should not sound like someone else's console.
-  static const String _asset = 'sounds/dispatch_alarm.wav';
+  /// The dashboard's own alert sound (ziren_dashboard/public/NotificationSound.mp3),
+  /// byte for byte: a dispatcher and a crew hear the same alarm for the same
+  /// kind of event (user request 2026-10-06, "para may consistency"). The OS
+  /// notification channels play the same file from res/raw/ziren_alert.mp3.
+  static const String _asset = 'sounds/alert_sound.mp3';
 
   final AudioPlayer _player = AudioPlayer(playerId: 'ziren_dispatch_alarm');
 

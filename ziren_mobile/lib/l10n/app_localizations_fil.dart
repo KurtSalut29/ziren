@@ -3345,6 +3345,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get respNearbyTitle => 'May insidenteng malapit sa iyo';
 
   @override
+  String get respNearbyAlertEyebrow => 'INSIDENTE MALAPIT SA IYO';
+
+  @override
   String get respNearbySubtitle => 'Wala pang ipinadalang responder. Puwede mong sabihin kung kaya mong pumunta — ang dispatcher ang magpapasya kung sino ang isasagot.';
 
   @override
@@ -4181,6 +4184,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get respNavRoadNote => 'Sinusundan ng ruta ang mga daan sa mapa. Mag-ingat sa sarado o bahang daan.';
 
   @override
+  String get respNavNearbyNote => 'Malapit ka na. Ilang hakbang na lang ang lugar sa direksyon ng arrow; maglakad na kung hindi na makalapit ang sasakyan.';
+
+  @override
   String get accountNoticeEyebrow => 'Abiso sa account';
 
   @override
@@ -4569,4 +4575,186 @@ class AppLocalizationsFil extends AppLocalizations {
   String speakingLanguageCheck(String language) {
     return 'Tingnan ang mga salita: puwedeng mali ang dinig ng phone sa $language. Ayusin bago ipadala.';
   }
+
+  @override
+  String weatherHeadThunderSoon(String time, String name) {
+    return 'Malamang may kulog at kidlat bandang $time, $name. Manatili sa loob ng bahay pag nagsimula na.';
+  }
+
+  @override
+  String weatherHeadHeavyRainSoon(String time, String name) {
+    return 'Inaasahan ang malakas na ulan bandang $time, $name. Lumayo sa bahang kalsada at ilog.';
+  }
+
+  @override
+  String weatherHeadRainingNow(String name) {
+    return 'Umuulan ngayon, $name. Mag-ingat kung kailangan mong lumabas.';
+  }
+
+  @override
+  String weatherHeadRainSoon(String time, String name) {
+    return 'Posibleng umulan bandang $time, $name. Magdala ng payong kung aalis ka.';
+  }
+
+  @override
+  String weatherHeadHeatDanger(String temp, String time, String name) {
+    return 'Delikado ang init ngayon, $name: ramdam na $temp bandang $time. Magpalamig at uminom ng tubig.';
+  }
+
+  @override
+  String weatherHeadHeatHigh(String temp, String time, String name) {
+    return 'Mainit mamaya, $name: ramdam na $temp bandang $time. Uminom ng maraming tubig.';
+  }
+
+  @override
+  String weatherHeadFairDay(String temp, String name) {
+    return 'Maayos ang panahon ngayon, $name. $temp sa ngayon.';
+  }
+
+  @override
+  String weatherHeadFairNight(String temp, String name) {
+    return 'Kalmado ang panahon ngayong gabi, $name. $temp sa ngayon.';
+  }
+
+  @override
+  String get weatherTipThunderIndoors => 'Manatili sa loob habang may kulog at kidlat. Lumayo sa bukid at matataas na puno, at i-unplug ang mga appliance.';
+
+  @override
+  String get weatherTipHeavyRainFlood => 'Huwag tumawid sa ilog o bahang kalsada. Kung madaling bahain sa inyo, iakyat ang mahahalagang gamit at ihanda ang go-bag.';
+
+  @override
+  String get weatherTipLandslideWatch => 'Malapit sa bundok o dalisdis? Bantayan ang bitak, gumuguhong bato o maputik na tubig, at lumikas agad kapag may nakita.';
+
+  @override
+  String get weatherTipUmbrella => 'Magdala ng payong o kapote kung lalabas ka.';
+
+  @override
+  String get weatherTipRoadSlippery => 'Madulas ang kalsada. Magmaneho nang dahan-dahan at buksan ang ilaw.';
+
+  @override
+  String get weatherTipHeatDangerWork => 'Iwasan ang mabigat na trabaho sa labas mula 10 AM hanggang 4 PM, at bantayan ang matatanda at mga bata.';
+
+  @override
+  String get weatherTipHeatStrokeSigns => 'Senyales ng heat stroke: hilo, pagkalito, mainit at tuyong balat. Palamigin ang tao at i-report agad.';
+
+  @override
+  String get weatherTipHeatWater => 'Uminom ng tubig nang madalas, kahit hindi nauuhaw.';
+
+  @override
+  String get weatherTipHeatShade => 'Sumilong sa tanghali at magsuot ng magaan at maluwag na damit.';
+
+  @override
+  String get weatherTipUvStrong => 'Napakatindi ng sikat ng araw. Gumamit ng sombrero o payong sa labas.';
+
+  @override
+  String get weatherTipWindStrong => 'Malakas ang hangin. Itali ang maluwag na bubong at lumayo sa puno at kawad ng kuryente.';
+
+  @override
+  String get weatherTipGoBagCheck => 'Magandang pagkakataon ang maayos na panahon para i-check ang go-bag at i-save ang mga hotline.';
+
+  @override
+  String get weatherCondClear => 'Maaliwalas';
+
+  @override
+  String get weatherCondMostlyClear => 'Halos maaliwalas';
+
+  @override
+  String get weatherCondPartlyCloudy => 'Bahagyang maulap';
+
+  @override
+  String get weatherCondCloudy => 'Maulap';
+
+  @override
+  String get weatherCondFog => 'Mahamog';
+
+  @override
+  String get weatherCondDrizzle => 'Ambon';
+
+  @override
+  String get weatherCondRain => 'Ulan';
+
+  @override
+  String get weatherCondHeavyRain => 'Malakas na ulan';
+
+  @override
+  String get weatherCondThunderstorm => 'Kulog at kidlat';
+
+  @override
+  String get weatherHeatCaution => 'Mag-ingat';
+
+  @override
+  String get weatherHeatExtremeCaution => 'Labis na pag-iingat';
+
+  @override
+  String get weatherHeatDanger => 'Delikado';
+
+  @override
+  String get weatherHeatExtremeDanger => 'Labis na delikado';
+
+  @override
+  String get weatherCardTitle => 'Panahon';
+
+  @override
+  String weatherFeelsLike(String temp) {
+    return 'Ramdam ay $temp';
+  }
+
+  @override
+  String get weatherTipsTitle => 'Paalala ni Ziren';
+
+  @override
+  String get weatherNow => 'Ngayon';
+
+  @override
+  String get weatherToday => 'Ngayong araw';
+
+  @override
+  String get weatherTomorrow => 'Bukas';
+
+  @override
+  String weatherSourceNote(String time) {
+    return 'Forecast mula sa Open-Meteo, na-update $time. Para sa opisyal na babala, sundan ang PAGASA at ang MDRRMO.';
+  }
+
+  @override
+  String weatherOldNote(String time) {
+    return 'Forecast mula $time ang ipinapakita. Mag-a-update ito pagbalik ng internet.';
+  }
+
+  @override
+  String get weatherRemindersToggle => 'Paalalahanan ako bago ang malakas na ulan o delikadong init';
+
+  @override
+  String get weatherRemindersHint => 'Mga isang oras bago, kahit nakasara ang app.';
+
+  @override
+  String get weatherLoading => 'Tinitingnan ang panahon…';
+
+  @override
+  String get weatherUnavailable => 'Hindi makuha ang forecast sa ngayon. Hilahin pababa para subukan ulit.';
+
+  @override
+  String weatherRainChanceLabel(String chance) {
+    return '$chance tsansa ng ulan';
+  }
+
+  @override
+  String get weatherNotifRainTitle => 'Uulan sa loob ng mga isang oras';
+
+  @override
+  String get weatherNotifHeavyRainTitle => 'Malakas na ulan sa loob ng mga isang oras';
+
+  @override
+  String get weatherNotifThunderTitle => 'Kulog at kidlat sa loob ng mga isang oras';
+
+  @override
+  String weatherNotifHeatTitle(String time) {
+    return 'Delikadong init mula $time';
+  }
+
+  @override
+  String get weatherChannelName => 'Paalala sa panahon';
+
+  @override
+  String get weatherChannelDescription => 'Paalala mga isang oras bago ang malakas na ulan, kulog at kidlat, o delikadong init.';
 }

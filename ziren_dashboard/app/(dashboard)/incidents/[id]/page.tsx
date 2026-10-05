@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useCallback, useEffect, useState } from 'react';
+import { AcceptReportDialog } from '@/components/incidents/accept-report-dialog';
 import { toast } from '@/lib/toast';
 import { useRouter } from 'next/navigation';
 import {
@@ -589,32 +590,14 @@ export default function IncidentDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {/* ── Accept report confirm ─────────────────────────── */}
-      <AlertDialog
+      <AcceptReportDialog
+        dispatchable={dispatchable}
+        incident={incident}
+        loading={actionLoading}
+        onCancel={() => setShowAcceptConfirm(false)}
+        onConfirm={() => { void handleAccept(); }}
         open={showAcceptConfirm}
-        onOpenChange={open => { if (!open && !actionLoading) setShowAcceptConfirm(false); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Accept this report?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You won&apos;t be able to Reject or Request Clarification after this.
-              {/* dispatchable, not canDispatch — canDispatch now also requires
-                  review_status === 'accepted', which only becomes true AFTER
-                  this confirmation goes through. */}
-              {dispatchable && ' Dispatch becomes available after this.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionLoading}>Back</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={actionLoading}
-              onClick={e => { e.preventDefault(); void handleAccept(); }}
-            >
-              Accept Report
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
 
       {/* ── Resolve confirm ────────────────────────────────── */}
       <AlertDialog

@@ -98,6 +98,9 @@ const _kEmpty = {'type': 'FeatureCollection', 'features': <dynamic>[]};
 /// turn onto another road puts it well past this.
 const double kNavOffRouteMetres = 90;
 
+/// Street-level zoom for framing a crew already close to the scene.
+const double kNavCloseZoom = 17.5;
+
 /// Never ask OSRM more often than this. It is a shared community server.
 const Duration kNavRefetchGap = Duration(seconds: 20);
 
@@ -207,26 +210,43 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
     return road.remainingFrom(me.latitude, me.longitude);
   }
 
-  double? get _straightMetres {
-    final me = _me;
-    if (me == null) return null;
-    return RoadRoute.metresBetween(
-      me.latitude,
-      me.longitude,
-      widget.latitude,
-      widget.longitude,
+  /// Within [RoadRoute.nearbyMetres] of the scene.
+  bool get _nearby =>
+      (_straightMetres ?? double.infinity) <= RoadRoute.nearbyMetres;
+
+  /// Whether the road path is the one to draw and quote. Close to the scene
+  /// OSRM's path runs down to the nearest road and back (a V several times
+  /// longer than the few steps left), so there the direct line is used — see
+  /// [RoadRoute.worthDrawing].
+  bool get _useRoad {
+    final remaining = _remaining;
+    final straight = _straightMetres;
+    if (remaining == null || straight == null) return false;
+    return RoadRoute.worthDrawing(
+      straightMetres: straight,
+      pathMetres: _roadMetres(remaining),
     );
   }
 
-  /// Along the road when there is one, else in a straight line.
-  double? get _distanceMetres {
-    final remaining = _remaining;
-    if (remaining == null) return _straightMetres;
+  double _roadMetres(RemainingRoute remaining) {
     final end = remaining.coordinates.last;
     // The road stops at the nearest road to the scene; the last stretch
     // from there to the scene itself is added on foot, in a straight line.
     return remaining.metres +
         RoadRoute.metresBetween(end[1], end[0], widget.latitude, widget.longitude);
+  }
+
+  double? get _straightMetres {
+    final me = _me;
+    if (me == null) return null;
+    return RoadRoute.metresBetween(me.latitude, me.longitude, widget.latitude, widget.longitude);
+  }
+
+  /// Along the road when that is the path drawn, else in a straight line.
+  double? get _distanceMetres {
+    final remaining = _remaining;
+    if (remaining == null || !_useRoad) return _straightMetres;
+    return _roadMetres(remaining);
   }
 
   /// Minutes at the assumed provincial road speed ([Geodesic.assumedSpeedKmh],
@@ -367,7 +387,10 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
         await ctrl.addLayer(
           _kSceneSource,
           _kSceneLabel,
-          _labelLayer(_kSceneHex, offset: 1.7),
+          // ABOVE its dot, while the crew's label sits below theirs: a crew
+          // standing at the scene had the two labels printed over each other
+          // ("InYou t", on-device check 2026-10-05).
+          _labelLayer(_kSceneHex, offset: -1.9, anchor: 'bottom'),
         );
         await ctrl.addLayer(
           _kMeSource,
@@ -407,7 +430,7 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
     ],
   };
 
-  static SymbolLayerProperties _labelLayer(String hex, {required double offset}) =>
+  static SymbolLayerProperties _labelLayer(String hex, {required double offset, String anchor = 'top'}) =>
       SymbolLayerProperties(
         textField: [Expressions.get, 'label'],
         textFont: _kLabelFont,
@@ -415,7 +438,7 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
         textColor: '#FFFFFF',
         textHaloColor: hex,
         textHaloWidth: 2.2,
-        textAnchor: 'top',
+    textAnchor: anchor,
         textOffset: [
           Expressions.literal,
           [0, offset],
@@ -430,7 +453,7 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
     final here = [me.longitude, me.latitude];
     final scene = [widget.longitude, widget.latitude];
     final remaining = _remaining;
-    if (remaining == null) return [here, scene];
+    if (remaining == null || !_useRoad) return [here, scene];
     // OSRM starts and ends on the nearest ROAD, not on the points it was
     // given, so the real ends are joined back on: the line always starts at
     // the crew and ends exactly on the scene.
@@ -444,7 +467,7 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
     if (ctrl == null || me == null || !_styleReady) return;
 
     final coords = _lineCoordinates(me);
-    final dashed = _road == null;
+    final dashed = !_useRoad;
     try {
       await ctrl.setGeoJsonSource(
         _kMeSource,
@@ -500,6 +523,18 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
       east = math.max(east, c[0]);
       south = math.min(south, c[1]);
       north = math.max(north, c[1]);
+    }
+    // Two points a few metres apart would be fitted at the map's deepest
+    // zoom, far past the satellite imagery's detail: the tester's screen was
+    // a blur. Close pairs are framed at street level around their middle.
+    if (RoadRoute.metresBetween(south, west, north, east) < 250) {
+      await ctrl.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng((south + north) / 2, (west + east) / 2),
+          kNavCloseZoom,
+        ),
+      );
+      return;
     }
     await ctrl.animateCamera(
       CameraUpdate.newLatLngBounds(
@@ -608,7 +643,8 @@ class _IncidentNavigationScreenState extends State<IncidentNavigationScreen> {
               distanceMetres: _distanceMetres,
               etaMinutes: _etaMinutes,
               bearing: _bearing,
-              byRoad: _road != null,
+              byRoad: _useRoad,
+              nearby: _nearby,
               onOpenExternal: _openExternal,
             ),
           ),
@@ -631,6 +667,7 @@ class NavGuidancePanel extends StatelessWidget {
     required this.etaMinutes,
     required this.bearing,
     required this.byRoad,
+    this.nearby = false,
     required this.onOpenExternal,
   });
 
@@ -642,13 +679,22 @@ class NavGuidancePanel extends StatelessWidget {
   /// Whether [distanceMetres] was measured along a road path or is the
   /// straight-line fallback. The two are labelled differently on purpose.
   final bool byRoad;
+
+  /// Within a short walk of the scene: the line is direct, and the note says
+  /// to go the last stretch on foot rather than look for a road.
+  final bool nearby;
   final VoidCallback onOpenExternal;
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final waiting = distanceMetres == null;
-    final how = byRoad ? t.respNavByRoad : t.respNavStraightDistance;
+    final how =
+        nearby
+            ? t.respNavClose
+            : byRoad
+            ? t.respNavByRoad
+            : t.respNavStraightDistance;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(
@@ -795,7 +841,11 @@ class NavGuidancePanel extends StatelessWidget {
                 const SizedBox(width: ZirenTokens.space6),
                 Expanded(
                   child: Text(
-                    byRoad ? t.respNavRoadNote : t.respNavStraightLine,
+                    nearby
+                        ? t.respNavNearbyNote
+                        : byRoad
+                        ? t.respNavRoadNote
+                        : t.respNavStraightLine,
                     style: TextStyle(
                       fontSize: 11,
                       height: 1.3,

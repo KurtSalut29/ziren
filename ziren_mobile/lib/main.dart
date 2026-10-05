@@ -10,6 +10,7 @@ import 'core/config/app_config.dart';
 import 'core/config/locale_provider.dart';
 import 'core/routing/app_router.dart';
 import 'features/auth/domain/auth_provider.dart';
+import 'features/weather/data/weather_store.dart';
 import 'features/incident_report/domain/incident_provider.dart';
 import 'features/notifications/domain/notification_provider.dart';
 import 'features/registration/domain/registration_draft.dart';
@@ -21,6 +22,8 @@ import 'features/responder/domain/responder_provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/theme/app_tokens.dart';
 import 'core/push/push_registration.dart';
+import 'core/push/responder_alert_push.dart'
+    show kAlertAssignment, kAlertNearby;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +45,10 @@ void main() async {
   // settle into the dark mode they actually chose.
   final accessibilityProvider = AccessibilityProvider();
   await accessibilityProvider.load();
+
+  // A responder's alarm while the app is closed is raised by a push handler
+  // that has to be registered on every launch (PushRegistration.initEarly).
+  await PushRegistration.initEarly();
 
   runApp(
     ZirenApp(
@@ -115,8 +122,23 @@ class _ZirenAppState extends State<ZirenApp> {
     // dispatch alarm. Withdrawn again once it is answered, dispatched to
     // someone, or ages out of the list.
     _responderProvider.onNearbyArrived = (items) {
+      // Open on screen, the shell's modal is the alert; the OS notification
+      // is for a phone in a pocket. Raising both would sound twice.
+      if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        return;
+      }
       for (final i in items) {
         _responderAlerts.notifyNearby(i);
+      }
+    };
+
+    // A responder alert pushed while the app is open: look now rather than on
+    // the next two-minute ping. The shell raises the matching modal.
+    PushRegistration.onAlert = (kind, data) {
+      if (kind == kAlertNearby) {
+        _responderProvider.loadNearby();
+      } else if (kind == kAlertAssignment) {
+        _responderProvider.loadQueue();
       }
     };
     _responderProvider.onNearbyResolved = (ids) {
@@ -182,6 +204,9 @@ class _ZirenAppState extends State<ZirenApp> {
       _responderProvider.stopLocationReporting();
       _providersLoadedForUserId = null;
       _profileProvider.clear();
+      // The saved forecast and any scheduled rain/heat reminder belong to the
+      // account that just left.
+      unawaited(WeatherStore.instance.clear());
     }
   }
 

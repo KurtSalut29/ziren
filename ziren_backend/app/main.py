@@ -24,13 +24,14 @@ from app.routers import (
     auth, incidents, dispatch, users, rubric, responder, stations,
     triage as triage_router, map as map_router, audit, notifications,
     geographic, analytics, governance, ai_monitoring, system_status,
-    announcements, reports, search, assist_requests,
+    announcements, reports, search, assist_requests, weather,
 )
 from app.services import (
     asr_engines,
     rubric_service,
     transcription_service,
     triage_service,
+    weather_alerts,
 )
 from app.services.rubric_traceability import (
     check_provenance,
@@ -148,7 +149,15 @@ async def lifespan(app: FastAPI):
             ),
         )
 
+    # Weather reminders ("heavy rain in about an hour") pushed to residents by
+    # town. No-op without FCM configured. One uvicorn worker (Dockerfile), so
+    # one sender.
+    if weather_alerts.start():
+        log.info("startup.weather_alerts", towns=len(weather_alerts.TOWNS))
+
     yield  # server runs here
+
+    weather_alerts.stop()
 
     # Shutdown logic (none needed for Phase 5)
     log.info("shutdown.rubric", message="Rubric engine shutting down.")
@@ -255,6 +264,7 @@ app.include_router(announcements.router, prefix="/announcements", tags=["announc
 app.include_router(reports.router, prefix="/reports", tags=["reports"])
 app.include_router(search.router, prefix="/search", tags=["search"])
 app.include_router(assist_requests.router, prefix="/assist-requests", tags=["assist-requests"])
+app.include_router(weather.router, prefix="/weather", tags=["weather"])
 
 
 # ── Android app download ─────────────────────────────────────────────────────

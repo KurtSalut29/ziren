@@ -12,3 +12,17 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# flutter_local_notifications keeps its notification cache with Gson, which
+# reads generic types through TypeToken subclasses. R8 strips the generic
+# signatures, and every cancel() then throws "TypeToken must be created with a
+# type argument" - in RELEASE builds only (on-device check 2026-10-06). That
+# silently broke cancelling notifications: a responder's insistent dispatch
+# alarm could not be stopped by answering it, and the closed-app alert
+# (cancel-then-show) was never shown. Debug builds are not shrunk, which is why
+# every debug test passed.
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.dexterous.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken

@@ -1311,13 +1311,15 @@ def assign_responder(
     # the realtime alarm only reaches a phone with Ziren open.
     if not is_self_assign:
         from app.services import push_service
-        push_service.send_to_users(
+        # An ALERT, not an ordinary push: the phone raises the full-screen
+        # dispatch alarm itself, over the lock screen, the way an incoming
+        # call does (send_alert_to_users).
+        push_service.send_alert_to_users(
             [responder_id],
+            kind="assignment",
             title="New assignment",
             body=f"{(chosen_severity or '').upper()} incident. Open Ziren to accept.",
             data={"type": "responder.assigned", "incident_id": incident_id, "severity": chosen_severity},
-            important=True,
-            channel="ziren_responder_dispatch_v2",
         )
 
     _tell_reporter(

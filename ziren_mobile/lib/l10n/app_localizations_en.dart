@@ -3357,6 +3357,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get respNearbyTitle => 'Incidents near you';
 
   @override
+  String get respNearbyAlertEyebrow => 'INCIDENT NEAR YOU';
+
+  @override
   String get respNearbySubtitle => 'Nobody has been sent yet. You can say whether you\'re able to go — the dispatcher decides who responds.';
 
   @override
@@ -4193,6 +4196,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get respNavRoadNote => 'The route follows the roads on the map. Watch for closed or flooded roads.';
 
   @override
+  String get respNavNearbyNote => 'You are close. The scene is a short walk in the direction of the arrow; go the rest of the way on foot if the vehicle cannot get nearer.';
+
+  @override
   String get accountNoticeEyebrow => 'Account notice';
 
   @override
@@ -4581,4 +4587,186 @@ class AppLocalizationsEn extends AppLocalizations {
   String speakingLanguageCheck(String language) {
     return 'Check the words: the phone may mishear $language. Fix anything wrong before sending.';
   }
+
+  @override
+  String weatherHeadThunderSoon(String time, String name) {
+    return 'A thunderstorm is likely around $time, $name. Stay indoors once it starts.';
+  }
+
+  @override
+  String weatherHeadHeavyRainSoon(String time, String name) {
+    return 'Heavy rain is expected around $time, $name. Stay away from flooded roads and rivers.';
+  }
+
+  @override
+  String weatherHeadRainingNow(String name) {
+    return 'It\'s raining right now, $name. Take care if you have to go out.';
+  }
+
+  @override
+  String weatherHeadRainSoon(String time, String name) {
+    return 'Rain is likely around $time, $name. Bring an umbrella if you\'re heading out.';
+  }
+
+  @override
+  String weatherHeadHeatDanger(String temp, String time, String name) {
+    return 'Dangerous heat today, $name: it will feel like $temp around $time. Stay cool and drink water.';
+  }
+
+  @override
+  String weatherHeadHeatHigh(String temp, String time, String name) {
+    return 'It\'s going to be hot, $name: it will feel like $temp around $time. Drink plenty of water.';
+  }
+
+  @override
+  String weatherHeadFairDay(String temp, String name) {
+    return 'The weather looks fair today, $name. It\'s $temp right now.';
+  }
+
+  @override
+  String weatherHeadFairNight(String temp, String name) {
+    return 'A calm night ahead, $name. It\'s $temp right now.';
+  }
+
+  @override
+  String get weatherTipThunderIndoors => 'Stay indoors during the thunderstorm. Keep off open fields and away from tall trees, and unplug appliances.';
+
+  @override
+  String get weatherTipHeavyRainFlood => 'Don\'t cross rivers or flooded roads. If your area floods easily, move valuables up and keep your go-bag ready.';
+
+  @override
+  String get weatherTipLandslideWatch => 'Living near a slope? Watch for cracks, falling rocks or muddy water, and leave early if you see them.';
+
+  @override
+  String get weatherTipUmbrella => 'Bring an umbrella or raincoat if you\'re going out.';
+
+  @override
+  String get weatherTipRoadSlippery => 'Roads get slippery. Drive or ride slowly and keep your lights on.';
+
+  @override
+  String get weatherTipHeatDangerWork => 'Avoid heavy work outdoors from 10 AM to 4 PM, and check on older people and children.';
+
+  @override
+  String get weatherTipHeatStrokeSigns => 'Signs of heat stroke: dizziness, confusion, hot dry skin. Cool the person down and report it right away.';
+
+  @override
+  String get weatherTipHeatWater => 'Drink water often, even if you\'re not thirsty.';
+
+  @override
+  String get weatherTipHeatShade => 'Stay in the shade at midday and wear light, loose clothes.';
+
+  @override
+  String get weatherTipUvStrong => 'The sun is very strong. Use a hat or umbrella outdoors.';
+
+  @override
+  String get weatherTipWindStrong => 'Strong winds. Secure loose roofing and stay away from trees and power lines.';
+
+  @override
+  String get weatherTipGoBagCheck => 'Fair weather is a good time to check your go-bag and save the hotline numbers.';
+
+  @override
+  String get weatherCondClear => 'Clear';
+
+  @override
+  String get weatherCondMostlyClear => 'Mostly clear';
+
+  @override
+  String get weatherCondPartlyCloudy => 'Partly cloudy';
+
+  @override
+  String get weatherCondCloudy => 'Cloudy';
+
+  @override
+  String get weatherCondFog => 'Foggy';
+
+  @override
+  String get weatherCondDrizzle => 'Drizzle';
+
+  @override
+  String get weatherCondRain => 'Rain';
+
+  @override
+  String get weatherCondHeavyRain => 'Heavy rain';
+
+  @override
+  String get weatherCondThunderstorm => 'Thunderstorm';
+
+  @override
+  String get weatherHeatCaution => 'Caution';
+
+  @override
+  String get weatherHeatExtremeCaution => 'Extreme caution';
+
+  @override
+  String get weatherHeatDanger => 'Danger';
+
+  @override
+  String get weatherHeatExtremeDanger => 'Extreme danger';
+
+  @override
+  String get weatherCardTitle => 'Weather';
+
+  @override
+  String weatherFeelsLike(String temp) {
+    return 'Feels like $temp';
+  }
+
+  @override
+  String get weatherTipsTitle => 'Ziren\'s reminders';
+
+  @override
+  String get weatherNow => 'Now';
+
+  @override
+  String get weatherToday => 'Today';
+
+  @override
+  String get weatherTomorrow => 'Tomorrow';
+
+  @override
+  String weatherSourceNote(String time) {
+    return 'Forecast from Open-Meteo, updated $time. For official warnings, follow PAGASA and your MDRRMO.';
+  }
+
+  @override
+  String weatherOldNote(String time) {
+    return 'Showing the forecast from $time. It will update once you\'re back online.';
+  }
+
+  @override
+  String get weatherRemindersToggle => 'Remind me before heavy rain or dangerous heat';
+
+  @override
+  String get weatherRemindersHint => 'About an hour before, even when the app is closed.';
+
+  @override
+  String get weatherLoading => 'Checking the weather…';
+
+  @override
+  String get weatherUnavailable => 'The forecast isn\'t available right now. Pull down to try again.';
+
+  @override
+  String weatherRainChanceLabel(String chance) {
+    return '$chance chance of rain';
+  }
+
+  @override
+  String get weatherNotifRainTitle => 'Rain in about an hour';
+
+  @override
+  String get weatherNotifHeavyRainTitle => 'Heavy rain in about an hour';
+
+  @override
+  String get weatherNotifThunderTitle => 'Thunderstorm in about an hour';
+
+  @override
+  String weatherNotifHeatTitle(String time) {
+    return 'Dangerous heat from $time';
+  }
+
+  @override
+  String get weatherChannelName => 'Weather reminders';
+
+  @override
+  String get weatherChannelDescription => 'A reminder about an hour before heavy rain, a thunderstorm or dangerous heat.';
 }

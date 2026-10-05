@@ -417,13 +417,15 @@ abstract final class AppTheme {
 
       // ── SnackBar ─────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: ZirenTokens.textPrimary,
+        backgroundColor: ZirenTokens.toastSurface,
         contentTextStyle: GoogleFonts.nunito(
           fontSize: 14,
-          color: ZirenTokens.textInverse,
+          color: ZirenTokens.toastText,
         ),
+        actionTextColor: ZirenTokens.brandOrange,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+          side: BorderSide(color: ZirenTokens.toastBorder),
         ),
         behavior: SnackBarBehavior.floating,
         elevation: 0,

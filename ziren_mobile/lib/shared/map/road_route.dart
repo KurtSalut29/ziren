@@ -119,6 +119,45 @@ class RoadRoute {
     );
   }
 
+  /// Within this, a road path is not drawn: the two points are joined directly.
+  static const double nearbyMetres = 150;
+
+  /// Whether a road path is worth drawing between two points [straightMetres]
+  /// apart, when following it (joined back onto both real points) is
+  /// [pathMetres] long.
+  ///
+  /// OSRM starts and ends on the nearest ROAD. When the two points are close
+  /// to each other but not to a road, the "route" runs down to the road and
+  /// straight back up: a V, labelled "by road", several times longer than the
+  /// few steps between them. A responder 11 m from the scene saw exactly that
+  /// (tester screenshot, 2026-10-05). Close by, or when the road path is a
+  /// short hop made long, the direct line is the honest answer.
+  static bool worthDrawing({
+    required double straightMetres,
+    required double pathMetres,
+  }) {
+    if (straightMetres <= nearbyMetres) return false;
+    if (straightMetres < 500 && pathMetres > straightMetres * 3) return false;
+    return true;
+  }
+
+  /// Length of [coordinates] (`[lon, lat]` pairs) joined back onto the real
+  /// start and end points, as the screens draw it.
+  double pathMetresBetween(
+    double fromLat,
+    double fromLng,
+    double toLat,
+    double toLng,
+  ) {
+    if (coordinates.isEmpty) {
+      return metresBetween(fromLat, fromLng, toLat, toLng);
+    }
+    final first = coordinates.first, last = coordinates.last;
+    return metresBetween(fromLat, fromLng, first[1], first[0]) +
+        metres +
+        metresBetween(last[1], last[0], toLat, toLng);
+  }
+
   /// The app's one distance (WGS-84, see [Geodesic]), so this screen and
   /// every other one quote the same metres for the same two points.
   static double metresBetween(

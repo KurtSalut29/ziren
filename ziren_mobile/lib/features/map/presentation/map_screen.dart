@@ -1115,7 +1115,24 @@ class _MapScreenState extends State<MapScreen> {
     final ctrl = _mapController;
     if (ctrl == null) return;
 
-    final roadRoute = await _fetchRoadRoute(fromLat, fromLng, toLat, toLng);
+    final fetched = await RoadRoute.fetch(fromLat, fromLng, toLat, toLng);
+    // Close by, OSRM's path runs down to the nearest road and back up - a V
+    // several times longer than the walk between the two points. There the
+    // direct line is drawn instead (RoadRoute.worthDrawing).
+    final straight = RoadRoute.metresBetween(fromLat, fromLng, toLat, toLng);
+    final roadRoute =
+        fetched != null &&
+                RoadRoute.worthDrawing(
+                  straightMetres: straight,
+                  pathMetres: fetched.pathMetresBetween(
+                    fromLat,
+                    fromLng,
+                    toLat,
+                    toLng,
+                  ),
+                )
+            ? fetched.coordinates
+            : null;
     // OSRM starts and ends its path on the nearest ROAD, not on the points it
     // was given. A house or field off the road therefore had the line stop
     // short — up to a few hundred metres in rural Biliran — and with nothing
@@ -1154,6 +1171,17 @@ class _MapScreenState extends State<MapScreen> {
       south = math.min(south, c[1]);
       north = math.max(north, c[1]);
     }
+    // Two points a few metres apart would be fitted at the deepest zoom, past
+    // the imagery's detail; frame them at street level instead.
+    if (straight < 250) {
+      await ctrl.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng((south + north) / 2, (west + east) / 2),
+          17.5,
+        ),
+      );
+      return;
+    }
     await ctrl.animateCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
@@ -1169,15 +1197,6 @@ class _MapScreenState extends State<MapScreen> {
       ),
     );
   }
-
-  /// A road-following path as `[lon, lat]` pairs, or null. See [RoadRoute].
-  Future<List<List<double>>?> _fetchRoadRoute(
-    double fromLat,
-    double fromLng,
-    double toLat,
-    double toLng,
-  ) async =>
-      (await RoadRoute.fetch(fromLat, fromLng, toLat, toLng))?.coordinates;
 
   String _agencyHex(String type) => switch (type) {
     'BFP' => '#E53935',

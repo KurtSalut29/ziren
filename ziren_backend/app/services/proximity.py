@@ -544,6 +544,7 @@ def notify_nearby(
             db.table("notifications").insert([_audit_row(incident_row, a, at) for a in told]).execute()
             for a in told:
                 _remember(str(incident_row["id"]), a.responder_id)
+            _push_nearby(incident_row, told)
         log.info(
             "incident.nearby_notified",
             incident_id=str(incident_row.get("id")),
@@ -554,6 +555,35 @@ def notify_nearby(
     except Exception:
         log.error("incident.nearby_notify_failed", incident_id=incident_row.get("id"), exc_info=True)
         return []
+
+
+def _push_nearby(incident_row: dict, told: list[Assessment]) -> None:
+    """Reach the responders' phones even with Ziren closed.
+
+    The rows above were only ever read by a phone that was open: the app asks
+    GET /responder/nearby on its own two-minute location ping. A closed app
+    heard nothing (tester report, 2026-10-05). An "alarm" responder now gets
+    the full-screen alert, the same treatment as an assignment; an "advisory"
+    one (told quietly by policy) gets an ordinary notification.
+    """
+    from app.services import push_service
+
+    severity = incident_row.get("severity")
+    base = {
+        "type": TYPE_NEARBY,
+        "incident_id": str(incident_row["id"]),
+        "severity": severity,
+        "category": incident_row.get("incident_category"),
+    }
+    for a in told:
+        data = {**base, "level": a.level,
+                "distance_m": None if a.distance_m is None else round(a.distance_m)}
+        title, body = _title_for(severity), _body_for(incident_row, a)
+        if a.level == "alarm":
+            push_service.send_alert_to_users([a.responder_id], kind="nearby", title=title, body=body, data=data)
+        else:
+            push_service.send_to_users([a.responder_id], title=title, body=body, data=data,
+                                       channel="ziren_responder_updates_v1")
 
 
 # ── remembering who has been recorded, without asking the database every poll ──

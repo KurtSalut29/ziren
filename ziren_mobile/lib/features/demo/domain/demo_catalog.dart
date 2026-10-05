@@ -90,6 +90,14 @@ abstract final class DemoCatalog {
             'Or tap the kind of emergency straight away: Fire, Medical, Accident, Crime, Calamity or Other. A short report form opens — I have a separate demo for it.',
       ),
       DemoStep(
+        anchor: 'home.weather',
+        pose: DemoPose.pointDown,
+        fil:
+            'Ang panahon dito sa inyo: ngayon, ang susunod na mga oras, at ang mga paalala ko — magdala ng payong, uminom ng tubig. Kapag may malakas na ulan o delikadong init na parating, magpapaalala ako sa phone mga isang oras bago, kahit nakasara ang app.',
+        en:
+            'The weather where you are: now, the next few hours, and my reminders — bring an umbrella, drink water. When heavy rain or dangerous heat is coming, I remind you on your phone about an hour before, even with the app closed.',
+      ),
+      DemoStep(
         anchor: 'home.hotlines',
         fil:
             'Hotline ng mga station: tawagan nang direkta ang BFP, PNP o MDRRMO. Kapag walang internet, ang pagpindot sa uri ng emergency ay magbubukas din ng mga numerong ito.',

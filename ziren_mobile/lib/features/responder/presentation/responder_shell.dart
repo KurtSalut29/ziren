@@ -9,11 +9,13 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../demo/presentation/demo_anchor.dart';
 import '../../../shared/widgets/ziren_toast.dart';
 import '../data/incident_alarm.dart';
+import '../domain/nearby_incident.dart';
 import '../domain/responder_incident_model.dart';
 import '../domain/responder_provider.dart';
 import '../domain/responder_vocabulary.dart';
 import 'incident_alert_screen.dart';
 import 'widgets/incoming_report_sheet.dart';
+import 'widgets/nearby_alert_sheet.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
 // Responder shell has a different tab set than the Resident shell:
@@ -64,6 +66,12 @@ class _ResponderShellState extends State<ResponderShell>
   /// second one's.
   bool _alertOnScreen = false;
 
+  /// Nearby incidents whose modal this app session has already raised. Cleared
+  /// when the app comes back to the foreground, so opening Ziren with one
+  /// still unanswered raises it again (tester report 2026-10-05: the alert
+  /// was only ever in the notification shade).
+  final Set<String> _nearbyShown = {};
+
   /// The in-app half of the dispatch alarm. See [IncidentAlarm] for why the
   /// app makes a sound of its own when the OS notification already does.
   final IncidentAlarm _alarm = IncidentAlarm();
@@ -109,7 +117,12 @@ class _ResponderShellState extends State<ResponderShell>
       _alarm.stop();
       return;
     }
-    context.read<ResponderProvider>().loadQueue();
+    final provider = context.read<ResponderProvider>();
+    provider.loadQueue();
+    // Back in front: an unanswered nearby alert is raised again, and the list
+    // is fetched now rather than on the next two-minute location ping.
+    _nearbyShown.clear();
+    provider.loadNearby();
   }
 
   /// Starts or stops the periodic recheck to match whether one is needed.
@@ -152,7 +165,10 @@ class _ResponderShellState extends State<ResponderShell>
         break;
       }
     }
-    if (found == null) return;
+    if (found == null) {
+      _maybeNearbyAlert(provider);
+      return;
+    }
 
     final target = found;
     _alertedForState[target.id] = target.ack.state;
@@ -204,6 +220,63 @@ class _ResponderShellState extends State<ResponderShell>
         }
       }
 
+      if (mounted) _alertOnScreen = false;
+    });
+  }
+
+  /// Announce an undispatched incident near this responder that they have not
+  /// answered. Assignments go first ([_maybeAlert] calls this only when none
+  /// is waiting): a summons outranks an invitation.
+  void _maybeNearbyAlert(ResponderProvider provider) {
+    if (_alertOnScreen || !provider.isOnDuty) return;
+    NearbyIncident? found;
+    for (final n in provider.nearby) {
+      if (!n.hasAnswered &&
+          !n.isAdvisory &&
+          !_nearbyShown.contains(n.incidentId)) {
+        if (found == null ||
+            ResponderVocabulary.rank(n.severity) <
+                ResponderVocabulary.rank(found.severity)) {
+          found = n;
+        }
+      }
+    }
+    if (found == null) return;
+
+    final target = found;
+    _nearbyShown.add(target.incidentId);
+    _alertOnScreen = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _alertOnScreen = false;
+        return;
+      }
+      // The OS notification for it, if any, has done its job.
+      provider.onNearbyResolved?.call([target.incidentId]);
+      _alarm.start();
+      final choice = await NearbyAlertSheet.show(context, target);
+      await _alarm.stop();
+
+      if (choice != NearbyAlertChoice.later && mounted) {
+        final ok = await provider.answerNearby(
+          target.incidentId,
+          choice == NearbyAlertChoice.canRespond
+              ? 'can_respond'
+              : 'unavailable',
+        );
+        if (mounted) {
+          final t = AppLocalizations.of(context);
+          final messenger = ScaffoldMessenger.of(context);
+          if (!ok) {
+            ZirenToast.error(messenger, t.respAnswerSendFailed);
+          } else if (choice == NearbyAlertChoice.canRespond) {
+            ZirenToast.success(messenger, t.respNearbyAnsweredYes);
+          } else {
+            ZirenToast.notice(messenger, t.respNearbyAnsweredNo);
+          }
+        }
+      }
       if (mounted) _alertOnScreen = false;
     });
   }
@@ -260,6 +333,10 @@ class _ResponderShellState extends State<ResponderShell>
     final currentIndex = widget.navigationShell.currentIndex;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final navBarTotalH = _navBarHeight + _navBarMarginB + bottomPadding;
+    // Toasts sit above the floating navigation, not on top of it - the
+    // resident shell already did this; the responder's "You said you can
+    // respond" was drawn over the nav (on-device check 2026-10-05).
+    ZirenToast.shellInset = navBarTotalH;
 
     return Scaffold(
       backgroundColor: ZirenTokens.surfaceBase,

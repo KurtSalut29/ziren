@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../../../core/push/responder_alert_push.dart';
 import '../domain/nearby_incident.dart';
 import '../domain/responder_notification_provider.dart';
 
@@ -54,11 +55,8 @@ class ResponderAlertService {
   // the old quiet banner on every handset that had already run the app —
   // that is, on every responder's phone, and on none of the fresh installs
   // it would be tested on. The id changes with the behaviour.
-  static const _channelId = 'ziren_responder_dispatch_v2';
-  static const _channelName = 'Dispatch alerts';
-  static const _channelDescription =
-      'Full-screen alarm when a dispatcher assigns you an incident. '
-      'Sounds even when the phone is on silent.';
+  // The channel itself (ResponderAlertChannels.dispatchId) now lives in
+  // core/push/responder_alert_push.dart, shared with the push handler.
 
   /// The retired channel. Deleted on init so a responder's notification
   /// settings do not accumulate a dead entry per release.
@@ -106,26 +104,10 @@ class ResponderAlertService {
 
       // Created explicitly rather than left to the first notification. A
       // channel created implicitly picks up defaults, and on some OEM builds
-      // that means no sound — which for this channel is the entire point.
-      await androidImpl?.createNotificationChannel(
-        AndroidNotificationChannel(
-          _channelId,
-          _channelName,
-          description: _channelDescription,
-          importance: Importance.max,
-          playSound: true,
-          enableVibration: true,
-          // ALARM, not notification. A notification-usage sound obeys the
-          // ringer switch, and a responder whose phone is on silent —
-          // because they were in a meeting, in church, asleep — would get
-          // a dispatch alert they cannot hear. An alarm is the category
-          // the OS lets through anyway, and this genuinely is one.
-          audioAttributesUsage: AudioAttributesUsage.alarm,
-          // Long, uneven, and deliberately not the default double-buzz:
-          // felt through a jacket pocket while driving.
-          vibrationPattern: _dispatchVibration,
-        ),
-      );
+      // that means no sound — which for these channels is the entire point.
+      // The definitions are shared with the push handler that raises the same
+      // alarms while the app is closed (ResponderAlertChannels).
+      await ResponderAlertChannels.createAll(_plugin);
 
       await androidImpl?.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -174,45 +156,15 @@ class ResponderAlertService {
 
     try {
       await _plugin.show(
-        // The incident id, not an incrementing counter. Android replaces a
-        // notification that reuses an id, so two events on the same incident
-        // collapse into one line instead of stacking; two different incidents
-        // stay two notifications, which is what a responder needs to see.
-        n.incidentId.hashCode,
+        // One id per incident (not a counter): two events on the same incident
+        // collapse into one line, and the push handler that raises the same
+        // alarm while the app is closed uses the same id, so the two never
+        // stack and either can be cancelled by an answer.
+        ResponderAlertIds.assignment(n.incidentId),
         n.label,
         body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            _channelName,
-            channelDescription: _channelDescription,
-            importance: Importance.max,
-            priority: Priority.high,
-            // Takes the screen and wakes the device, the way an incoming
-            // call does. A heads-up banner reaches a responder who is
-            // already looking at their phone, which is the one responder
-            // who does not need to be told.
-            fullScreenIntent: true,
-            // CALL is the honest classification and it is also what earns
-            // the full-screen grant on Android 14. A dispatch assignment
-            // is a summons that expects an answer.
-            category: AndroidNotificationCategory.call,
-            // Repeats until it is answered rather than chiming once into an
-            // empty room. Cleared by the accept/decline handling.
-            audioAttributesUsage: AudioAttributesUsage.alarm,
-            additionalFlags: Int32List.fromList(<int>[_flagInsistent]),
-            ongoing: true,
-            autoCancel: false,
-            vibrationPattern: _dispatchVibration,
-            ticker: 'New incident assigned',
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            interruptionLevel: InterruptionLevel.timeSensitive,
-          ),
-        ),
+        ResponderAlertChannels.assignment(),
+        payload: 'assignment:${n.incidentId}',
       );
     } catch (e) {
       debugPrint('[ResponderAlertService.notifyAssignment] $e');
@@ -229,11 +181,11 @@ class ResponderAlertService {
   Future<void> notifyStandDown(ResponderNotification n) async {
     if (!_ready) return;
     try {
-      await _plugin.cancel(n.incidentId.hashCode);
+      await _plugin.cancel(ResponderAlertIds.assignment(n.incidentId));
       await _plugin.show(
         // A different id from the assignment's, so this is its own line and not
         // a replacement that could itself be cancelled by the accept/decline path.
-        n.incidentId.hashCode ^ 0x57A9D,
+        ResponderAlertIds.standDown(n.incidentId),
         n.label,
         n.detail,
         const NotificationDetails(
@@ -261,10 +213,11 @@ class ResponderAlertService {
 
   /// Tell a crew that an incident nobody has been sent to yet is near them.
   ///
-  /// Deliberately NOT the full-screen dispatch alarm - a dispatcher has not
-  /// sent anyone, so this is an invitation to help, not a summons. It uses the
-  /// same quiet "Incident updates" channel as a stand-down: heads-up, one
-  /// notification per incident, no insistent loop.
+  /// Wakes the phone and comes up over the lock screen, like the emergency
+  /// broadcast apps (tester request 2026-10-05) - but sounds ONCE: a dispatcher
+  /// has not sent anyone, so this asks rather than summons, and it does not
+  /// loop the way an assignment does. Same channel and id as the push handler
+  /// that raises it while the app is closed.
   Future<void> notifyNearby(NearbyIncident n) async {
     if (!_ready) return;
     final where = (n.locationAddress ?? '').trim();
@@ -274,27 +227,19 @@ class ResponderAlertService {
                 '${where.isEmpty ? '' : ' · $where'}'
             : '${n.categoryLabel}${where.isEmpty ? '' : ' · $where'}';
     try {
+      // Cancel-then-show so it is always ADDED: an update to one still in the
+      // shade rings but does not wake the screen (see showResponderAlertFromPush).
+      try {
+        await _plugin.cancel(ResponderAlertIds.nearby(n.incidentId));
+      } catch (_) {
+        // Best effort; showing the alert is what matters.
+      }
       await _plugin.show(
-        _nearbyNotificationId(n.incidentId),
-        'Nearby incident needs a responder',
+        ResponderAlertIds.nearby(n.incidentId),
+        'Incident near you needs a responder',
         body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _updatesChannelId,
-            _updatesChannelName,
-            channelDescription: _updatesChannelDescription,
-            importance: Importance.high,
-            priority: Priority.high,
-            category: AndroidNotificationCategory.status,
-            ticker: 'Nearby incident',
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-            interruptionLevel: InterruptionLevel.active,
-          ),
-        ),
+        ResponderAlertChannels.nearby(),
+        payload: 'nearby:${n.incidentId}',
       );
     } catch (e) {
       debugPrint('[ResponderAlertService.notifyNearby] $e');
@@ -305,37 +250,11 @@ class ResponderAlertService {
   Future<void> cancelNearby(String incidentId) async {
     if (!_ready) return;
     try {
-      await _plugin.cancel(_nearbyNotificationId(incidentId));
+      await _plugin.cancel(ResponderAlertIds.nearby(incidentId));
     } catch (e) {
       debugPrint('[ResponderAlertService.cancelNearby] $e');
     }
   }
-
-  /// Distinct from the assignment id (`incidentId.hashCode`) and the stand-down
-  /// id (`^ 0x57A9D`) so the three can never collide or cancel one another.
-  int _nearbyNotificationId(String incidentId) =>
-      incidentId.hashCode ^ 0x4E4259;
-
-  /// FLAG_INSISTENT. Repeats the sound until the notification is dealt with.
-  /// FLAG_INSISTENT. Repeats the sound until the notification is dealt with.
-  ///
-  /// Not exposed by the plugin, so it goes in as a raw flag. The constant is
-  /// 0x00000004 and has been stable in the Android framework since API 1.
-  static const int _flagInsistent = 4;
-
-  /// Wait, buzz, wait, buzz — long enough to be felt through a jacket while
-  /// driving, and distinct from every default pattern on the handset.
-  /// Int64List, NOT Int32List. `additionalFlags` immediately below takes an
-  /// Int32List, so the two adjacent arguments want different widths — which
-  /// reads fine and does not compile.
-  static final Int64List _dispatchVibration = Int64List.fromList(<int>[
-    0,
-    700,
-    400,
-    700,
-    400,
-    700,
-  ]);
 
   /// Stop an alert that has been answered.
   ///
@@ -348,7 +267,7 @@ class ResponderAlertService {
   Future<void> dismiss(String incidentId) async {
     if (!_ready) return;
     try {
-      await _plugin.cancel(incidentId.hashCode);
+      await _plugin.cancel(ResponderAlertIds.assignment(incidentId));
     } catch (e) {
       debugPrint('[ResponderAlertService.dismiss] $e');
     }

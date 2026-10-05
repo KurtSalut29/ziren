@@ -24,6 +24,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AcceptReportDialog } from '@/components/incidents/accept-report-dialog';
 import { toast } from '@/lib/toast';
 import { announceOpened } from '@/lib/incidents/arrivals';
 import {
@@ -1273,33 +1274,15 @@ export function IncidentDetailModal({
         />
       )}
 
-      {/* ── Accept / Resolve confirm — same copy as page.tsx's ─────────── */}
-      <AlertDialog
-        onOpenChange={open => { if (!open && !actionLoading) setShowAcceptConfirm(false); }}
+      {/* ── Accept report confirm (shared with the other screen) ── */}
+      <AcceptReportDialog
+        dispatchable={dispatchable}
+        incident={detail}
+        loading={actionLoading}
+        onCancel={() => setShowAcceptConfirm(false)}
+        onConfirm={() => { void handleAccept(); }}
         open={showAcceptConfirm}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Accept this report?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You won&apos;t be able to Reject or Request Clarification after this.
-              {/* dispatchable, not canDispatch — canDispatch now also requires
-                  review_status === 'accepted', which is only true AFTER this
-                  very confirmation goes through, so it always reads false here. */}
-              {dispatchable && ' Dispatch becomes available after this.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionLoading}>Back</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={actionLoading}
-              onClick={e => { e.preventDefault(); void handleAccept(); }}
-            >
-              Accept Report
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
 
       <AlertDialog
         onOpenChange={open => { if (!open && !actionLoading) setShowResolveConfirm(false); }}

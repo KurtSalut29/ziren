@@ -16,6 +16,10 @@ import '../../../features/incident_report/domain/incident_category_style.dart';
 import '../../../features/incident_report/domain/incident_provider.dart';
 import '../../../features/notifications/domain/notification_provider.dart';
 import '../../../features/settings/domain/profile_provider.dart';
+import '../../../features/weather/data/weather_store.dart';
+import '../../../features/weather/domain/weather_advice.dart';
+import '../../../features/weather/presentation/weather_card.dart';
+import '../../../features/weather/presentation/weather_words.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/suspension_banner.dart';
@@ -101,6 +105,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WeatherStore.instance.addListener(_onWeather);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final incidents = context.read<IncidentProvider>();
       incidents.loadMyIncidents();
@@ -109,15 +114,22 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
       // spends a few seconds on Home before tapping a category. Starting
       // the request now means a precise fix is more likely already ready
       // by the time they need one.
-      if (incidents.currentPosition == null) incidents.fetchLocation();
+      final located =
+          incidents.currentPosition == null
+              ? incidents.fetchLocation()
+              : Future<void>.value();
+      // The forecast is for where the resident is, so it waits for the fix
+      // (or its failure: no fix means the forecast for Naval).
+      _refreshWeather(after: located);
       // Refreshes the saved copy of the station numbers while there is still
       // a connection, so the offline list is as current as it can be.
       HotlinesStore.instance.refresh();
       _checkConnectivity();
-      _connectivityTimer = Timer.periodic(
-        _pingInterval,
-        (_) => _checkConnectivity(),
-      );
+      _connectivityTimer = Timer.periodic(_pingInterval, (_) {
+        _checkConnectivity();
+        // Throttled by the store (every 15 minutes at most).
+        _refreshWeather();
+      });
 
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         final hasNetwork = results.any(
@@ -132,6 +144,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
             if (mounted) {
               final p = context.read<IncidentProvider>();
               if (p.incidentsError != null) p.loadMyIncidents();
+              if (WeatherStore.instance.failed) _refreshWeather();
             }
           });
         } else {
@@ -145,7 +158,31 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   void dispose() {
     _connectivityTimer?.cancel();
     _connectivitySub?.cancel();
+    WeatherStore.instance.removeListener(_onWeather);
     super.dispose();
+  }
+
+  /// Ziren's message on top reads the forecast too, so Home redraws with it.
+  void _onWeather() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _refreshWeather({
+    Future<void>? after,
+    bool force = false,
+  }) async {
+    if (after != null) {
+      try {
+        await after;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    final pos = context.read<IncidentProvider>().currentPosition;
+    await WeatherStore.instance.refresh(
+      lat: pos?.latitude,
+      lng: pos?.longitude,
+      force: force,
+    );
   }
 
   /// One tap on a category tile: set it, then go straight to the quick
@@ -245,6 +282,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                     _checkConnectivity(),
                     if (_alertsKey.currentState != null)
                       _alertsKey.currentState!.reload(),
+                    _refreshWeather(force: true),
                   ]),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -442,6 +480,23 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                     ),
                   ),
 
+                  // ── Weather ─────────────────────────────────────
+                  //
+                  // Below the report actions, never above them: the forecast is
+                  // for planning the day, the tiles are for an emergency now.
+                  // Ziren's top message already carries the one line that
+                  // matters (rain at 3 PM, dangerous heat); this is the detail.
+                  const SizedBox(height: ZirenTokens.space16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: kHomeGutter,
+                    ),
+                    child: DemoAnchor(
+                      id: 'home.weather',
+                      child: WeatherCard(store: WeatherStore.instance),
+                    ),
+                  ),
+
                   // ── Station hotlines ─────────────────────────────
                   //
                   // Always here, not only offline: a resident should already know
@@ -517,12 +572,22 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
       return t.mascotResidentOffline;
     }
     final mine = incidents.myIncidents;
-    if (mine.isEmpty) return t.mascotResidentIntro(name);
     final open =
         mine
             .where((i) => i.status != 'resolved' && i.status != 'cancelled')
             .length;
+    // A report still in progress comes first: it is the resident's own
+    // emergency. Then the weather, which is what Ziren knows about today.
     if (open > 0) return t.mascotResidentOpen('$open', name);
+    final forecast = WeatherStore.instance.forecast;
+    if (forecast != null) {
+      final advice = WeatherAdvice.from(forecast, DateTime.now());
+      return WeatherWords(
+        t,
+        Localizations.localeOf(context).toLanguageTag(),
+      ).headline(advice.headline, name);
+    }
+    if (mine.isEmpty) return t.mascotResidentIntro(name);
     return t.mascotResidentThanks('${mine.length}', name);
   }
 }

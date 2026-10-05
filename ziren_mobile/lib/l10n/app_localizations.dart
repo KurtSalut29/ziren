@@ -6487,6 +6487,12 @@ abstract class AppLocalizations {
   /// **'Incidents near you'**
   String get respNearbyTitle;
 
+  /// Responder app: label on the modal that announces an undispatched incident near the responder.
+  ///
+  /// In en, this message translates to:
+  /// **'INCIDENT NEAR YOU'**
+  String get respNearbyAlertEyebrow;
+
   /// Home screen: explains that answering does not assign the call.
   ///
   /// In en, this message translates to:
@@ -8023,6 +8029,12 @@ abstract class AppLocalizations {
   /// **'The route follows the roads on the map. Watch for closed or flooded roads.'**
   String get respNavRoadNote;
 
+  /// Responder navigation: shown instead of the road note when the crew is within about 150 m of the scene.
+  ///
+  /// In en, this message translates to:
+  /// **'You are close. The scene is a short walk in the direction of the arrow; go the rest of the way on foot if the vehicle cannot get nearer.'**
+  String get respNavNearbyNote;
+
   /// No description provided for @accountNoticeEyebrow.
   ///
   /// In en, this message translates to:
@@ -8706,6 +8718,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check the words: the phone may mishear {language}. Fix anything wrong before sending.'**
   String speakingLanguageCheck(String language);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'A thunderstorm is likely around {time}, {name}. Stay indoors once it starts.'**
+  String weatherHeadThunderSoon(String time, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy rain is expected around {time}, {name}. Stay away from flooded roads and rivers.'**
+  String weatherHeadHeavyRainSoon(String time, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s raining right now, {name}. Take care if you have to go out.'**
+  String weatherHeadRainingNow(String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Rain is likely around {time}, {name}. Bring an umbrella if you\'re heading out.'**
+  String weatherHeadRainSoon(String time, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous heat today, {name}: it will feel like {temp} around {time}. Stay cool and drink water.'**
+  String weatherHeadHeatDanger(String temp, String time, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s going to be hot, {name}: it will feel like {temp} around {time}. Drink plenty of water.'**
+  String weatherHeadHeatHigh(String temp, String time, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'The weather looks fair today, {name}. It\'s {temp} right now.'**
+  String weatherHeadFairDay(String temp, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'A calm night ahead, {name}. It\'s {temp} right now.'**
+  String weatherHeadFairNight(String temp, String name);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Stay indoors during the thunderstorm. Keep off open fields and away from tall trees, and unplug appliances.'**
+  String get weatherTipThunderIndoors;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t cross rivers or flooded roads. If your area floods easily, move valuables up and keep your go-bag ready.'**
+  String get weatherTipHeavyRainFlood;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Living near a slope? Watch for cracks, falling rocks or muddy water, and leave early if you see them.'**
+  String get weatherTipLandslideWatch;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Bring an umbrella or raincoat if you\'re going out.'**
+  String get weatherTipUmbrella;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Roads get slippery. Drive or ride slowly and keep your lights on.'**
+  String get weatherTipRoadSlippery;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Avoid heavy work outdoors from 10 AM to 4 PM, and check on older people and children.'**
+  String get weatherTipHeatDangerWork;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Signs of heat stroke: dizziness, confusion, hot dry skin. Cool the person down and report it right away.'**
+  String get weatherTipHeatStrokeSigns;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Drink water often, even if you\'re not thirsty.'**
+  String get weatherTipHeatWater;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Stay in the shade at midday and wear light, loose clothes.'**
+  String get weatherTipHeatShade;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'The sun is very strong. Use a hat or umbrella outdoors.'**
+  String get weatherTipUvStrong;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Strong winds. Secure loose roofing and stay away from trees and power lines.'**
+  String get weatherTipWindStrong;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Fair weather is a good time to check your go-bag and save the hotline numbers.'**
+  String get weatherTipGoBagCheck;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get weatherCondClear;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Mostly clear'**
+  String get weatherCondMostlyClear;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Partly cloudy'**
+  String get weatherCondPartlyCloudy;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Cloudy'**
+  String get weatherCondCloudy;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Foggy'**
+  String get weatherCondFog;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Drizzle'**
+  String get weatherCondDrizzle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get weatherCondRain;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy rain'**
+  String get weatherCondHeavyRain;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Thunderstorm'**
+  String get weatherCondThunderstorm;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Caution'**
+  String get weatherHeatCaution;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Extreme caution'**
+  String get weatherHeatExtremeCaution;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Danger'**
+  String get weatherHeatDanger;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Extreme danger'**
+  String get weatherHeatExtremeDanger;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Weather'**
+  String get weatherCardTitle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Feels like {temp}'**
+  String weatherFeelsLike(String temp);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Ziren\'s reminders'**
+  String get weatherTipsTitle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get weatherNow;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get weatherToday;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get weatherTomorrow;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Forecast from Open-Meteo, updated {time}. For official warnings, follow PAGASA and your MDRRMO.'**
+  String weatherSourceNote(String time);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the forecast from {time}. It will update once you\'re back online.'**
+  String weatherOldNote(String time);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me before heavy rain or dangerous heat'**
+  String get weatherRemindersToggle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'About an hour before, even when the app is closed.'**
+  String get weatherRemindersHint;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the weather…'**
+  String get weatherLoading;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'The forecast isn\'t available right now. Pull down to try again.'**
+  String get weatherUnavailable;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'{chance} chance of rain'**
+  String weatherRainChanceLabel(String chance);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Rain in about an hour'**
+  String get weatherNotifRainTitle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy rain in about an hour'**
+  String get weatherNotifHeavyRainTitle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Thunderstorm in about an hour'**
+  String get weatherNotifThunderTitle;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous heat from {time}'**
+  String weatherNotifHeatTitle(String time);
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'Weather reminders'**
+  String get weatherChannelName;
+
+  /// Weather on resident Home (Open-Meteo forecast via /weather)
+  ///
+  /// In en, this message translates to:
+  /// **'A reminder about an hour before heavy rain, a thunderstorm or dangerous heat.'**
+  String get weatherChannelDescription;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

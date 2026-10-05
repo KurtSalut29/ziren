@@ -124,6 +124,19 @@ abstract final class ZirenTokens {
       isDark ? const Color(0xFF4B4B52) : const Color(0xFFD4D4D8);
   static const Color textInverse = Color(0xFFFFFFFF); // text on brand bg
 
+  // ── Toast / snackbar ──────────────────────────────────────
+  // A dark bar with white words in light mode. In dark mode it used to be
+  // `textPrimary` (near-white) behind `textInverse` (white): a responder's
+  // "You have accepted this. The dispatcher knows." was a blank white strip
+  // (tester screenshot, 2026-10-05). Dark mode now gets a raised grey bar,
+  // lifted off the page by a border, with the normal light text.
+  static Color get toastSurface =>
+      isDark ? const Color(0xFF2E2E33) : const Color(0xFF1A1A1A);
+  static Color get toastText =>
+      isDark ? const Color(0xFFF5F5F6) : const Color(0xFFFFFFFF);
+  static Color get toastBorder =>
+      isDark ? const Color(0xFF45454C) : const Color(0x00000000);
+
   // ── Severity (4-tier — contrast-checked ≥4.5:1 on #FAFAFA) ──
   // RULE: always pair with icon + label. Never color alone.
   // RULE: severity ≠ brandOrange. Red/amber/green = risk signal.

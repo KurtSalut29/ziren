@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ziren_alert is only named at runtime (the notification channels' sound,
+     RawResourceAndroidNotificationSound('ziren_alert')), so resource shrinking
+     in release builds would otherwise delete it and the alarm would fall back
+     to the phone's default sound. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/ziren_alert" />

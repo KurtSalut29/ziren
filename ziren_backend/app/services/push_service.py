@@ -142,8 +142,91 @@ def send_to_users(
         log.error("push.queue_failed", exc_info=True)
 
 
+# A responder alert the phone must turn into a full-screen alarm.
+ALERT_KINDS = ("assignment", "nearby")
+
+
+def send_alert_to_users(
+    user_ids: Iterable[str],
+    *,
+    kind: str,
+    title: str,
+    body: str | None = None,
+    data: dict | None = None,
+    ttl_seconds: int = 600,
+) -> None:
+    """Queue a responder ALERT: a data-only, high-priority message.
+
+    An ordinary push (send_to_users) is drawn by Android itself as a plain
+    notification - it cannot wake the screen or come up over the lock screen.
+    A responder told about a fire on the next street needs the incoming-call
+    treatment the emergency broadcast apps give (tester request, 2026-10-05).
+    So the message carries no `notification` block: the app's background
+    handler receives it even when Ziren is closed and raises the full-screen
+    alarm itself (see ziren_mobile lib/core/push/responder_alert_push.dart).
+
+    `ttl_seconds` is short on purpose: a phone that was off for an hour must
+    not wake up to an alarm for a call that was handled long ago.
+    """
+    if kind not in ALERT_KINDS:
+        raise ValueError(f"Unknown alert kind {kind!r}")
+    ids = sorted({str(u) for u in user_ids if u})
+    if not ids or not enabled():
+        return
+    payload = {**(data or {}), "ziren_alert": kind, "title": title[:200], "body": (body or "")[:400]}
+    try:
+        _pool.submit(_deliver, ids, title, body, payload, True, None, True, ttl_seconds)
+    except Exception:
+        log.error("push.queue_failed", exc_info=True)
+
+
+def send_data_to_users(
+    user_ids: Iterable[str],
+    *,
+    data: dict,
+    ttl_seconds: int,
+) -> None:
+    """Queue a data-only, high-priority message the app turns into its own
+    notification (the weather reminder: weather_alerts.py).
+
+    Data-only because the phone words it in the resident's language and drops
+    it if they switched the reminder off. High priority because that is what
+    reaches a closed app on phones whose battery manager freezes it.
+    """
+    ids = sorted({str(u) for u in user_ids if u})
+    if not ids or not enabled():
+        return
+    try:
+        _pool.submit(_deliver, ids, "", None, dict(data), True, None, True, ttl_seconds)
+    except Exception:
+        log.error("push.queue_failed", exc_info=True)
+
+
+def _message(
+    token: str, title: str, body: str | None, data: dict, important: bool,
+    channel: str | None, alert: bool, ttl_seconds: int | None,
+) -> dict:
+    """One FCM v1 message. An alert is data-only (the app draws it); anything
+    else carries a `notification` block Android draws by itself."""
+    if alert:
+        android: dict = {"priority": "HIGH"}
+        if ttl_seconds:
+            android["ttl"] = f"{int(ttl_seconds)}s"
+        return {"token": token, "data": data, "android": android}
+    return {
+        "token": token,
+        "notification": {"title": title[:200], **({"body": body[:400]} if body else {})},
+        "data": data,
+        "android": {
+            "priority": "HIGH" if important else "NORMAL",
+            "notification": {"channel_id": channel or ("ziren_alerts" if important else "ziren_updates")},
+        },
+    }
+
+
 def _deliver(
     user_ids: list[str], title: str, body: str | None, data: dict, important: bool, channel: str | None = None,
+    alert: bool = False, ttl_seconds: int | None = None,
 ) -> None:
     info = _service_account()
     if info is None:
@@ -163,17 +246,7 @@ def _deliver(
     sent = dead = 0
     with httpx.Client(timeout=10, headers={"Authorization": f"Bearer {access}"}) as client:
         for token in tokens:
-            message = {
-                "message": {
-                    "token": token,
-                    "notification": {"title": title[:200], **({"body": body[:400]} if body else {})},
-                    "data": payload_data,
-                    "android": {
-                        "priority": "HIGH" if important else "NORMAL",
-                        "notification": {"channel_id": channel or ("ziren_alerts" if important else "ziren_updates")},
-                    },
-                }
-            }
+            message = {"message": _message(token, title, body, payload_data, important, channel, alert, ttl_seconds)}
             try:
                 r = client.post(url, json=message)
             except httpx.HTTPError:

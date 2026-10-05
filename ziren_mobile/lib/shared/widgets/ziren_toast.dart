@@ -31,13 +31,21 @@ class ZirenToast {
     ZirenTone tone = ZirenTone.neutral,
     Duration duration = const Duration(seconds: 5),
   }) {
-    final color = tone == ZirenTone.neutral ? ZirenTokens.textInverse : tone.color;
+    // Colours are set here, not left to the theme: in dark mode the theme's
+    // old bar was near-white behind white text, and this widget is what every
+    // "that worked" message goes through.
+    final color = tone == ZirenTone.neutral ? ZirenTokens.toastText : tone.color;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           duration: duration,
           behavior: SnackBarBehavior.floating,
+          backgroundColor: ZirenTokens.toastSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+            side: BorderSide(color: ZirenTokens.toastBorder),
+          ),
           margin: EdgeInsets.fromLTRB(
             ZirenTokens.space16,
             0,
@@ -66,7 +74,11 @@ class ZirenToast {
               Expanded(
                 child: Text(
                   message,
-                  style: const TextStyle(fontSize: 14, height: 1.35),
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.35,
+                    color: ZirenTokens.toastText,
+                  ),
                 ),
               ),
             ],

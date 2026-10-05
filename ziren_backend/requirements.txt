@@ -21,6 +21,15 @@ python-multipart==0.0.20
 # HTTP client (for external calls: Claude API)
 httpx==0.28.1
 
+# Push notifications (push_service): the FCM service-account JWT is signed
+# with RS256, which PyJWT can only do with `cryptography` installed. PyJWT
+# itself arrives through supabase -> gotrue, but WITHOUT the crypto extra, so
+# leaving this implicit shipped a server where every push failed with
+# "Algorithm 'RS256' could not be found" (2026-10-05) while the dev venv,
+# which happened to have cryptography, passed every test.
+pyjwt[crypto]==2.14.0
+cryptography==50.0.1
+
 # Rate limiting
 slowapi==0.1.9
 
