@@ -29,7 +29,6 @@ class StepIdTypeScreen extends StatelessWidget {
       step: RegStep.idType,
       title: t.regIdTypeTitle,
       subtitle: t.regIdTypeSubtitle,
-      showSkipVerification: true,
       onContinue:
           d.validIdType == null
               ? null

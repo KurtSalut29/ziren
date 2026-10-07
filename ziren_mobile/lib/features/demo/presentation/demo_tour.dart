@@ -159,11 +159,19 @@ class _DemoTourViewState extends State<DemoTourView>
   }
 
   /// Scrolls [id] into view. When it is not built yet (a long list only builds
-  /// what is near the screen), scrolls the screen down until it is.
+  /// what is near the screen), looks for it: first at the top of the screen,
+  /// then further down.
+  ///
+  /// The top first, because a list also UNBUILDS what has scrolled far away.
+  /// Started from the bottom of Home (the station hotlines), the header's bell
+  /// and profile button no longer existed, and a search that only went down
+  /// never found them: the mascot talked from the middle of a dimmed screen
+  /// with nothing lit (tester report, 2026-10-06).
   Future<void> _reveal(String id) async {
     final reduce = MediaQuery.disableAnimationsOf(context);
     final duration = reduce ? Duration.zero : const Duration(milliseconds: 320);
-    for (var attempt = 0; attempt < 8; attempt++) {
+    var lookedAtTop = false;
+    for (var attempt = 0; attempt < 12; attempt++) {
       final ctx = DemoAnchors.contextOf(id);
       if (ctx != null) {
         if (!ctx.mounted) return;
@@ -178,7 +186,24 @@ class _DemoTourViewState extends State<DemoTourView>
         return;
       }
       final position = _anyScrollPosition();
-      if (position == null || position.extentAfter <= 0) return;
+      if (position == null) return;
+      if (!lookedAtTop) {
+        lookedAtTop = true;
+        if (position.pixels > position.minScrollExtent) {
+          if (reduce) {
+            position.jumpTo(position.minScrollExtent);
+          } else {
+            await position.animateTo(
+              position.minScrollExtent,
+              duration: duration,
+              curve: Curves.easeOutCubic,
+            );
+          }
+          await WidgetsBinding.instance.endOfFrame;
+          continue;
+        }
+      }
+      if (position.extentAfter <= 0) return;
       final to = math.min(
         position.pixels + position.viewportDimension * 0.7,
         position.maxScrollExtent,
@@ -205,6 +230,14 @@ class _DemoTourViewState extends State<DemoTourView>
       if (ctx == null) continue;
       final scrollable = Scrollable.maybeOf(ctx);
       if (scrollable != null) return scrollable.position;
+    }
+    // None of this script's parts is built right now (all scrolled far
+    // away): any other marked part of the same screen leads to the list.
+    for (final ctx in DemoAnchors.mountedContexts()) {
+      final scrollable = Scrollable.maybeOf(ctx);
+      if (scrollable != null && scrollable.position.axis == Axis.vertical) {
+        return scrollable.position;
+      }
     }
     return null;
   }
@@ -245,17 +278,17 @@ class _DemoTourViewState extends State<DemoTourView>
     // mascot has nothing to point at.
     final placement =
         target == null
-            ? _Placement.middle
+            ? DemoPlacement.middle
             : (target.center.dy < size.height * 0.5
-                ? _Placement.below
-                : _Placement.above);
+                ? DemoPlacement.below
+                : DemoPlacement.above);
 
     final pose =
         _step.pose ??
         switch (placement) {
-          _Placement.below => DemoPose.pointUp,
-          _Placement.above => DemoPose.pointDown,
-          _Placement.middle => DemoPose.pointYou,
+          DemoPlacement.below => DemoPose.pointUp,
+          DemoPlacement.above => DemoPose.pointDown,
+          DemoPlacement.middle => DemoPose.pointYou,
         };
 
     final card = _TourCard(
@@ -273,7 +306,6 @@ class _DemoTourViewState extends State<DemoTourView>
       onNext: _next,
     );
 
-    const gap = 14.0;
     return Material(
       type: MaterialType.transparency,
       child: Stack(
@@ -305,32 +337,21 @@ class _DemoTourViewState extends State<DemoTourView>
               ),
             ),
           ),
-          AnimatedPositioned(
-            duration:
-                MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-            left: ZirenTokens.space12,
-            right: ZirenTokens.space12,
-            top: switch (placement) {
-              _Placement.below => math.min(
-                target!.bottom + gap,
-                size.height - padding.bottom - _TourCard.minHeight,
+          // Placed by its REAL size, not a guess: in Filipino, or with the
+          // phone's text made larger, the bubble grew past the old fixed
+          // estimate and its Next button ended up below the screen's edge
+          // (tester report, 2026-10-06).
+          Positioned.fill(
+            child: CustomSingleChildLayout(
+              delegate: DemoCardLayout(
+                target: target,
+                placement: placement,
+                padding: padding,
               ),
-              _Placement.middle => size.height * 0.30,
-              _Placement.above => null,
-            },
-            bottom:
-                placement == _Placement.above
-                    ? math.min(
-                      size.height - target!.top + gap,
-                      size.height - padding.top - _TourCard.minHeight,
-                    )
-                    : null,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: card,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: card,
+              ),
             ),
           ),
         ],
@@ -339,7 +360,70 @@ class _DemoTourViewState extends State<DemoTourView>
   }
 }
 
-enum _Placement { above, below, middle }
+enum DemoPlacement { above, below, middle }
+
+/// Puts the mascot card next to what it explains, always fully on screen.
+///
+/// It goes on the side [placement] prefers; if it does not fit there, on the
+/// other side; if it fits on neither (a tall target with a long Filipino line
+/// in large text), as close as it can while staying on screen, even if that
+/// covers part of the target. Taller than the screen, it is capped, and the
+/// card scrolls its text so the buttons stay visible.
+class DemoCardLayout extends SingleChildLayoutDelegate {
+  DemoCardLayout({
+    required this.target,
+    required this.placement,
+    required this.padding,
+  });
+
+  final Rect? target;
+  final DemoPlacement placement;
+  final EdgeInsets padding;
+
+  static const gap = 14.0;
+  static const margin = 12.0;
+
+  double _top(Size size) => padding.top + margin;
+  double _bottom(Size size) => size.height - padding.bottom - margin;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final size = constraints.biggest;
+    return BoxConstraints(
+      minWidth: size.width - 2 * margin,
+      maxWidth: size.width - 2 * margin,
+      maxHeight: math.max(0, _bottom(size) - _top(size)),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final top = _top(size), bottom = _bottom(size);
+    double clamp(double y) =>
+        y.clamp(top, math.max(top, bottom - childSize.height));
+    final t = target;
+    if (t == null || placement == DemoPlacement.middle) {
+      return Offset(margin, clamp(size.height * 0.30));
+    }
+    final below = t.bottom + gap;
+    final above = t.top - gap - childSize.height;
+    final fitsBelow = below + childSize.height <= bottom;
+    final fitsAbove = above >= top;
+    final double y;
+    if (placement == DemoPlacement.below) {
+      y = fitsBelow ? below : (fitsAbove ? above : clamp(below));
+    } else {
+      y = fitsAbove ? above : (fitsBelow ? below : clamp(above));
+    }
+    return Offset(margin, y);
+  }
+
+  @override
+  bool shouldRelayout(DemoCardLayout old) =>
+      old.target != target ||
+      old.placement != placement ||
+      old.padding != padding;
+}
 
 /// Dims everything except the lit part, which gets a brand-orange ring that
 /// breathes outwards so the eye finds it.
@@ -409,8 +493,6 @@ class _TourCard extends StatelessWidget {
     required this.onNext,
   });
 
-  /// Room the card needs, so it is never pushed off the screen's edge.
-  static const minHeight = 210.0;
   static const mascotHeight = 128.0;
 
   final String title;
@@ -427,6 +509,15 @@ class _TourCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Larger text is honoured, up to a point: past 1.4x the bubble would need
+    // most of the screen for one sentence.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.4,
+      child: _row(context),
+    );
+  }
+
+  Widget _row(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -534,18 +625,31 @@ class _TourCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: ZirenTokens.space8),
-                    Text(
-                      text,
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        height: 1.4,
-                        fontWeight: FontWeight.w700,
-                        color: ZirenTokens.textPrimary,
+                    // The one part that gives way when the card is capped by
+                    // the screen: the words scroll, the buttons stay.
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Text(
+                          text,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            height: 1.4,
+                            fontWeight: FontWeight.w700,
+                            color: ZirenTokens.textPrimary,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: ZirenTokens.space8),
                     _Progress(index: index, count: count),
-                    Row(
+                    // Skip on the left, Back and Next on the right; when they
+                    // do not fit on one line (large text, Filipino words), Next
+                    // moves under Skip instead of running off the bubble.
+                    Wrap(
+                      key: const ValueKey('demo-buttons'),
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      runSpacing: 2,
                       children: [
                         if (!last)
                           TextButton(
@@ -558,38 +662,52 @@ class _TourCard extends StatelessWidget {
                               minimumSize: const Size(0, 40),
                             ),
                             child: Text(DemoChrome.skip(lang)),
-                          ),
-                        const Spacer(),
-                        if (onBack != null)
-                          IconButton(
-                            tooltip: DemoChrome.back(lang),
-                            onPressed: onBack,
-                            icon: Icon(
-                              LucideIcons.arrow_left,
-                              size: 20,
-                              color: ZirenTokens.textSecondary,
+                          )
+                        else
+                          const SizedBox.shrink(),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          alignment: WrapAlignment.end,
+                          children: [
+                            if (onBack != null)
+                              IconButton(
+                                tooltip: DemoChrome.back(lang),
+                                onPressed: onBack,
+                                icon: Icon(
+                                  LucideIcons.arrow_left,
+                                  size: 20,
+                                  color: ZirenTokens.textSecondary,
+                                ),
+                              ),
+                            const SizedBox(width: ZirenTokens.space4),
+                            FilledButton.icon(
+                              key: const ValueKey('demo-next'),
+                              onPressed: onNext,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ZirenTokens.brandOrange,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(0, 40),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
+                              ),
+                              iconAlignment: IconAlignment.end,
+                              icon: Icon(
+                                last
+                                    ? LucideIcons.check
+                                    : LucideIcons.arrow_right,
+                                size: 17,
+                              ),
+                              label: Text(
+                                last
+                                    ? DemoChrome.done(lang)
+                                    : DemoChrome.next(lang),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                             ),
-                          ),
-                        const SizedBox(width: ZirenTokens.space4),
-                        FilledButton.icon(
-                          onPressed: onNext,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: ZirenTokens.brandOrange,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(0, 40),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                          ),
-                          iconAlignment: IconAlignment.end,
-                          icon: Icon(
-                            last ? LucideIcons.check : LucideIcons.arrow_right,
-                            size: 17,
-                          ),
-                          label: Text(
-                            last
-                                ? DemoChrome.done(lang)
-                                : DemoChrome.next(lang),
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
+                          ],
                         ),
                       ],
                     ),

@@ -40,6 +40,7 @@ import {
   type StandingFilter, type StandingResult,
 } from '@/lib/api/residents';
 import { ID_TYPE_LABELS } from '@/lib/api/verification';
+import { ZirenIdCard } from './ziren-id-card';
 import { formatDate, formatDateTime } from '@/lib/format/datetime';
 import { displayPrefs } from '@/lib/prefs/definitions';
 import { useNotice } from '@/lib/toast';
@@ -513,6 +514,10 @@ function DetailDialog({ open, detail, error, onClose, onAction }: {
                 </div>
               )}
 
+              {/* A verified resident is shown as their Ziren ID first: the
+                  face and the particulars an administrator recognises them by. */}
+              {detail.verified && <ZirenIdCard detail={detail} />}
+
               <div className="grid grid-cols-3 gap-2.5">
                 <_Stat icon={FileText} label="Reports filed" value={detail.report_count} />
                 <_Stat
@@ -537,8 +542,9 @@ function DetailDialog({ open, detail, error, onClose, onAction }: {
                       : null}
                   </_Info>
                   <_Info icon={Mail} label="Email">{detail.email}</_Info>
-                  <_Info icon={MapPin} label="Address">{address || null}</_Info>
-                  <_Info icon={CalendarClock} label="Date of birth">{detail.date_of_birth}</_Info>
+                  {/* Already on the Ziren ID above for a verified resident. */}
+                  {!detail.verified && <_Info icon={MapPin} label="Address">{address || null}</_Info>}
+                  {!detail.verified && <_Info icon={CalendarClock} label="Date of birth">{detail.date_of_birth}</_Info>}
                   <_Info icon={IdCard} label="ID on file">
                     {detail.valid_id_type
                       ? `${ID_TYPE_LABELS[detail.valid_id_type] ?? detail.valid_id_type}${detail.valid_id_number ? ` · ${detail.valid_id_number}` : ''}`

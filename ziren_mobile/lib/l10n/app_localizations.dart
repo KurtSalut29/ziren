@@ -440,13 +440,13 @@ abstract class AppLocalizations {
   /// No description provided for @consentSummaryReporting.
   ///
   /// In en, this message translates to:
-  /// **'You can always report an emergency, verified or not.'**
+  /// **'Reports can be sent once an administrator verifies your account. Emergency hotlines always work.'**
   String get consentSummaryReporting;
 
   /// No description provided for @consentSummaryPhotos.
   ///
   /// In en, this message translates to:
-  /// **'Your ID and face photos are private, and deleted once checked.'**
+  /// **'Your ID photo is deleted once checked. Your face photo stays private, as the picture on your Ziren ID that only administrators see.'**
   String get consentSummaryPhotos;
 
   /// No description provided for @consentSummaryNotHotline.
@@ -1664,7 +1664,7 @@ abstract class AppLocalizations {
   /// No description provided for @regAgencyIdWhy.
   ///
   /// In en, this message translates to:
-  /// **'Speeds up approval considerably - your admin can check the badge number without calling your station.'**
+  /// **'Required. Your admin checks that the name on it is yours before approving your account.'**
   String get regAgencyIdWhy;
 
   /// No description provided for @regIdBestChoice.
@@ -2294,7 +2294,7 @@ abstract class AppLocalizations {
   /// No description provided for @verifySelfie.
   ///
   /// In en, this message translates to:
-  /// **'Selfie (optional but helps)'**
+  /// **'Selfie'**
   String get verifySelfie;
 
   /// No description provided for @verifySubmit.
@@ -2348,19 +2348,19 @@ abstract class AppLocalizations {
   /// No description provided for @verifyIntro.
   ///
   /// In en, this message translates to:
-  /// **'This is optional. You can already report emergencies without it - verifying just tells a dispatcher your reports come from a confirmed resident.'**
+  /// **'Only residents verified by an administrator can send reports. Show a valid ID with your name on it and take a selfie - an administrator compares the two.'**
   String get verifyIntro;
 
   /// No description provided for @verifySentBody.
   ///
   /// In en, this message translates to:
-  /// **'An administrator will check your ID. Nothing changes for you in the meantime - keep using Ziren exactly as before.'**
+  /// **'An administrator will check your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.'**
   String get verifySentBody;
 
   /// No description provided for @verifyPrivacyNote.
   ///
   /// In en, this message translates to:
-  /// **'Your photos are private, never shown to responders, and deleted once an administrator has checked them.'**
+  /// **'Your photos are private and never shown to responders. The ID photo is deleted once an administrator has checked it; your selfie is kept as the picture on your Ziren ID.'**
   String get verifyPrivacyNote;
 
   /// No description provided for @bannerInReview.
@@ -2390,13 +2390,13 @@ abstract class AppLocalizations {
   /// No description provided for @bannerInReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'An administrator is checking your ID. You can keep using Ziren normally in the meantime.'**
+  /// **'An administrator is checking your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.'**
   String get bannerInReviewBody;
 
   /// No description provided for @bannerFinishBody.
   ///
   /// In en, this message translates to:
-  /// **'Add a valid ID so a dispatcher knows your reports come from a real resident. You can report emergencies either way.'**
+  /// **'Add your valid ID and a selfie. Reports can be sent once an administrator verifies your account. In an emergency, call a hotline now.'**
   String get bannerFinishBody;
 
   /// No description provided for @badgeRequired.
@@ -9030,6 +9030,378 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A reminder about an hour before heavy rain, a thunderstorm or dangerous heat.'**
   String get weatherChannelDescription;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'The name on your ID does not match'**
+  String get regNameMismatchTitle;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find this on your ID: {parts}. Type your name exactly as it is printed on the ID, or take a clearer photo of the card.'**
+  String regNameMismatchBody(String parts);
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'first name \"{value}\"'**
+  String regNamePartFirst(String value);
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'middle name \"{value}\"'**
+  String regNamePartMiddle(String value);
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'last name \"{value}\"'**
+  String regNamePartLast(String value);
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Correct my name'**
+  String get regFixName;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Take the photo again'**
+  String get regRetakeId;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo of your agency ID to continue.'**
+  String get regAgencyIdNeeded;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your ID...'**
+  String get regAgencyIdReading;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'The name on your ID matches.'**
+  String get regAgencyIdNameOk;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Your ID and selfie are needed to finish registering. Ziren checks every account so that emergency reports come from real people.'**
+  String get regVerificationRequired;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your account to send reports'**
+  String get reportNeedsVerificationTitle;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'To keep false reports out, only residents verified by an administrator can send reports. Add your valid ID and a selfie. In an emergency right now, call a hotline.'**
+  String get reportNeedsVerificationBody;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for an administrator'**
+  String get reportPendingVerificationTitle;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Your ID is being checked. You can send reports as soon as an administrator approves it. In an emergency right now, call a hotline.'**
+  String get reportPendingVerificationBody;
+
+  /// Verified-only reporting and ID name match (2026-10-07)
+  ///
+  /// In en, this message translates to:
+  /// **'Verify my account'**
+  String get reportVerifyNow;
+
+  /// Ziren code: identifying the reporter on arrival without judging appearance or gender
+  ///
+  /// In en, this message translates to:
+  /// **'Your Ziren code'**
+  String get meetCodeTitleReporter;
+
+  /// Ziren code: identifying the reporter on arrival without judging appearance or gender
+  ///
+  /// In en, this message translates to:
+  /// **'When the responders arrive, they will ask for this code. Tell it to them so they know you are the one who reported. Keep it to yourself until then.'**
+  String get meetCodeBodyReporter;
+
+  /// Ziren code: identifying the reporter on arrival without judging appearance or gender
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the reporter for their Ziren code'**
+  String get meetCodeTitleResponder;
+
+  /// Ziren code: identifying the reporter on arrival without judging appearance or gender
+  ///
+  /// In en, this message translates to:
+  /// **'The person who reported will tell you this code. Identify them by the code, never by how they look or by their gender.'**
+  String get meetCodeBodyResponder;
+
+  /// Ziren code: identifying the reporter on arrival without judging appearance or gender
+  ///
+  /// In en, this message translates to:
+  /// **'Ziren code {digits}'**
+  String meetCodeSemantics(String digits);
+
+  /// SOS screen labels (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'What kind of emergency?'**
+  String get sosWhatKind;
+
+  /// SOS screen labels (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Helps send the right team to the right place.'**
+  String get sosWhatKindHelp;
+
+  /// SOS screen labels (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what kind of emergency above to continue'**
+  String get sosChooseKindHint;
+
+  /// SOS screen labels (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the checkbox above to continue'**
+  String get sosConfirmHint;
+
+  /// SOS screen labels (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'For life-threatening emergencies, also call 911 directly. This report is reviewed by a human dispatcher — not AI.'**
+  String get sosFallbackReminder;
+
+  /// Responder field updates panel (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Field updates'**
+  String get respNotesTitle;
+
+  /// Responder field updates panel (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'No updates yet. Add what you find as the response unfolds.'**
+  String get respNotesEmpty;
+
+  /// Responder field updates panel (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Fire has spread to the second floor.'**
+  String get respNotesHint;
+
+  /// Responder field updates panel (were hard-coded English, found 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the thread.'**
+  String get respNotesLoadError;
+
+  /// Middle name: full, not an initial (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Write your full middle name as it is on your ID - for example Santos, not S. Type just the initial only if your ID shows only the initial.'**
+  String get regMiddleNameHelp;
+
+  /// Middle name: full, not an initial (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'\"{value}\" is only the initial of your middle name. Your ID shows it in full, so type the whole middle name (for example Santos, not S.).'**
+  String regMiddleInitialBody(String value);
+
+  /// Middle name: full, not an initial (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your name, as printed on your ID'**
+  String get verifyNameLabel;
+
+  /// Middle name: full, not an initial (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'First, middle and last name. Write the middle name in full (for example Santos, not S.) unless your ID shows only the initial.'**
+  String get verifyNameHelp;
+
+  /// Middle name: full, not an initial (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your name. Try again.'**
+  String get verifyNameSaveError;
+
+  /// Verification decision notice (user report 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is verified'**
+  String get accountVerifiedTitle;
+
+  /// Verification decision notice (user report 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'An administrator checked your ID. You can now send emergency reports in Ziren.'**
+  String get accountVerifiedBody;
+
+  /// Verification decision notice (user report 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your ID could not be verified'**
+  String get accountVerifyRejectedTitle;
+
+  /// Verification decision notice (user report 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, and a new selfie.'**
+  String get accountVerifyRejectedBody;
+
+  /// Verification decision notice (user report 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Verify again'**
+  String get accountVerifyAgain;
+
+  /// Home: label above the incident tiles (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an incident'**
+  String get homeChooseIncidentTitle;
+
+  /// Home: label above the incident tiles (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Tap what is happening to report it: fire, medical, accident, crime, calamity or other.'**
+  String get homeChooseIncidentBody;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Thunderstorm from {time}'**
+  String weatherMoodStorm(String time);
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy rain from {time}'**
+  String weatherMoodHeavyRain(String time);
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Raining now'**
+  String get weatherMoodRainingNow;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Rain from {time}'**
+  String weatherMoodRainSoon(String time);
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous heat'**
+  String get weatherMoodHeatDanger;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Hot day'**
+  String get weatherMoodHeat;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Fair weather'**
+  String get weatherMoodFair;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Calm night'**
+  String get weatherMoodFairNight;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get weatherMeterRain;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Heat'**
+  String get weatherMeterHeat;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'No rain'**
+  String get weatherRainNone;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get weatherRainLight;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get weatherRainModerate;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy'**
+  String get weatherRainHeavy;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Intense'**
+  String get weatherRainIntense;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Torrential'**
+  String get weatherRainTorrential;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get weatherHeatNormal;
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'from {time}'**
+  String weatherMeterFrom(String time);
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'feels {temp} at {time}'**
+  String weatherMeterPeak(String temp, String time);
+
+  /// Weather card mood + rain/heat meters (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get weatherMeterToday;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

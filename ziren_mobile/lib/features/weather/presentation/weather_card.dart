@@ -157,104 +157,56 @@ class _Body extends StatelessWidget {
     final isDay = fresh ? forecast.current.isDay : (first?.isDay ?? true);
     final temp = fresh ? forecast.current.temperatureC : first?.temperatureC;
     final feels = fresh ? forecast.current.heatIndexC : first?.heatIndexC;
-    final heatNow =
-        fresh
-            ? forecast.current.heatLevel
-            : (first?.heatLevel ?? HeatLevel.none);
-    final heatLabel = words.heat(heatNow);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Now ──────────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            ZirenTokens.space16,
-            ZirenTokens.space16,
-            ZirenTokens.space16,
-            ZirenTokens.space12,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  WeatherWords.conditionIcon(cond, isDay: isDay),
-                  size: 28,
-                  color: accent,
-                ),
-              ),
-              const SizedBox(width: ZirenTokens.space12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t.weatherCardTitle.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.4,
-                        color: ZirenTokens.textMuted,
+        // ── Now: what kind of day it is, at a glance ────
+        _Hero(
+          mood: _Mood.of(advice.headline),
+          moodLabel: _moodLabel(t, words, advice.headline),
+          temp: temp,
+          feels: feels,
+          condition: words.condition(cond),
+          conditionIcon: WeatherWords.conditionIcon(cond, isDay: isDay),
+          title: t.weatherCardTitle,
+          meters: [
+            _Meter(
+              key: const ValueKey('weather-meter-rain'),
+              icon: LucideIcons.cloud_rain,
+              label: t.weatherMeterRain,
+              value: _rainWord(t, forecast.outlook.rainLevel),
+              detail:
+                  forecast.outlook.rainLevel == RainLevel.none ||
+                          forecast.outlook.rainStartsAt == null
+                      ? t.weatherMeterToday
+                      : t.weatherMeterFrom(
+                        words.time(forecast.outlook.rainStartsAt!),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: WeatherWords.temp(temp),
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.6,
-                              color: ZirenTokens.textPrimary,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '  ${words.condition(cond)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: ZirenTokens.textSecondary,
-                            ),
-                          ),
-                        ],
+              steps: 5,
+              filled: forecast.outlook.rainLevel.index,
+              color: ZirenTokens.systemInfo,
+            ),
+            _Meter(
+              key: const ValueKey('weather-meter-heat'),
+              icon: LucideIcons.thermometer_sun,
+              label: t.weatherMeterHeat,
+              value:
+                  words.heat(forecast.outlook.heatLevel) ?? t.weatherHeatNormal,
+              detail:
+                  forecast.outlook.heatIndexMaxC == null
+                      ? t.weatherMeterToday
+                      : forecast.outlook.heatPeakAt == null
+                      ? WeatherWords.temp(forecast.outlook.heatIndexMaxC)
+                      : t.weatherMeterPeak(
+                        WeatherWords.temp(forecast.outlook.heatIndexMaxC),
+                        words.time(forecast.outlook.heatPeakAt!),
                       ),
-                    ),
-                    if (feels != null &&
-                        temp != null &&
-                        feels.round() > temp.round())
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Wrap(
-                          spacing: ZirenTokens.space6,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              t.weatherFeelsLike(WeatherWords.temp(feels)),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: ZirenTokens.textSecondary,
-                              ),
-                            ),
-                            if (heatLabel != null) _HeatChip(label: heatLabel),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+              steps: 4,
+              filled: forecast.outlook.heatLevel.index,
+              color: ZirenTokens.systemWarning,
+            ),
+          ],
         ),
 
         // ── Next hours ───────────────────────────────────
@@ -362,6 +314,37 @@ class _Body extends StatelessWidget {
     );
   }
 
+  static String _rainWord(AppLocalizations t, RainLevel l) => switch (l) {
+    RainLevel.none => t.weatherRainNone,
+    RainLevel.light => t.weatherRainLight,
+    RainLevel.moderate => t.weatherRainModerate,
+    RainLevel.heavy => t.weatherRainHeavy,
+    RainLevel.intense => t.weatherRainIntense,
+    RainLevel.torrential => t.weatherRainTorrential,
+  };
+
+  /// The verdict in a few words: rain or heat, and from when.
+  static String _moodLabel(
+    AppLocalizations t,
+    WeatherWords words,
+    WeatherHeadline h,
+  ) {
+    final at = h.at == null ? '' : words.time(h.at!);
+    return switch (h.kind) {
+      WeatherHeadlineKind.thunderSoon =>
+        at.isEmpty ? t.weatherCondThunderstorm : t.weatherMoodStorm(at),
+      WeatherHeadlineKind.heavyRainSoon =>
+        at.isEmpty ? t.weatherCondHeavyRain : t.weatherMoodHeavyRain(at),
+      WeatherHeadlineKind.rainingNow => t.weatherMoodRainingNow,
+      WeatherHeadlineKind.rainSoon =>
+        at.isEmpty ? t.weatherCondRain : t.weatherMoodRainSoon(at),
+      WeatherHeadlineKind.heatDanger => t.weatherMoodHeatDanger,
+      WeatherHeadlineKind.heatHigh => t.weatherMoodHeat,
+      WeatherHeadlineKind.fairDay => t.weatherMoodFair,
+      WeatherHeadlineKind.fairNight => t.weatherMoodFairNight,
+    };
+  }
+
   String _stamp(BuildContext context, WeatherWords words, DateTime at) {
     final local = at.toLocal();
     final today = DateTime(now.year, now.month, now.day);
@@ -390,45 +373,6 @@ class _Rule extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Divider(height: 1, thickness: 1, color: ZirenTokens.surfaceBorder);
-}
-
-class _HeatChip extends StatelessWidget {
-  const _HeatChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: ZirenTokens.systemWarningBg,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius32),
-        border: Border.all(
-          color: ZirenTokens.systemWarning.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            LucideIcons.thermometer_sun,
-            size: 12,
-            color: ZirenTokens.systemWarning,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w800,
-              color: ZirenTokens.systemWarning,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _HourCell extends StatelessWidget {
@@ -702,5 +646,333 @@ class _ReminderSwitchState extends State<_ReminderSwitch> {
   Future<void> _set(bool v) async {
     setState(() => _on = v);
     await WeatherReminders.setEnabled(v);
+  }
+}
+
+/// What kind of day the card is about. One look at the colour, the big
+/// picture and the label should answer "rain or heat?" (user report
+/// 2026-10-08: the old small icon left that unclear).
+enum _Mood {
+  storm,
+  rain,
+  heat,
+  fair,
+  night;
+
+  static _Mood of(WeatherHeadline h) => switch (h.kind) {
+    WeatherHeadlineKind.thunderSoon => storm,
+    WeatherHeadlineKind.heavyRainSoon ||
+    WeatherHeadlineKind.rainingNow ||
+    WeatherHeadlineKind.rainSoon => rain,
+    WeatherHeadlineKind.heatDanger || WeatherHeadlineKind.heatHigh => heat,
+    WeatherHeadlineKind.fairDay => fair,
+    WeatherHeadlineKind.fairNight => night,
+  };
+
+  /// Rain is info blue and heat warning amber, as everywhere in the app (red
+  /// stays for critical incidents); a fair day is the calm green.
+  Color get color => switch (this) {
+    storm || rain => ZirenTokens.systemInfo,
+    heat => ZirenTokens.systemWarning,
+    fair => ZirenTokens.systemSuccess,
+    night => ZirenTokens.textSecondary,
+  };
+
+  IconData get icon => switch (this) {
+    storm => LucideIcons.cloud_lightning,
+    rain => LucideIcons.cloud_rain,
+    heat => LucideIcons.sun,
+    fair => LucideIcons.cloud_sun,
+    night => LucideIcons.moon,
+  };
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero({
+    required this.mood,
+    required this.moodLabel,
+    required this.temp,
+    required this.feels,
+    required this.condition,
+    required this.conditionIcon,
+    required this.title,
+    required this.meters,
+  });
+
+  final _Mood mood;
+  final String moodLabel;
+  final double? temp;
+  final double? feels;
+  final String condition;
+  final IconData conditionIcon;
+  final String title;
+  final List<Widget> meters;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = mood.color;
+    final dark = ZirenTokens.isDark;
+    final feelsHigher =
+        feels != null && temp != null && feels!.round() > temp!.round();
+    return Container(
+      key: ValueKey('weather-hero-${mood.name}'),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            c.withValues(alpha: dark ? 0.30 : 0.20),
+            c.withValues(alpha: dark ? 0.08 : 0.04),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // The picture of the day, large and faint behind the words.
+          Positioned(
+            right: -18,
+            top: -14,
+            child: ExcludeSemantics(
+              child: Icon(
+                mood.icon,
+                size: 132,
+                color: c.withValues(alpha: 0.16),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(ZirenTokens.space16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                    color: ZirenTokens.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: ZirenTokens.space8),
+                // The verdict: a solid pill in the day's colour.
+                Container(
+                  key: const ValueKey('weather-mood'),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    // Deepened so white text on it stays readable (the bare
+                    // sky blue and amber are too light for small white type).
+                    color: Color.lerp(c, Colors.black, 0.24),
+                    borderRadius: BorderRadius.circular(ZirenTokens.radius32),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(mood.icon, size: 16, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          moodLabel,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: ZirenTokens.space10),
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: ZirenTokens.surfaceCard,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: c.withValues(alpha: 0.45)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(conditionIcon, size: 28, color: c),
+                    ),
+                    const SizedBox(width: ZirenTokens.space12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: WeatherWords.temp(temp),
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.8,
+                                    color: ZirenTokens.textPrimary,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: '  $condition',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: ZirenTokens.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (feelsHigher)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Wrap(
+                                spacing: ZirenTokens.space6,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    ).weatherFeelsLike(WeatherWords.temp(feels)),
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: ZirenTokens.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: ZirenTokens.space12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final (i, m) in meters.indexed) ...[
+                      if (i > 0) const SizedBox(width: ZirenTokens.space8),
+                      Expanded(child: m),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Rain: Heavy, from 3 PM" over a bar of steps - how much of it today.
+class _Meter extends StatelessWidget {
+  const _Meter({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.steps,
+    required this.filled,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final int steps;
+  final int filled;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final on = filled > 0;
+    final tint = on ? color : ZirenTokens.textMuted;
+    return Semantics(
+      label: '$label: $value, $detail',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+        decoration: BoxDecoration(
+          color: ZirenTokens.surfaceCard.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(ZirenTokens.radius12),
+          border: Border.all(
+            color:
+                on ? color.withValues(alpha: 0.45) : ZirenTokens.surfaceBorder,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 14, color: tint),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                      color: ZirenTokens.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: on ? ZirenTokens.textPrimary : ZirenTokens.textSecondary,
+              ),
+            ),
+            Text(
+              detail,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: ZirenTokens.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                for (var k = 0; k < steps; k++) ...[
+                  if (k > 0) const SizedBox(width: 3),
+                  Expanded(
+                    child: Container(
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: k < filled ? color : ZirenTokens.surfaceBorder,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

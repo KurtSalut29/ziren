@@ -5,6 +5,7 @@ import '../../../../shared/theme/app_tokens.dart';
 import '../../../incident_report/domain/incident_model.dart';
 import '../../domain/responder_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../../../core/config/locale_provider.dart';
 
 /// Field Response Updates (Section 11) and Incident-Specific Communication
 /// (Section 12) — the same thread the Agency Admin reads and writes on the
@@ -50,7 +51,9 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
       );
       if (mounted) setState(() => _notes = notes);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Could not load the thread.');
+      if (mounted) {
+        setState(() => _error = LocaleProvider.strings.respNotesLoadError);
+      }
     }
   }
 
@@ -101,7 +104,7 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  'Field updates',
+                  LocaleProvider.strings.respNotesTitle,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -125,7 +128,7 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
             )
           else if (_notes!.isEmpty)
             Text(
-              'No updates yet. Add what you find as the response unfolds.',
+              LocaleProvider.strings.respNotesEmpty,
               style: TextStyle(fontSize: 12.5, color: ZirenTokens.textMuted),
             )
           else
@@ -150,11 +153,11 @@ class _ResponderNotesPanelState extends State<ResponderNotesPanel> {
                   minLines: 1,
                   maxLines: 3,
                   style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(
-                    hintText: 'e.g. Fire has spread to the second floor.',
-                    hintStyle: TextStyle(fontSize: 12.5),
+                  decoration: InputDecoration(
+                    hintText: LocaleProvider.strings.respNotesHint,
+                    hintStyle: const TextStyle(fontSize: 12.5),
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),

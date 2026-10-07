@@ -8,7 +8,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator, model_validator
 
 
 class IncidentStatus(str, Enum):
@@ -479,6 +479,13 @@ class IncidentResponse(BaseModel):
     # crew member's identity to be reassured, and handing it out invites
     # direct contact that bypasses the dispatcher entirely.
     responding_agency:   str  | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def meet_code(self) -> str:
+        """The reporter tells the arriving crew this; see app/core/meet_code.py."""
+        from app.core.meet_code import meet_code
+        return meet_code(self.id)
 
 
 class DispatchLogResponse(BaseModel):

@@ -198,10 +198,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get consentSummaryLocation => 'We use your location and contact details so responders can find you.';
 
   @override
-  String get consentSummaryReporting => 'You can always report an emergency, verified or not.';
+  String get consentSummaryReporting => 'Reports can be sent once an administrator verifies your account. Emergency hotlines always work.';
 
   @override
-  String get consentSummaryPhotos => 'Your ID and face photos are private, and deleted once checked.';
+  String get consentSummaryPhotos => 'Your ID photo is deleted once checked. Your face photo stays private, as the picture on your Ziren ID that only administrators see.';
 
   @override
   String get consentSummaryNotHotline => 'Ziren does not replace 911. Call directly if the app cannot reach the network.';
@@ -836,7 +836,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regChooseDate => 'Choose a date';
 
   @override
-  String get regAgencyIdWhy => 'Speeds up approval considerably - your admin can check the badge number without calling your station.';
+  String get regAgencyIdWhy => 'Required. Your admin checks that the name on it is yours before approving your account.';
 
   @override
   String get regIdBestChoice => 'Best choice';
@@ -1153,7 +1153,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verifyIdNumber => 'ID number';
 
   @override
-  String get verifySelfie => 'Selfie (optional but helps)';
+  String get verifySelfie => 'Selfie';
 
   @override
   String get verifySubmit => 'Submit for review';
@@ -1180,13 +1180,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verifyNotSignedIn => 'You are not signed in.';
 
   @override
-  String get verifyIntro => 'This is optional. You can already report emergencies without it - verifying just tells a dispatcher your reports come from a confirmed resident.';
+  String get verifyIntro => 'Only residents verified by an administrator can send reports. Show a valid ID with your name on it and take a selfie - an administrator compares the two.';
 
   @override
-  String get verifySentBody => 'An administrator will check your ID. Nothing changes for you in the meantime - keep using Ziren exactly as before.';
+  String get verifySentBody => 'An administrator will check your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.';
 
   @override
-  String get verifyPrivacyNote => 'Your photos are private, never shown to responders, and deleted once an administrator has checked them.';
+  String get verifyPrivacyNote => 'Your photos are private and never shown to responders. The ID photo is deleted once an administrator has checked it; your selfie is kept as the picture on your Ziren ID.';
 
   @override
   String get bannerInReview => 'Verification in review';
@@ -1201,10 +1201,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bannerNotNow => 'Not now';
 
   @override
-  String get bannerInReviewBody => 'An administrator is checking your ID. You can keep using Ziren normally in the meantime.';
+  String get bannerInReviewBody => 'An administrator is checking your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.';
 
   @override
-  String get bannerFinishBody => 'Add a valid ID so a dispatcher knows your reports come from a real resident. You can report emergencies either way.';
+  String get bannerFinishBody => 'Add your valid ID and a selfie. Reports can be sent once an administrator verifies your account. In an emergency, call a hotline now.';
 
   @override
   String get badgeRequired => 'REQUIRED';
@@ -4769,4 +4769,212 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherChannelDescription => 'A reminder about an hour before heavy rain, a thunderstorm or dangerous heat.';
+
+  @override
+  String get regNameMismatchTitle => 'The name on your ID does not match';
+
+  @override
+  String regNameMismatchBody(String parts) {
+    return 'We could not find this on your ID: $parts. Type your name exactly as it is printed on the ID, or take a clearer photo of the card.';
+  }
+
+  @override
+  String regNamePartFirst(String value) {
+    return 'first name \"$value\"';
+  }
+
+  @override
+  String regNamePartMiddle(String value) {
+    return 'middle name \"$value\"';
+  }
+
+  @override
+  String regNamePartLast(String value) {
+    return 'last name \"$value\"';
+  }
+
+  @override
+  String get regFixName => 'Correct my name';
+
+  @override
+  String get regRetakeId => 'Take the photo again';
+
+  @override
+  String get regAgencyIdNeeded => 'Take a photo of your agency ID to continue.';
+
+  @override
+  String get regAgencyIdReading => 'Reading your ID...';
+
+  @override
+  String get regAgencyIdNameOk => 'The name on your ID matches.';
+
+  @override
+  String get regVerificationRequired => 'Your ID and selfie are needed to finish registering. Ziren checks every account so that emergency reports come from real people.';
+
+  @override
+  String get reportNeedsVerificationTitle => 'Verify your account to send reports';
+
+  @override
+  String get reportNeedsVerificationBody => 'To keep false reports out, only residents verified by an administrator can send reports. Add your valid ID and a selfie. In an emergency right now, call a hotline.';
+
+  @override
+  String get reportPendingVerificationTitle => 'Waiting for an administrator';
+
+  @override
+  String get reportPendingVerificationBody => 'Your ID is being checked. You can send reports as soon as an administrator approves it. In an emergency right now, call a hotline.';
+
+  @override
+  String get reportVerifyNow => 'Verify my account';
+
+  @override
+  String get meetCodeTitleReporter => 'Your Ziren code';
+
+  @override
+  String get meetCodeBodyReporter => 'When the responders arrive, they will ask for this code. Tell it to them so they know you are the one who reported. Keep it to yourself until then.';
+
+  @override
+  String get meetCodeTitleResponder => 'Ask the reporter for their Ziren code';
+
+  @override
+  String get meetCodeBodyResponder => 'The person who reported will tell you this code. Identify them by the code, never by how they look or by their gender.';
+
+  @override
+  String meetCodeSemantics(String digits) {
+    return 'Ziren code $digits';
+  }
+
+  @override
+  String get sosWhatKind => 'What kind of emergency?';
+
+  @override
+  String get sosWhatKindHelp => 'Helps send the right team to the right place.';
+
+  @override
+  String get sosChooseKindHint => 'Choose what kind of emergency above to continue';
+
+  @override
+  String get sosConfirmHint => 'Confirm the checkbox above to continue';
+
+  @override
+  String get sosFallbackReminder => 'For life-threatening emergencies, also call 911 directly. This report is reviewed by a human dispatcher — not AI.';
+
+  @override
+  String get respNotesTitle => 'Field updates';
+
+  @override
+  String get respNotesEmpty => 'No updates yet. Add what you find as the response unfolds.';
+
+  @override
+  String get respNotesHint => 'e.g. Fire has spread to the second floor.';
+
+  @override
+  String get respNotesLoadError => 'Could not load the thread.';
+
+  @override
+  String get regMiddleNameHelp => 'Write your full middle name as it is on your ID - for example Santos, not S. Type just the initial only if your ID shows only the initial.';
+
+  @override
+  String regMiddleInitialBody(String value) {
+    return '\"$value\" is only the initial of your middle name. Your ID shows it in full, so type the whole middle name (for example Santos, not S.).';
+  }
+
+  @override
+  String get verifyNameLabel => 'Your name, as printed on your ID';
+
+  @override
+  String get verifyNameHelp => 'First, middle and last name. Write the middle name in full (for example Santos, not S.) unless your ID shows only the initial.';
+
+  @override
+  String get verifyNameSaveError => 'Could not save your name. Try again.';
+
+  @override
+  String get accountVerifiedTitle => 'Your account is verified';
+
+  @override
+  String get accountVerifiedBody => 'An administrator checked your ID. You can now send emergency reports in Ziren.';
+
+  @override
+  String get accountVerifyRejectedTitle => 'Your ID could not be verified';
+
+  @override
+  String get accountVerifyRejectedBody => 'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, and a new selfie.';
+
+  @override
+  String get accountVerifyAgain => 'Verify again';
+
+  @override
+  String get homeChooseIncidentTitle => 'Choose an incident';
+
+  @override
+  String get homeChooseIncidentBody => 'Tap what is happening to report it: fire, medical, accident, crime, calamity or other.';
+
+  @override
+  String weatherMoodStorm(String time) {
+    return 'Thunderstorm from $time';
+  }
+
+  @override
+  String weatherMoodHeavyRain(String time) {
+    return 'Heavy rain from $time';
+  }
+
+  @override
+  String get weatherMoodRainingNow => 'Raining now';
+
+  @override
+  String weatherMoodRainSoon(String time) {
+    return 'Rain from $time';
+  }
+
+  @override
+  String get weatherMoodHeatDanger => 'Dangerous heat';
+
+  @override
+  String get weatherMoodHeat => 'Hot day';
+
+  @override
+  String get weatherMoodFair => 'Fair weather';
+
+  @override
+  String get weatherMoodFairNight => 'Calm night';
+
+  @override
+  String get weatherMeterRain => 'Rain';
+
+  @override
+  String get weatherMeterHeat => 'Heat';
+
+  @override
+  String get weatherRainNone => 'No rain';
+
+  @override
+  String get weatherRainLight => 'Light';
+
+  @override
+  String get weatherRainModerate => 'Moderate';
+
+  @override
+  String get weatherRainHeavy => 'Heavy';
+
+  @override
+  String get weatherRainIntense => 'Intense';
+
+  @override
+  String get weatherRainTorrential => 'Torrential';
+
+  @override
+  String get weatherHeatNormal => 'Normal';
+
+  @override
+  String weatherMeterFrom(String time) {
+    return 'from $time';
+  }
+
+  @override
+  String weatherMeterPeak(String temp, String time) {
+    return 'feels $temp at $time';
+  }
+
+  @override
+  String get weatherMeterToday => 'today';
 }

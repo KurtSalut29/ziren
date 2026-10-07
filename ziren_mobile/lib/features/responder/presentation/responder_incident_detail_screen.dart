@@ -25,6 +25,7 @@ import '../domain/responder_provider.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../demo/presentation/demo_anchor.dart';
+import '../../../shared/widgets/meet_code_card.dart';
 
 /// Full incident detail screen for Responders.
 ///
@@ -641,6 +642,11 @@ class _DetailBody extends StatelessWidget {
                   id: 'ridet.reporter',
                   child: _ReporterCard(incident: incident),
                 ),
+                // How to know them on arrival: ask for the code.
+                if (incident.meetCode != null) ...[
+                  MeetCodeCard(code: incident.meetCode!, forResponder: true),
+                  const SizedBox(height: ZirenTokens.space12),
+                ],
 
                 // ── Station ──────────────────────────────────
                 if (incident.stationName != null)

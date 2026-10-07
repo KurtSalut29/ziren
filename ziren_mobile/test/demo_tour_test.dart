@@ -319,4 +319,145 @@ void main() {
       expect(find.text(responder ? 'RHOME' : 'HOME'), findsOneWidget);
     }
   });
+
+  testWidgets('started at the bottom of a list, it finds a part at the top', (tester) async {
+    // Tester report 2026-10-06: started from the station hotlines at the
+    // bottom of Home, the bell and profile steps lit nothing, because the
+    // header had been unbuilt and the tour only ever searched downwards.
+    final controller = ScrollController();
+    await tester.pumpWidget(_app(_LongList(controller: controller)));
+    // A lazy list only knows its true end once it has built it.
+    while (controller.position.extentAfter > 0) {
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+    }
+    expect(DemoAnchors.isMounted('l.hotlines'), isTrue);
+    expect(DemoAnchors.isMounted('l.bell'), isFalse);
+
+    showDemoTour(
+      tester.element(find.byType(_LongList)),
+      _script(const [
+        DemoStep(anchor: 'l.hotlines', fil: 'Mga hotline', en: 'Hotlines'),
+        DemoStep(anchor: 'l.bell', fil: 'Ang kampana', en: 'The bell'),
+      ]),
+    );
+    await tester.pump();
+    await _settle(tester);
+    expect(find.text('Mga hotline'), findsOneWidget);
+
+    await tester.tap(find.text('Susunod'));
+    await _settle(tester);
+    expect(find.text('Ang kampana'), findsOneWidget);
+    expect(DemoAnchors.isMounted('l.bell'), isTrue);
+    final bell = _litRect(tester, 'l.bell');
+    final screen = Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(screen.contains(bell.center), isTrue);
+    // Pointed at, not talked from the middle.
+    expect(
+      find.byWidgetPredicate((w) => w is Image && w.key == const ValueKey(DemoPose.pointUp)),
+      findsOneWidget,
+    );
+  });
+
+  for (final scale in [1.0, 1.3, 1.6]) {
+    testWidgets('long Filipino text at ${scale}x stays on screen, Next reachable', (tester) async {
+      // A small phone (360 x 640 dp), the bubble for a target low on screen.
+      tester.view.physicalSize = const Size(720, 1280);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(
+            size: const Size(360, 640),
+            textScaler: TextScaler.linear(scale),
+            padding: const EdgeInsets.only(top: 24, bottom: 16),
+          ),
+          child: _app(const _Screen()),
+        ),
+      );
+      final longFil = DemoCatalog.resident()
+          .expand((s) => s.steps)
+          .map((s) => s.fil)
+          .reduce((a, b) => a.length >= b.length ? a : b);
+      showDemoTour(
+        tester.element(find.byType(_Screen)),
+        _script([
+          DemoStep(anchor: 't.bottom', fil: longFil, en: 'x'),
+          DemoStep(anchor: 't.top', fil: longFil, en: 'y'),
+        ]),
+      );
+      await tester.pump();
+      await _settle(tester);
+
+      final screen = const Offset(0, 0) & const Size(360, 640);
+      final next = find.byKey(const ValueKey('demo-next'));
+      expect(next, findsOneWidget);
+      final nextRect = tester.getRect(next);
+      expect(screen.contains(nextRect.topLeft) && screen.contains(nextRect.bottomRight), isTrue,
+          reason: 'Next at $nextRect');
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(next);
+      await _settle(tester);
+      final again = tester.getRect(find.byKey(const ValueKey('demo-next')));
+      expect(screen.contains(again.topLeft) && screen.contains(again.bottomRight), isTrue,
+          reason: 'Next at $again');
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  test('the card goes where it fits, never off screen', () {
+    const size = Size(360, 640);
+    const pad = EdgeInsets.only(top: 24, bottom: 16);
+    Offset place(Rect target, DemoPlacement p, double h) => DemoCardLayout(
+          target: target,
+          placement: p,
+          padding: pad,
+        ).getPositionForChild(size, Size(336, h));
+
+    // Room below: below.
+    expect(place(const Rect.fromLTWH(0, 100, 50, 50), DemoPlacement.below, 200).dy, 164);
+    // No room below for a tall card: flips above.
+    final flipped = place(const Rect.fromLTWH(0, 380, 50, 50), DemoPlacement.below, 300);
+    expect(flipped.dy, 380 - 14 - 300);
+    // Room on neither side: clamped inside the screen.
+    final clamped = place(const Rect.fromLTWH(0, 200, 50, 300), DemoPlacement.above, 260);
+    expect(clamped.dy, greaterThanOrEqualTo(24 + 12));
+    expect(clamped.dy + 260, lessThanOrEqualTo(640 - 16 - 12));
+  });
+
+}
+
+/// A Home-like screen: a header at the top of a long list, the hotlines at the
+/// bottom. The list unbuilds what scrolls far away, like the real Home.
+class _LongList extends StatelessWidget {
+  const _LongList({required this.controller});
+
+  final ScrollController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(
+        controller: controller,
+        cacheExtent: 0,
+        children: [
+          DemoAnchor(
+            id: 'l.bell',
+            child: Container(height: 50, width: 50, color: Colors.orange),
+          ),
+          for (var i = 0; i < 30; i++) SizedBox(height: 120, child: Text('row $i')),
+          DemoAnchor(
+            id: 'l.hotlines',
+            child: Container(height: 80, color: Colors.green),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Rect _litRect(WidgetTester tester, String id) {
+  final box = DemoAnchors.contextOf(id)!.findRenderObject()! as RenderBox;
+  return box.localToGlobal(Offset.zero) & box.size;
 }

@@ -25,6 +25,9 @@ enum NoticeAction {
 
   /// Open the safety alert (an evacuation order...), where it is answered.
   openAnnouncement,
+
+  /// Send the ID and selfie again: what a refused verification asks for.
+  verifyAgain,
 }
 
 /// One notification, as the resident should read it: the words, the picture and
@@ -199,6 +202,26 @@ NoticeView noticeView(AppLocalizations t, AppNotification n) {
         title: t.accountReinstatedTitle,
         body: n.wasSuspended ? t.accountReinstatedBody : t.accountWarningsClearedBody,
         quote: detail.isEmpty ? null : detail,
+      );
+
+    case NotificationKind.accountVerified:
+      return NoticeView(
+        icon: LucideIcons.shield_check,
+        color: ZirenTokens.systemSuccess,
+        eyebrow: t.accountNoticeEyebrow,
+        title: t.accountVerifiedTitle,
+        body: t.accountVerifiedBody,
+      );
+
+    case NotificationKind.accountVerificationRejected:
+      return NoticeView(
+        icon: LucideIcons.shield_x,
+        color: ZirenTokens.systemWarning,
+        eyebrow: t.accountNoticeEyebrow,
+        title: t.accountVerifyRejectedTitle,
+        body: t.accountVerifyRejectedBody,
+        primary: NoticeAction.verifyAgain,
+        primaryLabel: t.accountVerifyAgain,
       );
 
     case NotificationKind.announcement:

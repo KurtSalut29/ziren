@@ -89,6 +89,9 @@ export interface ResidentDetail extends ResidentAccount {
   is_pwd: boolean;
   emergency_contact_name: string | null;
   emergency_contact_number: string | null;
+  /** The approved selfie, as the photo on the Ziren ID: a short-lived signed
+   *  link, null when not verified or none on file (2026-10-08). */
+  photo_url?: string | null;
   rejected_report_count: number;
   recent_reports: ResidentReport[];
   history: StandingEvent[];

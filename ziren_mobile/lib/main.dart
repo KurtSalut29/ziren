@@ -141,6 +141,13 @@ class _ZirenAppState extends State<ZirenApp> {
         _responderProvider.loadQueue();
       }
     };
+    // A resident's notice pushed while the app is open (an approved ID, a
+    // warning, a message): read it now. The shell shows it and, for an
+    // account notice, reloads the profile - so an approval opens reporting
+    // within seconds instead of at the next launch (user report 2026-10-08).
+    PushRegistration.onNotice = (_) {
+      unawaited(_notificationProvider.syncFromServer());
+    };
     _responderProvider.onNearbyResolved = (ids) {
       for (final id in ids) {
         _responderAlerts.cancelNearby(id);

@@ -586,9 +586,8 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
                       ),
                     ),
                   ),
-                  // Same escape as every other identity step: verification
-                  // never gates reporting.
-                  const SkipVerificationLink(),
+                  // Balances the back button: there is no skipping this step.
+                  const SizedBox(width: 48),
                 ],
               ),
             ),

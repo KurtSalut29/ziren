@@ -37,6 +37,36 @@ Map<String, dynamic> _profile(Map<String, dynamic> extra) => {
 };
 
 void main() {
+  // An administrator's decision on the resident's ID reaches the phone as a
+  // notice of its own (user report 2026-10-08: an approval used to change
+  // nothing until the app was reopened, and nothing said so).
+  group('a verification decision', () {
+    test('an approval is an account notice, so the profile is read again', () {
+      final n = NotificationProvider.fromStoredRow(
+        _row('account.verified', {'at': '2026-10-08T02:00:00+00:00'}),
+      )!;
+      expect(n.kind, NotificationKind.accountVerified);
+      expect(n.isAccount, isTrue);
+      expect(n.eventKey, 'account:n-1');
+      final v = noticeView(en, n);
+      expect(v.title, 'Your account is verified');
+      expect(v.body, contains('send emergency reports'));
+      expect(noticeView(fil, n).title, 'Verified na ang account mo');
+    });
+
+    test('a refusal says what to send and opens Verify', () {
+      final n = NotificationProvider.fromStoredRow(
+        _row('account.verification_rejected', {'at': '2026-10-08T02:00:00+00:00'}),
+      )!;
+      expect(n.kind, NotificationKind.accountVerificationRejected);
+      expect(n.isAccount, isTrue);
+      final v = noticeView(en, n);
+      expect(v.title, 'Your ID could not be verified');
+      expect(v.primary, NoticeAction.verifyAgain);
+      expect(v.primaryLabel, 'Verify again');
+    });
+  });
+
   group('a stored account notice becomes a notification', () {
     test('a warning, with the rule, the note and how many are left', () {
       final n = NotificationProvider.fromStoredRow(_row('account.warned', {

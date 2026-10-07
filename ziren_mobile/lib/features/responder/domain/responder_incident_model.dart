@@ -29,6 +29,7 @@ class ResponderIncidentModel {
     // Reporter
     this.reporterName,
     this.reporterPhone,
+    this.meetCode,
     this.reporterVerified = false,
     this.reporterWarningCount = 0,
     this.emergencyContactName,
@@ -64,6 +65,10 @@ class ResponderIncidentModel {
   // Reporter info (for dispatcher + responder context)
   final String? reporterName;
   final String? reporterPhone;
+
+  /// The reporter's "Ziren code", to ask for on arrival: the crew identifies
+  /// them by it, never by appearance or gender (backend app/core/meet_code.py).
+  final String? meetCode;
   final bool reporterVerified;
   final int reporterWarningCount;
   final String? emergencyContactName;
@@ -172,6 +177,7 @@ class ResponderIncidentModel {
       stationAddress: station?['address'] as String?,
       reporterName: reporter?['full_name'] as String?,
       reporterPhone: reporter?['phone_number'] as String?,
+      meetCode: json['meet_code'] as String?,
       reporterVerified: reporter?['is_verified'] as bool? ?? false,
       reporterWarningCount: reporter?['sos_warning_count'] as int? ?? 0,
       emergencyContactName: reporter?['emergency_contact_name'] as String?,

@@ -755,6 +755,8 @@ export interface QueueIncident {
   users: {
     full_name: string;
     is_verified: boolean;
+    /** 2 = an administrator approved the resident's ID. What "verified" means here. */
+    verification_level?: number | null;
     sos_warning_count: number;
     created_at: string;
   } | null;
@@ -1041,6 +1043,8 @@ export interface IncidentDetail extends QueueIncident, Partial<AfterAction> {
     full_name: string;
     phone_number: string | null;
     is_verified: boolean;
+    /** 2 = an administrator approved the resident's ID. What "verified" means here. */
+    verification_level?: number | null;
     sos_warning_count: number;
     sos_suspended_until: string | null;
     created_at: string;
@@ -1048,6 +1052,8 @@ export interface IncidentDetail extends QueueIncident, Partial<AfterAction> {
     emergency_contact_number: string | null;
   } | null;
   dispatch_log: DispatchLogEntry[];
+  /** The reporter's Ziren code (backend app/core/meet_code.py). */
+  meet_code?: string | null;
   available_responders: Responder[];
   /** How far the report is from the station it was routed to (ellipsoidal km). */
   station_distance_km?: number | null;

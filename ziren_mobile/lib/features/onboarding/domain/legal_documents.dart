@@ -27,10 +27,13 @@ enum LegalDoc { privacy, terms }
 /// "1.1" should mean something changed that was worth re-reading.
 abstract final class LegalDocuments {
   /// Bumping either of these re-prompts every existing account.
-  static const String privacyVersion = '1.0';
+  // 1.1 (2026-10-08): an approved selfie is kept as the photo on the Ziren
+  // ID card (administrators only); the ID scan is still deleted.
+  static const String privacyVersion = '1.1';
   // 1.1 (2026-09-24): the connectivity section no longer describes an SMS
   // delivery path — the app now sends reports over the internet only.
-  static const String termsVersion = '1.1';
+  // 1.2 (2026-10-08): only a verified account sends reports (was: anyone).
+  static const String termsVersion = '1.2';
 
   /// Filipino is the app's default and the language most of Biliran reads
   /// most comfortably; English is the fallback for anything not translated.

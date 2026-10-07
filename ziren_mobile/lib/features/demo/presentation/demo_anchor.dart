@@ -84,6 +84,14 @@ abstract final class DemoAnchors {
     return onstage;
   }
 
+  /// Every marked part on screen now, newest first.
+  static Iterable<BuildContext> mountedContexts() sync* {
+    for (final id in _byId.keys.toList()) {
+      final ctx = contextOf(id);
+      if (ctx != null) yield ctx;
+    }
+  }
+
   /// Ids currently registered (mounted), for tests and for waiting on a
   /// screen to finish building.
   static bool isMounted(String id) => contextOf(id) != null;

@@ -453,7 +453,9 @@ class _VerificationCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: ZirenTokens.space8),
-              _OptionalPill(label: t.badgeOptional),
+              // Not optional any more: an unverified resident cannot report
+              // (2026-10-07).
+              _OptionalPill(label: t.badgeRequired),
             ],
           ),
           const SizedBox(height: ZirenTokens.space8),

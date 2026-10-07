@@ -135,20 +135,47 @@ def test_verification_level_defaults_to_zero():
     )
 
 
-def test_incident_submission_does_not_check_verification_level():
+def test_reporting_needs_an_admin_verified_resident():
     """
-    The safety-critical invariant: no code path in incident submission may
-    branch on verification_level. Blocking an unverified user from reporting
-    an emergency would be a safety defect, not a security feature.
+    Reversed 2026-10-07 at the user's request: false reports from throwaway
+    accounts sent crews out, so a resident reports only once an administrator
+    has verified them (verification_level 2). The app keeps the hotlines one
+    tap away for anyone refused.
     """
-    from app.services import incident_service
-    import inspect
+    import pytest
+    from fastapi import HTTPException
+    from app.services.incident_standing import refuse_if_unverified, UNVERIFIED_MESSAGE
 
-    src = inspect.getsource(incident_service)
-    assert "verification_level" not in src, (
-        "incident_service must not read verification_level. Tiered trust is "
-        "dispatcher-facing metadata and must never gate submission."
-    )
+    for level in (0, 1):
+        with pytest.raises(HTTPException) as e:
+            refuse_if_unverified("resident", level)
+        assert e.value.status_code == 403
+        assert e.value.detail == UNVERIFIED_MESSAGE
+    refuse_if_unverified("resident", 2)          # verified: allowed
+    for role in ("responder", "agency_admin", "provincial_admin"):
+        refuse_if_unverified(role, 0)            # staff are not residents
+    refuse_if_unverified("resident", None)       # unreadable: fails open
+
+
+def test_every_report_path_checks_verification():
+    """The ordinary report and the SOS both refuse an unverified resident."""
+    import inspect
+    from app.services import incident_service, incident_standing
+
+    assert "refuse_if_unverified" in inspect.getsource(incident_standing.ensure_reporting_allowed)
+    assert "refuse_if_unverified" in inspect.getsource(incident_service.submit_sos)
+    assert "ensure_reporting_allowed(db, reporter_id)" in inspect.getsource(incident_service.submit_incident)
+
+
+def test_unverified_lookup_failure_does_not_block_a_report():
+    """The check fails open: a database hiccup must not refuse an emergency."""
+    from app.services.incident_standing import ensure_reporting_allowed
+
+    class Broken:
+        def table(self, _):
+            raise RuntimeError("db down")
+
+    ensure_reporting_allowed(Broken(), "u-1")
 
 
 # ── Accessibility data must reach the responding crew ─────────────────────────

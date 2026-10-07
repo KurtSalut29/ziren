@@ -186,10 +186,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get consentSummaryLocation => 'Ginagamit namin ang inyong lokasyon at contact details para matagpuan kayo ng mga responder.';
 
   @override
-  String get consentSummaryReporting => 'Maaari kayong laging mag-ulat ng emerhensiya, beripikado man o hindi.';
+  String get consentSummaryReporting => 'Makakapagpadala ng ulat kapag na-verify na ng administrator ang inyong account. Laging gumagana ang mga emergency hotline.';
 
   @override
-  String get consentSummaryPhotos => 'Pribado ang larawan ng inyong ID at mukha, at buburahin kapag nasuri na.';
+  String get consentSummaryPhotos => 'Buburahin ang larawan ng ID ninyo kapag nasuri na. Pribado ang larawan ng mukha ninyo, bilang larawan sa Ziren ID na administrator lang ang nakakakita.';
 
   @override
   String get consentSummaryNotHotline => 'Hindi kapalit ng 911 ang Ziren. Tumawag nang direkta kung hindi maabot ng app ang network.';
@@ -824,7 +824,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get regChooseDate => 'Pumili ng petsa';
 
   @override
-  String get regAgencyIdWhy => 'Mapapabilis nito ang approval - makikita ng admin ninyo ang badge number nang hindi tumatawag sa istasyon.';
+  String get regAgencyIdWhy => 'Kailangan ito. Titingnan ng admin ninyo na iyo ang pangalan dito bago aprubahan ang account mo.';
 
   @override
   String get regIdBestChoice => 'Pinakamainam';
@@ -1141,7 +1141,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get verifyIdNumber => 'ID number';
 
   @override
-  String get verifySelfie => 'Selfie (opsyonal pero nakakatulong)';
+  String get verifySelfie => 'Selfie';
 
   @override
   String get verifySubmit => 'Ipasa para suriin';
@@ -1168,13 +1168,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get verifyNotSignedIn => 'Hindi kayo naka-sign in.';
 
   @override
-  String get verifyIntro => 'Opsyonal ito. Makakapag-ulat na kayo ng emerhensiya kahit wala nito - ang beripikasyon ay nagsasabi lang sa dispatcher na galing ang ulat ninyo sa kumpirmadong residente.';
+  String get verifyIntro => 'Ang mga residenteng na-verify ng administrator lang ang makakapagpadala ng report. Ipakita ang valid ID na may pangalan mo at kumuha ng selfie - pinaghahambing ito ng administrator.';
 
   @override
-  String get verifySentBody => 'Susuriin ng administrator ang inyong ID. Walang magbabago sa inyo habang naghihintay - gamitin lang ang Ziren gaya ng dati.';
+  String get verifySentBody => 'Susuriin ng administrator ang ID mo. Makakapagpadala ka na ng report kapag naaprubahan ito. Kung may emergency ngayon, tumawag sa hotline.';
 
   @override
-  String get verifyPrivacyNote => 'Pribado ang mga larawan ninyo, hindi ipinapakita sa mga responder, at buburahin kapag nasuri na ng administrator.';
+  String get verifyPrivacyNote => 'Pribado ang mga larawan ninyo at hindi ipinapakita sa mga responder. Buburahin ang larawan ng ID kapag nasuri na ng administrator; itatago ang selfie bilang larawan sa inyong Ziren ID.';
 
   @override
   String get bannerInReview => 'Sinusuri ang beripikasyon';
@@ -1189,10 +1189,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get bannerNotNow => 'Mamaya na lang';
 
   @override
-  String get bannerInReviewBody => 'Sinusuri ng administrator ang inyong ID. Magagamit pa rin ninyo ang Ziren gaya ng dati.';
+  String get bannerInReviewBody => 'Sinusuri ng administrator ang iyong ID. Makakapag-ulat ka kapag naaprubahan na ito. Kung may emergency, tumawag agad sa hotline.';
 
   @override
-  String get bannerFinishBody => 'Magdagdag ng balidong ID para malaman ng dispatcher na galing ang ulat ninyo sa tunay na residente. Makakapag-ulat kayo kahit alin man.';
+  String get bannerFinishBody => 'Idagdag ang iyong balidong ID at selfie. Makakapag-ulat ka kapag na-verify na ng administrator ang account mo. Kung may emergency, tumawag agad sa hotline.';
 
   @override
   String get badgeRequired => 'KAILANGAN';
@@ -4757,4 +4757,212 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get weatherChannelDescription => 'Paalala mga isang oras bago ang malakas na ulan, kulog at kidlat, o delikadong init.';
+
+  @override
+  String get regNameMismatchTitle => 'Hindi tugma ang pangalan sa ID mo';
+
+  @override
+  String regNameMismatchBody(String parts) {
+    return 'Hindi namin makita sa ID mo ang: $parts. I-type ang pangalan mo nang eksakto gaya ng nakalimbag sa ID, o kumuha ng mas malinaw na litrato nito.';
+  }
+
+  @override
+  String regNamePartFirst(String value) {
+    return 'pangalan na \"$value\"';
+  }
+
+  @override
+  String regNamePartMiddle(String value) {
+    return 'gitnang pangalan na \"$value\"';
+  }
+
+  @override
+  String regNamePartLast(String value) {
+    return 'apelyido na \"$value\"';
+  }
+
+  @override
+  String get regFixName => 'Itama ang pangalan ko';
+
+  @override
+  String get regRetakeId => 'Kunan ulit ang ID';
+
+  @override
+  String get regAgencyIdNeeded => 'Kunan ng litrato ang agency ID mo para makapagpatuloy.';
+
+  @override
+  String get regAgencyIdReading => 'Binabasa ang ID mo...';
+
+  @override
+  String get regAgencyIdNameOk => 'Tugma ang pangalan sa ID mo.';
+
+  @override
+  String get regVerificationRequired => 'Kailangan ang ID at selfie mo para matapos ang pag-register. Sinusuri ng Ziren ang bawat account para galing sa totoong tao ang bawat ulat.';
+
+  @override
+  String get reportNeedsVerificationTitle => 'I-verify ang account para makapag-ulat';
+
+  @override
+  String get reportNeedsVerificationBody => 'Para maiwasan ang maling ulat, ang mga residenteng na-verify ng administrator lang ang makakapagpadala ng ulat. Idagdag ang balidong ID at selfie mo. Kung may emergency ngayon, tumawag sa hotline.';
+
+  @override
+  String get reportPendingVerificationTitle => 'Hinihintay ang administrator';
+
+  @override
+  String get reportPendingVerificationBody => 'Sinusuri pa ang ID mo. Makakapagpadala ka ng ulat kapag naaprubahan na ito ng administrator. Kung may emergency ngayon, tumawag sa hotline.';
+
+  @override
+  String get reportVerifyNow => 'I-verify ang account ko';
+
+  @override
+  String get meetCodeTitleReporter => 'Ang Ziren code mo';
+
+  @override
+  String get meetCodeBodyReporter => 'Pagdating ng mga responder, itatanong nila ang code na ito. Sabihin ito sa kanila para malaman nilang ikaw ang nag-report. Huwag muna itong ibigay sa iba.';
+
+  @override
+  String get meetCodeTitleResponder => 'Itanong sa nag-report ang Ziren code niya';
+
+  @override
+  String get meetCodeBodyResponder => 'Sasabihin sa iyo ng nag-report ang code na ito. Kilalanin sila sa code, hindi sa itsura o kasarian nila.';
+
+  @override
+  String meetCodeSemantics(String digits) {
+    return 'Ziren code $digits';
+  }
+
+  @override
+  String get sosWhatKind => 'Anong klaseng emergency?';
+
+  @override
+  String get sosWhatKindHelp => 'Para maipadala ang tamang koponan sa tamang lugar.';
+
+  @override
+  String get sosChooseKindHint => 'Piliin muna sa itaas kung anong klaseng emergency';
+
+  @override
+  String get sosConfirmHint => 'I-check muna ang kahon sa itaas para magpatuloy';
+
+  @override
+  String get sosFallbackReminder => 'Kung buhay ang nakataya, tumawag din agad sa 911. Isang tunay na dispatcher ang sumusuri sa report na ito — hindi AI.';
+
+  @override
+  String get respNotesTitle => 'Mga update mula sa lugar';
+
+  @override
+  String get respNotesEmpty => 'Wala pang update. Idagdag ang mga nakikita mo habang tumutugon.';
+
+  @override
+  String get respNotesHint => 'Hal. Umabot na ang apoy sa ikalawang palapag.';
+
+  @override
+  String get respNotesLoadError => 'Hindi ma-load ang mga update.';
+
+  @override
+  String get regMiddleNameHelp => 'Isulat ang buong gitnang pangalan gaya ng nasa ID - halimbawa Santos, hindi S. Inisyal lang kung inisyal lang ang nakasulat sa ID.';
+
+  @override
+  String regMiddleInitialBody(String value) {
+    return 'Inisyal lang ang \"$value\" ng gitnang pangalan mo. Buo ito sa ID mo, kaya i-type ang buong gitnang pangalan (halimbawa Santos, hindi S.).';
+  }
+
+  @override
+  String get verifyNameLabel => 'Pangalan mo, gaya ng nakasulat sa ID';
+
+  @override
+  String get verifyNameHelp => 'Pangalan, gitnang pangalan at apelyido. Isulat nang buo ang gitnang pangalan (halimbawa Santos, hindi S.) maliban kung inisyal lang ang nasa ID.';
+
+  @override
+  String get verifyNameSaveError => 'Hindi ma-save ang pangalan mo. Subukan ulit.';
+
+  @override
+  String get accountVerifiedTitle => 'Verified na ang account mo';
+
+  @override
+  String get accountVerifiedBody => 'Nasuri na ng administrator ang ID mo. Makakapagpadala ka na ng emergency report sa Ziren.';
+
+  @override
+  String get accountVerifyRejectedTitle => 'Hindi na-verify ang ID mo';
+
+  @override
+  String get accountVerifyRejectedBody => 'Hindi makumpirma ng administrator kung sino ka mula sa mga litrato. Magpadala ng malinaw na litrato ng ID mo, kasama ang pangalan mo gaya ng nakasulat dito, at bagong selfie.';
+
+  @override
+  String get accountVerifyAgain => 'Mag-verify ulit';
+
+  @override
+  String get homeChooseIncidentTitle => 'Pumili ng insidente';
+
+  @override
+  String get homeChooseIncidentBody => 'I-tap kung ano ang nangyayari para i-report: sunog, medikal, aksidente, krimen, kalamidad o iba pa.';
+
+  @override
+  String weatherMoodStorm(String time) {
+    return 'May kidlat at ulan mula $time';
+  }
+
+  @override
+  String weatherMoodHeavyRain(String time) {
+    return 'Malakas na ulan mula $time';
+  }
+
+  @override
+  String get weatherMoodRainingNow => 'Umuulan ngayon';
+
+  @override
+  String weatherMoodRainSoon(String time) {
+    return 'Uulan mula $time';
+  }
+
+  @override
+  String get weatherMoodHeatDanger => 'Delikadong init';
+
+  @override
+  String get weatherMoodHeat => 'Mainit ngayon';
+
+  @override
+  String get weatherMoodFair => 'Maaliwalas ang panahon';
+
+  @override
+  String get weatherMoodFairNight => 'Payapang gabi';
+
+  @override
+  String get weatherMeterRain => 'Ulan';
+
+  @override
+  String get weatherMeterHeat => 'Init';
+
+  @override
+  String get weatherRainNone => 'Walang ulan';
+
+  @override
+  String get weatherRainLight => 'Mahina';
+
+  @override
+  String get weatherRainModerate => 'Katamtaman';
+
+  @override
+  String get weatherRainHeavy => 'Malakas';
+
+  @override
+  String get weatherRainIntense => 'Napakalakas';
+
+  @override
+  String get weatherRainTorrential => 'Bumubuhos';
+
+  @override
+  String get weatherHeatNormal => 'Normal';
+
+  @override
+  String weatherMeterFrom(String time) {
+    return 'mula $time';
+  }
+
+  @override
+  String weatherMeterPeak(String temp, String time) {
+    return '$temp bandang $time';
+  }
+
+  @override
+  String get weatherMeterToday => 'ngayong araw';
 }

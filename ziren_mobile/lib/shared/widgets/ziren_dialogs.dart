@@ -80,6 +80,7 @@ Future<T?> showZirenDialog<T>(
   required List<ZirenDialogAction<T>> actions,
   bool horizontalActions = false,
   bool barrierDismissible = true,
+  void Function(BuildContext dialogContext)? onOpen,
 }) {
   // showGeneralDialog rather than showDialog: a plain dialog route has no
   // room to blur what is behind it, and this app's one dialog primitive is
@@ -90,8 +91,10 @@ Future<T?> showZirenDialog<T>(
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.black.withValues(alpha: 0.55),
     transitionDuration: ZirenTokens.motionEntrance,
-    pageBuilder:
-        (dialogContext, animation, secondaryAnimation) => ZirenDialog<T>(
+    pageBuilder: (dialogContext, animation, secondaryAnimation) {
+      // Lets the caller close it itself (e.g. once a check it raced finishes).
+      onOpen?.call(dialogContext);
+      return ZirenDialog<T>(
           icon: icon,
           leading: leading,
           tone: tone,
@@ -101,7 +104,8 @@ Future<T?> showZirenDialog<T>(
           body: body,
           actions: actions,
           horizontalActions: horizontalActions,
-        ),
+        );
+    },
     transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(parent: animation, curve: ZirenTokens.curveStandard);
       return AnimatedBuilder(

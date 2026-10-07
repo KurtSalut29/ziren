@@ -20,6 +20,7 @@ from supabase import Client
 
 from app.core.dependencies import assert_agency_scope
 from app.db.supabase_client import get_supabase
+from app.core.meet_code import meet_code
 from app.services import notification_service
 from app.services import proximity
 from app.services import responder_ack
@@ -378,7 +379,7 @@ def get_incident_history(
             # responder gets an alias so the two don't collide in the row.
             "responder:users!incidents_assigned_responder_id_fkey(full_name), "
             "users!incidents_reporter_id_fkey("
-            "  full_name, is_verified, sos_warning_count, created_at"
+            "  full_name, is_verified, verification_level, sos_warning_count, created_at"
             ")",
             count="exact",
         )
@@ -626,7 +627,7 @@ def get_incident_queue(dispatcher: dict) -> list[dict]:
             "review_status, rejection_reason, clarification_note, clarification_requested_at, "
             "stations(name, agencies(agency_type, municipality, name)), "
             "users!incidents_reporter_id_fkey("
-            "  full_name, is_verified, sos_warning_count, created_at"
+            "  full_name, is_verified, verification_level, sos_warning_count, created_at"
             ")"
         )
         .in_("status", ["received", "processing", "dispatched", "en_route", "arrived"])
@@ -965,7 +966,7 @@ def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
             "  full_name, badge_id, location, location_updated_at"
             "), "
             "users!incidents_reporter_id_fkey("
-            "  id, full_name, phone_number, is_verified, sos_warning_count, "
+            "  id, full_name, phone_number, is_verified, verification_level, sos_warning_count, "
             "  sos_suspended_until, created_at, "
             "  emergency_contact_name, emergency_contact_number"
             ")"
@@ -1018,6 +1019,9 @@ def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
         .execute()
     )
     row["dispatch_log"] = log_result.data or []
+    # The reporter's Ziren code, so a dispatcher on the phone with someone can
+    # confirm it is the reporter (app/core/meet_code.py).
+    row["meet_code"] = meet_code(row.get("id") or incident_id)
 
     # Attach available responders for assignment (same agency, approved, on_duty)
     agency_id = row.get("assigned_agency_id")

@@ -21,6 +21,8 @@ import '../../notifications/presentation/notice_view.dart' show noticeStage;
 import 'widgets/transcript_prompt.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../demo/presentation/demo_anchor.dart';
+import '../../../shared/widgets/report_gate.dart';
+import '../../../shared/widgets/meet_code_card.dart';
 
 /// Everything about one report, on its own screen.
 ///
@@ -218,6 +220,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
             ),
           ),
 
+          // ── The Ziren code, for the crew on arrival ───────
+          if (isOpen && incident.meetCode != null) ...[
+            const SizedBox(height: ZirenTokens.space12),
+            MeetCodeCard(code: incident.meetCode!, forResponder: false),
+          ],
+
           // ── The agency's decision, in words ───────────────
           //
           // A rejected report used to arrive in Trash with nothing said.
@@ -244,7 +252,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   icon: LucideIcons.file_plus,
                   label: t.reportFileAgain,
                   filled: true,
-                  onTap: () => context.push('/report'),
+                  onTap: () async {
+                    if (await refuseReport(context)) return;
+                    if (context.mounted) context.push('/report');
+                  },
                 ),
               ],
             ),
@@ -272,7 +283,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   icon: LucideIcons.file_plus,
                   label: t.reportFileAgain,
                   filled: true,
-                  onTap: () => context.push('/report'),
+                  onTap: () async {
+                    if (await refuseReport(context)) return;
+                    if (context.mounted) context.push('/report');
+                  },
                 ),
               ],
             ),

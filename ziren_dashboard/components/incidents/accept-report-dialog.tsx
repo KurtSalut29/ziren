@@ -119,11 +119,11 @@ export function AcceptReportDialog({
                     <span className="truncate">{reporter.full_name}</span>
                     <span
                       className="shrink-0 rounded-full px-1.5 py-px text-[10.5px] font-semibold"
-                      style={reporter.is_verified
+                      style={(reporter.verification_level ?? 0) >= 2
                         ? { background: 'var(--color-system-success-bg)', color: 'var(--color-system-success)' }
                         : { background: 'var(--color-system-warning-bg)', color: 'var(--color-system-warning)' }}
                     >
-                      {reporter.is_verified ? 'Verified' : 'Not verified'}
+                      {(reporter.verification_level ?? 0) >= 2 ? 'Verified' : 'Not verified'}
                     </span>
                   </p>
                 )}

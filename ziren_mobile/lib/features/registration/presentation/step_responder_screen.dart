@@ -9,7 +9,10 @@ import '../../../core/utils/validators.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_text_field.dart';
 import '../../auth/data/id_upload_service.dart';
+import '../data/id_ocr_service.dart';
+import '../domain/id_name_match.dart';
 import '../domain/registration_draft.dart';
+import 'name_mismatch_notice.dart';
 import 'registration_shell.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -23,6 +26,10 @@ const _agencyTypes = ['BFP', 'PNP', 'MDRRMO'];
 /// because the registration screen passed `validIdImage: null` for the whole
 /// responder branch. Approving an account that can see every incident in a
 /// municipality deserves at least as much evidence as a resident account.
+///
+/// Required, and read (user request, 2026-10-07): the name typed on the name
+/// step has to be on the agency ID, exactly as for a resident's ID
+/// (IdNameMatch). Coming back from correcting the name reads it again.
 class StepResponderScreen extends StatefulWidget {
   const StepResponderScreen({super.key});
 
@@ -33,6 +40,10 @@ class StepResponderScreen extends StatefulWidget {
 class _StepResponderScreenState extends State<StepResponderScreen> {
   final _formKey = GlobalKey<FormState>();
   final _uploads = IdUploadService();
+  final _ocr = IdOcrService();
+
+  bool _reading = false;
+  IdNameMatch? _match;
 
   late final TextEditingController _badge;
   late final TextEditingController _rank;
@@ -45,6 +56,10 @@ class _StepResponderScreenState extends State<StepResponderScreen> {
     _badge = TextEditingController(text: d.badgeId);
     _rank = TextEditingController(text: d.rankOrPosition);
     _unit = TextEditingController(text: d.unitAssignment);
+    final path = d.agencyIdImagePath;
+    if (path != null && File(path).existsSync()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _analyse(d, path));
+    }
   }
 
   @override
@@ -52,6 +67,7 @@ class _StepResponderScreenState extends State<StepResponderScreen> {
     _badge.dispose();
     _rank.dispose();
     _unit.dispose();
+    _ocr.dispose();
     super.dispose();
   }
 
@@ -59,7 +75,42 @@ class _StepResponderScreenState extends State<StepResponderScreen> {
     final file = await _uploads.pickIdPhoto(source: ImageSource.camera);
     if (file == null || !mounted) return;
     d.agencyIdImagePath = file.path;
+    d.agencyIdNameMatched = null;
     d.commit();
+    await _analyse(d, file.path);
+  }
+
+  /// Read the agency ID and check the typed name is on it.
+  Future<void> _analyse(RegistrationDraft d, String path) async {
+    setState(() {
+      _reading = true;
+      _match = null;
+    });
+    IdNameMatch? match;
+    try {
+      final result = await _ocr.read(imagePath: path);
+      match = IdNameMatch.check(
+        cardText: result.rawText,
+        firstName: d.firstName,
+        middleName: d.middleName,
+        lastName: d.lastName,
+      );
+    } catch (_) {
+      // Unreadable: nothing matched; the notice offers a retake.
+      match = IdNameMatch.check(
+        cardText: '',
+        firstName: d.firstName,
+        middleName: d.middleName,
+        lastName: d.lastName,
+      );
+    }
+    if (!mounted) return;
+    d.agencyIdNameMatched = match.matches;
+    d.commit();
+    setState(() {
+      _reading = false;
+      _match = match;
+    });
   }
 
   Future<void> _pickJoinDate(RegistrationDraft d) async {
@@ -82,7 +133,12 @@ class _StepResponderScreenState extends State<StepResponderScreen> {
     final t = AppLocalizations.of(context);
     final d = context.watch<RegistrationDraft>();
     final joined = d.dateJoined;
-    final complete = d.agencyType != null && _badge.text.trim().isNotEmpty;
+    final complete =
+        d.agencyType != null &&
+        _badge.text.trim().isNotEmpty &&
+        d.agencyIdImagePath != null &&
+        d.agencyIdNameMatched == true &&
+        !_reading;
 
     return RegistrationScaffold(
       step: RegStep.responderDetails,
@@ -231,16 +287,58 @@ class _StepResponderScreenState extends State<StepResponderScreen> {
 
             RegField(
               label: t.fieldAgencyIdPhoto,
-              optional: true,
               child: _AgencyIdPhoto(
                 path: d.agencyIdImagePath,
                 onCapture: () => _pickAgencyId(d),
                 onRemove: () {
                   d.agencyIdImagePath = null;
+                  d.agencyIdNameMatched = null;
                   d.commit();
+                  setState(() => _match = null);
                 },
               ),
             ),
+            const SizedBox(height: ZirenTokens.space12),
+            if (d.agencyIdImagePath == null)
+              Text(
+                t.regAgencyIdNeeded,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: ZirenTokens.systemWarning,
+                ),
+              )
+            else if (_reading)
+              Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: ZirenTokens.space8),
+                  Text(t.regAgencyIdReading),
+                ],
+              )
+            else if (_match != null && !_match!.matches)
+              NameMismatchNotice(
+                match: _match!,
+                draft: d,
+                from: RegStep.responderDetails,
+                onRetake: () => _pickAgencyId(d),
+              )
+            else if (d.agencyIdNameMatched == true)
+              Row(
+                children: [
+                  Icon(
+                    LucideIcons.circle_check,
+                    size: 16,
+                    color: ZirenTokens.systemSuccess,
+                  ),
+                  const SizedBox(width: ZirenTokens.space8),
+                  Expanded(child: Text(t.regAgencyIdNameOk)),
+                ],
+              ),
             const SizedBox(height: ZirenTokens.space8),
             Text(
               t.regAgencyIdWhy,

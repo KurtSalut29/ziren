@@ -17,14 +17,14 @@
  * the selfie the face on the card. Everything here is arranged around making
  * that one comparison fast, and around the two rules that constrain it:
  *
- *   1. Verification is NOT permission. Approving raises a confidence signal a
- *      dispatcher reads. Rejecting takes it away again. Neither changes what
- *      the resident can do — an unverified person reports emergencies exactly
- *      like a verified one (migration 012).
+ *   1. Verification IS permission since 2026-10-07 (user request, reversing
+ *      migration 012): only a resident approved here can send reports. The
+ *      server enforces it (incident_standing.refuse_if_unverified).
  *
  *   2. The images are retained only to be checked once. Deciding purges them
- *      by default, per migration 015's retention rule. The ID type and number
- *      stay on the row as the audit trail of what was looked at.
+ *      by default, per migration 015's retention rule - except an APPROVED
+ *      resident's selfie, kept as the photo on their Ziren ID card (2026-10-08).
+ *      The ID type and number stay on the row as the audit trail.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -327,7 +327,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
       setNotice({
         type: 'success',
         text: approve
-          ? `${selected.full_name} verified and moved to Resident accounts. Their ID and selfie have been deleted.`
+          ? `${selected.full_name} verified and moved to Resident accounts. Their ID photo was deleted; the selfie is kept as the photo on their Ziren ID.`
           : `${selected.full_name} left unverified. Their submitted images have been deleted.`,
       });
       setSelected(null);
@@ -396,7 +396,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
       const verb = approve ? 'verified' : 'rejected';
       setNotice(
         res.failed.length === 0
-          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}${approve ? ' and moved to Resident accounts' : ''}. Their photographs were deleted.` }
+          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}${approve ? ' and moved to Resident accounts' : ''}. ${approve ? 'Their ID photographs were deleted; each selfie is kept as the photo on their Ziren ID.' : 'Their photographs were deleted.'}` }
           : { type: 'error', text: `${res.decided} ${verb}, ${res.failed.length} could not be: ${res.failed[0].reason}` },
       );
       setPicked(new Set());
@@ -607,8 +607,10 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
               {confirmBulk === 'approve' ? 'Verify' : 'Reject'} {pickedShown.length} resident{pickedShown.length === 1 ? '' : 's'}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Their ID photographs will be deleted as part of this decision, per the retention
-              policy. This cannot be undone.
+              {confirmBulk === 'approve'
+                ? 'Their ID photographs will be deleted as part of this decision, per the retention policy; each selfie is kept as the photo on their Ziren ID.'
+                : 'Their ID photographs and selfies will be deleted as part of this decision, per the retention policy.'}{' '}
+              This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -929,10 +931,11 @@ function ReviewModal({
             <p className="flex items-start gap-2.5 rounded-[12px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
               <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <span>
-                Deciding either way <strong className="font-semibold text-foreground">deletes both photographs</strong>, which
-                is the retention rule for identity documents. The ID type and number
-                stay on the record. A verified resident moves to <strong className="font-semibold text-foreground">Resident accounts</strong>;
-                neither decision changes what they can do in the app.
+                Deciding <strong className="font-semibold text-foreground">deletes the ID photograph</strong>, which
+                is the retention rule for identity documents; the ID type and number
+                stay on the record. Approving keeps the selfie as the photo on the resident&apos;s
+                Ziren ID (rejecting deletes it too), and moves them to{' '}
+                <strong className="font-semibold text-foreground">Resident accounts</strong>, where they can send reports.
               </span>
             </p>
           </div>
@@ -1205,7 +1208,7 @@ function BulkBar({
           </span>
         ) : (
           <>
-            {hint} · Every photograph in the batch is deleted on decision, and
+            {hint} · Every ID photograph in the batch is deleted on decision (an approved selfie stays as the Ziren ID photo), and
             each row is recorded against your account.
           </>
         )}

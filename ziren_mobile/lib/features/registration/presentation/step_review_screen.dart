@@ -42,6 +42,20 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
   }
 
   Future<void> _submit(RegistrationDraft d, AuthProvider auth) async {
+    // No account without its evidence (a draft saved by an older build may
+    // have skipped it). Back to the first step that is missing something.
+    final missing = d.missingEvidence;
+    if (missing != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).regVerificationRequired),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.go(missing.path);
+      return;
+    }
+
     // A draft resumed in a fresh process has no password — it is deliberately
     // never written to disk. Ask for it here rather than sending them back
     // through the whole flow.
@@ -124,8 +138,6 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
             const SizedBox(height: ZirenTokens.space20),
           ],
 
-          if (d.skippedVerification) _SkippedNotice(draft: d),
-
           _Group(
             title: t.regGroupAboutYou,
             step: RegStep.personal,
@@ -197,7 +209,7 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
                 ),
               ],
             )
-          else if (!d.skippedVerification)
+          else
             _Group(
               title: t.regGroupIdentity,
               step: RegStep.idType,
@@ -273,67 +285,6 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
     'prefer_not_to_say' => 'Prefer not to say',
     _ => null,
   };
-}
-
-class _SkippedNotice extends StatelessWidget {
-  const _SkippedNotice({required this.draft});
-  final RegistrationDraft draft;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: ZirenTokens.space20),
-      padding: const EdgeInsets.all(ZirenTokens.space16),
-      decoration: BoxDecoration(
-        color: ZirenTokens.systemWarningBg,
-        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
-        border: Border.all(color: ZirenTokens.severityHighBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                LucideIcons.hourglass,
-                size: 18,
-                color: ZirenTokens.systemWarning,
-              ),
-              const SizedBox(width: ZirenTokens.space8),
-              Flexible(child: Text(
-                t.regVerificationSkipped,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: ZirenTokens.textPrimary,
-                ),
-              )),
-            ],
-          ),
-          const SizedBox(height: ZirenTokens.space8),
-          Text(
-            t.regSkippedNotice,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.45,
-              color: ZirenTokens.textSecondary,
-            ),
-          ),
-          const SizedBox(height: ZirenTokens.space8),
-          TextButton(
-            onPressed: () {
-              draft.skippedVerification = false;
-              draft.commit();
-              context.go(RegStep.idType.path);
-            },
-            style: TextButton.styleFrom(padding: EdgeInsets.zero),
-            child: Text(t.regVerifyNowInstead),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _Group extends StatelessWidget {

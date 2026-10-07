@@ -12,9 +12,11 @@ import '../data/face_align_service.dart';
 import '../data/face_match_client.dart';
 import '../data/id_ocr_service.dart';
 import '../domain/id_catalogue.dart';
+import '../domain/id_name_match.dart';
 import '../domain/id_photo_check.dart';
 import '../domain/registration_draft.dart';
 import 'id_check_notice.dart';
+import 'name_mismatch_notice.dart';
 import 'registration_shell.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -35,10 +37,10 @@ import '../../../shared/widgets/ziren_photo_sheet.dart';
 /// -------------------------
 /// This step used to take any photograph at all - a selfie, a wall, a receipt -
 /// and let the resident carry on, on the reasoning that verification must never
-/// gate reporting. It still does not: "Skip verification" is right under the
-/// button and registers the account unverified. But once someone chooses to
-/// verify, an upload that cannot possibly be an ID proves nothing and only fills
-/// the review queue with junk, so Continue now needs a photo that:
+/// gate reporting. It now does (user request, 2026-10-07): there is no skipping
+/// this step, and an account can only report once an administrator has checked
+/// it. An upload that cannot possibly be an ID proves nothing and only fills
+/// the review queue with junk, so Continue needs a photo that:
 ///
 ///   - has readable text on it,
 ///   - has a face on it (the portrait the selfie will be compared with), and
@@ -46,9 +48,12 @@ import '../../../shared/widgets/ziren_photo_sheet.dart';
 ///
 /// Anything else is told, in words, what is missing and how to fix it.
 ///
-/// A name mismatch, an expired card and a number that does not fit the chosen
-/// type stay ADVISORY: married names and middle initials differ from cards
-/// legitimately and constantly, and an admin decides those.
+/// The name typed on the name step must be on the card: first, middle and last
+/// (IdNameMatch; a middle name printed as an initial passes). Someone whose
+/// name differs - a married name - types it as the card prints it.
+///
+/// An expired card and a number that does not fit the chosen type stay
+/// ADVISORY: an admin decides those.
 ///
 /// What the card is NOT used for
 /// -----------------------------
@@ -114,6 +119,15 @@ class _StepIdCaptureScreenState extends State<StepIdCaptureScreen> {
   }
 
   /// Why the photo cannot be accepted yet, or [IdPhotoCheck.ok].
+  /// The typed name against the card. Required: see id_name_match.dart.
+  IdNameMatch _nameMatch(RegistrationDraft d, String cardText) =>
+      IdNameMatch.check(
+        cardText: cardText,
+        firstName: d.firstName,
+        middleName: d.middleName,
+        lastName: d.lastName,
+      );
+
   IdPhotoCheck _check(RegistrationDraft d) => judgeIdPhoto(
     hasPhoto: d.idImagePath != null,
     reading: _reading,
@@ -223,9 +237,15 @@ class _StepIdCaptureScreenState extends State<StepIdCaptureScreen> {
 
       final doc = result.docCheckFor(d.validIdType);
       d.ocrRawText = result.rawText;
-      d.ocrNameMatched = result.nameMatched;
+      // The whole typed name against the card - first, middle and last. The
+      // admin's queue reads the same verdict (id_checks.name_matched).
+      final nameMatched = _nameMatch(d, result.rawText).matches;
+      d.ocrNameMatched = nameMatched;
       d.idFaceCropB64 = face.b64;
-      d.idChecks = result.toChecks(faceFound: face.b64 != null, docCheck: doc);
+      d.idChecks = {
+        ...result.toChecks(faceFound: face.b64 != null, docCheck: doc),
+        'name_matched': nameMatched,
+      };
 
       // Only fill an empty field. Overwriting something the person typed with
       // an OCR guess is how you turn a correct number into a wrong one. And
@@ -286,15 +306,17 @@ class _StepIdCaptureScreenState extends State<StepIdCaptureScreen> {
     final option = IdCatalogue.byValue(d.validIdType);
     final hasPhoto = d.idImagePath != null;
     final check = _check(d);
+    final nameMatch =
+        _result == null ? null : _nameMatch(d, _result!.rawText);
 
     return RegistrationScaffold(
       step: RegStep.idCapture,
       title: t.regIdCaptureTitle,
       subtitle: option == null ? null : 'Showing your ${option.label}.',
-      showSkipVerification: true,
-      // Only a photo that passed the check goes on. See the class comment.
+      // Only a photo that passed the check, carrying the typed name, goes on.
+      // See the class comment.
       onContinue:
-          check == IdPhotoCheck.ok
+          check == IdPhotoCheck.ok && (nameMatch?.matches ?? false)
               ? () {
                 d.validIdNumber = _number.text.trim();
                 _noteNumberEdit(d);
@@ -343,28 +365,21 @@ class _StepIdCaptureScreenState extends State<StepIdCaptureScreen> {
                       _result?.docCheckFor(d.validIdType).foundType,
                     )?.label,
               )
-            else ...[
+            else if (nameMatch != null && !nameMatch.matches)
+              // Blocking too: the account has to be the person on the card.
+              NameMismatchNotice(
+                match: nameMatch,
+                draft: d,
+                from: RegStep.idCapture,
+                onRetake: () => _chooseSource(d),
+              )
+            else
               _Banner(
                 icon: LucideIcons.circle_check,
                 colour: ZirenTokens.systemSuccess,
                 background: ZirenTokens.systemSuccessBg,
                 text: t.idCheckPassed,
               ),
-              // Advisory only from here on: a name that does not match is
-              // often fine (married names, initials), and an admin decides.
-              if (_result?.nameMatched == false && d.lastName.trim().isNotEmpty) ...[
-                const SizedBox(height: ZirenTokens.space12),
-                _Banner(
-                  icon: LucideIcons.circle_question_mark,
-                  colour: ZirenTokens.systemWarning,
-                  background: ZirenTokens.systemWarningBg,
-                  text:
-                      'We did not find "${d.lastName}" on this card. That is '
-                      'often fine — married names and initials differ. Check '
-                      'the photo is the right ID, then continue.',
-                ),
-              ],
-            ],
             // A card that has expired. Reported, never blocking — an expired
             // barangay ID is still evidence of who someone is, and it is an
             // admin's call whether it is enough.

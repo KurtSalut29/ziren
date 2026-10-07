@@ -1405,3 +1405,20 @@ body {
 #main-content > :last-child:not(.h-full) {
   padding-bottom: 88px;
 }
+
+/* Printing one resident's Ziren ID (components/verification/ziren-id-card.tsx):
+   a copy of the card is put directly under <body> as [data-id-card-print] for
+   the length of the print, and everything else is left out. */
+@media print {
+  html.print-id-card body { background: #fff !important; }
+  html.print-id-card body > *:not([data-id-card-print]) { display: none !important; }
+  html.print-id-card [data-id-card-print] { display: block !important; padding: 12mm; }
+  html.print-id-card [data-id-card-print] [data-id-card] {
+    width: 128mm !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+}
+@media screen {
+  [data-id-card-print] { display: none; }
+}

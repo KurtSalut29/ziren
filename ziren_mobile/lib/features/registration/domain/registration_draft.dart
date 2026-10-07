@@ -71,6 +71,10 @@ class RegistrationDraft extends ChangeNotifier {
   /// That is why this is remembered rather than inferred.
   bool cameFromSignIn = false;
 
+  /// The step to go back to after correcting the name, when an ID step sent
+  /// the person to fix it (the name has to match the ID). In memory only.
+  RegStep? returnTo;
+
   // ── Role ────────────────────────────────────────────────────
   String role = 'resident';
   bool get isResponder => role == 'responder';
@@ -116,6 +120,9 @@ class RegistrationDraft extends ChangeNotifier {
   DateTime? dateJoined;
   String? agencyIdImagePath;
 
+  /// Whether the typed name was found on the agency ID photo. Required.
+  bool? agencyIdNameMatched;
+
   // ── Accessibility ───────────────────────────────────────────
   bool isPwd = false;
   String pwdIdNumber = '';
@@ -133,13 +140,10 @@ class RegistrationDraft extends ChangeNotifier {
   String? livenessMethod;
   DateTime? livenessAssertedAt;
 
-  /// True when the person took the "I need help right now" route past the ID
-  /// and selfie steps. The account is still created, at verification_level 0.
-  ///
-  /// This exists because migration 012 states the rule plainly: verification
-  /// must never gate reporting. An unverified resident in an emergency has to
-  /// be able to get an account and file a report.
-  bool skippedVerification = false;
+  // There is no skipping the ID and selfie any more (user request,
+  // 2026-10-07): an account reports only once an administrator has checked
+  // it. A draft saved by an older build with "skipped" set is read as not
+  // skipped, and the review step sends it back for the missing evidence.
 
   /// Text ML Kit read off the ID, kept so the review screen can show what was
   /// matched and what was not. Never trusted over what the person typed.
@@ -225,8 +229,24 @@ class RegistrationDraft extends ChangeNotifier {
     return steps[i - 1];
   }
 
-  /// Skipping verification jumps from wherever they are to the review screen.
-  RegStep get afterSkip => RegStep.review;
+  /// The first step whose evidence is missing, or null when the account can
+  /// be submitted: the ID (photo, type, a name that matches it) for a
+  /// resident, the agency ID (with a matching name) for a responder, and a
+  /// selfie for both.
+  RegStep? get missingEvidence {
+    if (isResponder) {
+      if (agencyIdImagePath == null || agencyIdNameMatched != true) {
+        return RegStep.responderDetails;
+      }
+    } else {
+      if (validIdType == null) return RegStep.idType;
+      if (idImagePath == null || ocrNameMatched != true) {
+        return RegStep.idCapture;
+      }
+    }
+    if (selfiePath == null) return RegStep.selfie;
+    return null;
+  }
 
   // ── Mutation ────────────────────────────────────────────────
 
@@ -242,6 +262,7 @@ class RegistrationDraft extends ChangeNotifier {
 
   void reset() {
     cameFromSignIn = false;
+    returnTo = null;
     role = 'resident';
     firstName = middleName = lastName = nameSuffix = '';
     dateOfBirth = null;
@@ -254,6 +275,7 @@ class RegistrationDraft extends ChangeNotifier {
     badgeId = rankOrPosition = unitAssignment = '';
     dateJoined = null;
     agencyIdImagePath = null;
+    agencyIdNameMatched = null;
     isPwd = false;
     pwdIdNumber = '';
     disabilities = {};
@@ -266,7 +288,6 @@ class RegistrationDraft extends ChangeNotifier {
     selfiePath = null;
     livenessMethod = null;
     livenessAssertedAt = null;
-    skippedVerification = false;
     ocrRawText = null;
     ocrNameMatched = null;
     idNumberSource = null;
@@ -306,6 +327,7 @@ class RegistrationDraft extends ChangeNotifier {
     'unitAssignment': unitAssignment,
     'dateJoined': dateJoined?.toIso8601String(),
     'agencyIdImagePath': agencyIdImagePath,
+    'agencyIdNameMatched': agencyIdNameMatched,
     'isPwd': isPwd,
     'pwdIdNumber': pwdIdNumber,
     'disabilities': disabilities.toList(),
@@ -318,7 +340,6 @@ class RegistrationDraft extends ChangeNotifier {
     'selfiePath': selfiePath,
     'livenessMethod': livenessMethod,
     'livenessAssertedAt': livenessAssertedAt?.toIso8601String(),
-    'skippedVerification': skippedVerification,
     'ocrNameMatched': ocrNameMatched,
     'idNumberSource': idNumberSource,
     'idChecks': idChecks,
@@ -352,6 +373,7 @@ class RegistrationDraft extends ChangeNotifier {
     unitAssignment = m['unitAssignment'] as String? ?? '';
     dateJoined = DateTime.tryParse(m['dateJoined'] as String? ?? '');
     agencyIdImagePath = m['agencyIdImagePath'] as String?;
+    agencyIdNameMatched = m['agencyIdNameMatched'] as bool?;
     isPwd = m['isPwd'] as bool? ?? false;
     pwdIdNumber = m['pwdIdNumber'] as String? ?? '';
     disabilities =
@@ -367,7 +389,6 @@ class RegistrationDraft extends ChangeNotifier {
     livenessAssertedAt = DateTime.tryParse(
       m['livenessAssertedAt'] as String? ?? '',
     );
-    skippedVerification = m['skippedVerification'] as bool? ?? false;
     ocrNameMatched = m['ocrNameMatched'] as bool?;
     idNumberSource = m['idNumberSource'] as String?;
     idChecks = (m['idChecks'] as Map?)?.cast<String, dynamic>();

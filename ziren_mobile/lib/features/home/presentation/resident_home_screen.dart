@@ -29,6 +29,7 @@ import '../../../shared/widgets/home_surface.dart';
 import '../../../shared/widgets/mascot_home_header.dart';
 import '../../demo/presentation/welcome_demo.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../../shared/widgets/report_gate.dart';
 
 /// Resident Home.
 ///
@@ -51,11 +52,6 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
   _ConnectivityMode _connectivity = _ConnectivityMode.unknown;
   Timer? _connectivityTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
-
-  /// Session-scoped, deliberately not persisted. Dismissing means "not right
-  /// now", not "never ask again" — the banner is the only route back into
-  /// verification for someone who skipped it at signup.
-  bool _verificationDismissed = false;
 
   /// Whether the new-account greeting has been considered on this Home.
   bool _welcomeChecked = false;
@@ -199,7 +195,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
     }
     // A suspended account's report is refused by the server. Say so here,
     // before the wizard, not after they have described an emergency.
-    if (await refuseIfSuspended(context)) return;
+    if (await refuseReport(context)) return;
     if (!mounted) return;
     context.read<IncidentProvider>()
       ..clearWizard()
@@ -365,7 +361,7 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                           showHotlinesSheet(context, offline: true);
                           return;
                         }
-                        if (await refuseIfSuspended(context)) return;
+                        if (await refuseReport(context)) return;
                         if (!context.mounted) return;
                         context.push('/sos-confirm');
                       },
@@ -385,6 +381,21 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                     ),
                   ],
 
+                  // ── Not verified yet ─────────────────────────────
+                  //
+                  // Directly under the button it explains: a resident reports
+                  // only once an administrator has verified the account
+                  // (2026-10-07). Not dismissable while that is true. Draws
+                  // nothing for a verified account.
+                  const SizedBox(height: ZirenTokens.space12),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: kHomeGutter),
+                    child: DemoAnchor(
+                      id: 'home.verify',
+                      child: VerificationBanner(),
+                    ),
+                  ),
+
                   if (_connectivity == _ConnectivityMode.offline) ...[
                     const SizedBox(height: ZirenTokens.space12),
                     Padding(
@@ -396,6 +407,24 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                   ],
 
                   const SizedBox(height: ZirenTokens.space20),
+
+                  // ── "Choose an incident" ──────────────────────────
+                  //
+                  // Says what the six tiles are for: each one starts a report
+                  // of that kind (user request 2026-10-08 - without it the
+                  // grid read as decoration under the big button).
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      kHomeGutter,
+                      0,
+                      kHomeGutter,
+                      ZirenTokens.space10,
+                    ),
+                    child: _GridHeading(
+                      title: t.homeChooseIncidentTitle,
+                      body: t.homeChooseIncidentBody,
+                    ),
+                  ),
 
                   // ── Category grid ─────────────────────────────────
                   DemoAnchor(
@@ -515,26 +544,6 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
                       ),
                     ),
                   ),
-
-                  // ── Verification nudge ─────────────────────────
-                  //
-                  // Below the emergency action, never above it. This is a chore
-                  // the app is asking of someone; it does not get to sit between
-                  // a person and the report button. Dismissable for the session,
-                  // because a nudge that cannot be silenced becomes noise the
-                  // user learns to scroll past.
-                  if (!_verificationDismissed) ...[
-                    const SizedBox(height: ZirenTokens.space20),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: kHomeGutter,
-                      ),
-                      child: VerificationBanner(
-                        onDismiss:
-                            () => setState(() => _verificationDismissed = true),
-                      ),
-                    ),
-                  ],
 
                   const SizedBox(height: ZirenTokens.space24),
                 ],
@@ -709,6 +718,43 @@ class _HotlinesCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The heading over the incident tiles: what they are, and that a tap reports.
+class _GridHeading extends StatelessWidget {
+  const _GridHeading({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      header: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: ZirenTokens.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            body,
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.35,
+              color: ZirenTokens.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -98,7 +98,11 @@ class _StepPersonalScreenState extends State<StepPersonalScreen> {
               ? () {
                 if (!_formKey.currentState!.validate()) return;
                 _save(d);
-                context.go(d.next(RegStep.personal)!.path);
+                // Sent here from an ID step to correct the name: straight back
+                // to it, which reads the card again.
+                final back = d.returnTo;
+                d.returnTo = null;
+                context.go((back ?? d.next(RegStep.personal)!).path);
               }
               : null,
       child: Form(
@@ -126,6 +130,9 @@ class _StepPersonalScreenState extends State<StepPersonalScreen> {
               child: ZirenTextField(
                 label: '',
                 hint: t.hintMiddleName,
+                // In full, as on the ID: "S." could be Santos or Seno, and the
+                // ID step matches it against the card.
+                helperText: t.regMiddleNameHelp,
                 controller: _middle,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,

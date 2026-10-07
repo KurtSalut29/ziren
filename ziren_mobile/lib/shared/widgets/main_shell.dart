@@ -140,6 +140,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
             await openReportChatById(context, target.incidentId);
           case NoticeAction.hotlines:
             await context.push('/hotlines');
+          case NoticeAction.verifyAgain:
+            await context.push('/profile/verify');
           case NoticeAction.openAnnouncement:
             if (target.announcementId != null) {
               await context.push('/announcements/${target.announcementId}');

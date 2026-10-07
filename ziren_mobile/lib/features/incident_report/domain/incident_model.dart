@@ -20,6 +20,7 @@ class IncidentModel {
     this.reviewStatus,
     this.reviewedAt,
     this.rejectionReason,
+    this.meetCode,
     this.clarificationNote,
     this.clarificationRequestedAt,
     this.signals,
@@ -60,6 +61,11 @@ class IncidentModel {
 
   /// Why the agency rejected it. Present only when [isRejected].
   final String? rejectionReason;
+
+  /// The "Ziren code": four digits the reporter tells the arriving crew, so
+  /// they are identified by a code and not by how they look (backend
+  /// app/core/meet_code.py). Null from an older backend.
+  final String? meetCode;
 
   /// What the agency asked, and when.
   final String? clarificationNote;
@@ -189,6 +195,7 @@ class IncidentModel {
               ? DateTime.parse(json['reviewed_at'] as String).toLocal()
               : null,
       rejectionReason: json['rejection_reason'] as String?,
+      meetCode: json['meet_code'] as String?,
       clarificationNote: json['clarification_note'] as String?,
       clarificationRequestedAt:
           json['clarification_requested_at'] != null

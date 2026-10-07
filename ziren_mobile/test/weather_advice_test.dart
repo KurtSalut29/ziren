@@ -459,6 +459,52 @@ void main() {
       expect(find.textContaining('PAGASA'), findsOneWidget);
     });
 
+    // User report 2026-10-08: the card did not make it plain whether the day
+    // was about rain or about heat. The top now says it in colour, picture
+    // and words, with a Rain and a Heat gauge side by side.
+    testWidgets('rain coming: the top says rain, the rain gauge is filled', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        fc(
+          outlook: outlook(rain: 'heavy', rainAt: 13),
+          watch: [window('rain', 'heavy', 13, 16, peak: 9)],
+        ),
+      );
+      expect(find.byKey(const ValueKey('weather-hero-rain')), findsOneWidget);
+      expect(find.text('Heavy rain from 1 PM'), findsOneWidget);
+      expect(find.text('Heavy'), findsOneWidget);
+      expect(find.text('from 1 PM'), findsOneWidget);
+      expect(find.byKey(const ValueKey('weather-meter-heat')), findsOneWidget);
+    });
+
+    testWidgets('a hot day: the top says heat, not rain', (tester) async {
+      await pump(
+        tester,
+        fc(
+          current: {
+            'time': iso(10),
+            'temperature_c': 33.0,
+            'heat_index_c': 43.0,
+            'condition': 'clear',
+            'is_day': true,
+            'rain_level': 'none',
+            'heat_level': 'danger',
+            'precip_mm': 0,
+          },
+          outlook: outlook(heat: 'danger', hi: 44, peak: 13),
+          watch: [window('heat', 'danger', 11, 15, peak: 44)],
+        ),
+      );
+      expect(find.byKey(const ValueKey('weather-hero-heat')), findsOneWidget);
+      expect(find.byKey(const ValueKey('weather-hero-rain')), findsNothing);
+      expect(find.text('Dangerous heat'), findsOneWidget);
+      expect(find.text('No rain'), findsOneWidget);
+      expect(find.text('Danger'), findsOneWidget);
+      expect(find.text('feels 44°C at 1 PM'), findsOneWidget);
+    });
+
     testWidgets('the chance of rain shows only for hours that rain', (
       tester,
     ) async {

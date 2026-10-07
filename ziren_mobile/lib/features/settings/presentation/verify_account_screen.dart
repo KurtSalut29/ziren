@@ -14,8 +14,10 @@ import '../../registration/data/face_align_service.dart';
 import '../../registration/data/face_match_client.dart';
 import '../../registration/data/id_ocr_service.dart';
 import '../../registration/domain/id_catalogue.dart';
+import '../../registration/domain/id_name_match.dart';
 import '../../registration/domain/id_photo_check.dart';
 import '../../registration/presentation/id_check_notice.dart';
+import '../data/profile_repository.dart';
 import '../domain/profile_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
@@ -57,6 +59,13 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
   final _picker = ImagePicker();
   final _number = TextEditingController();
 
+  /// The account's name, editable here: the ID has to carry it, and the usual
+  /// slip - a middle name saved as "S." while the card prints "SENO" - is
+  /// fixed on this screen instead of a trip to Settings. Saved with Submit.
+  late final _name = TextEditingController(
+    text: context.read<ProfileProvider>().profile?.fullName ?? '',
+  );
+
   String? _idType;
   File? _idImage;
   File? _selfie;
@@ -83,11 +92,15 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
     _number.addListener(() {
       if (mounted) setState(() {});
     });
+    _name.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _number.dispose();
+    _name.dispose();
     _ocr.dispose();
     _faces.dispose();
     super.dispose();
@@ -107,11 +120,39 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
     docCheck: _result?.docCheckFor(_idType),
   );
 
+  /// What is not on the card. An initial gets its own sentence ("S." could be
+  /// Santos or Seno): "not found" alone leaves the person guessing.
+  String _mismatchText(AppLocalizations t) {
+    final missing = _missingName ?? const <String>[];
+    bool initial(String w) => RegExp(r'^[A-Z]$').hasMatch(w);
+    final initials = missing.where(initial).toList();
+    final others = missing.where((w) => !initial(w)).toList();
+    return [
+      if (others.isNotEmpty || initials.isEmpty)
+        '${t.regNameMismatchTitle}. ${t.regNameMismatchBody(others.map((w) => '"$w"').join(', '))}',
+      for (final w in initials) t.regMiddleInitialBody('$w.'),
+    ].join('\n\n');
+  }
+
   /// "Passport", "Driver's License" - the chosen type, for the messages.
   String? get _chosenLabel => IdCatalogue.byValue(_idType)?.label;
 
+  /// Words of the account's name that are not on the card. The ID has to be
+  /// the account holder's own (see id_name_match.dart). Null until read.
+  List<String>? get _missingName {
+    final result = _result;
+    if (result == null) return null;
+    return IdNameMatch.missingFromFullName(result.rawText, _name.text);
+  }
+
   bool get _canSubmit =>
-      _idType != null && _check == IdPhotoCheck.ok && !_submitting;
+      _idType != null &&
+      _check == IdPhotoCheck.ok &&
+      (_missingName?.isEmpty ?? false) &&
+      // Required, as at registration: the administrator compares the face on
+      // the ID with this one.
+      _selfie != null &&
+      !_submitting;
 
   Future<void> _pickId() async {
     final file = await _uploads.pickIdPhoto(source: ImageSource.camera);
@@ -130,13 +171,12 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
       _faceRatio = null;
     });
     try {
-      final profile = context.read<ProfileProvider>().profile;
       // Text and portrait are read together: they are independent, and each
       // takes about a second on a mid-range handset.
       final results = await Future.wait([
         _ocr.read(
           imagePath: file.path,
-          expectedSurname: profile?.fullName.split(' ').last,
+          expectedSurname: _name.text.trim().split(' ').last,
           idType: _idType,
         ),
         _faces.alignFace(file.path),
@@ -205,6 +245,24 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
         _error = t.verifyNotSignedIn;
       });
       return;
+    }
+
+    // The corrected name first: evidence filed under a name the ID does not
+    // carry would only be refused by the administrator.
+    final profiles = context.read<ProfileProvider>();
+    final name = _name.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (name != profiles.profile?.fullName.trim()) {
+      try {
+        await ProfileRepository().updateMyProfile({'full_name': name});
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _submitting = false;
+            _error = t.verifyNameSaveError;
+          });
+        }
+        return;
+      }
     }
 
     try {
@@ -310,6 +368,18 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
                       ),
 
                       const SizedBox(height: ZirenTokens.space20),
+                      _Label(t.verifyNameLabel),
+                      const SizedBox(height: ZirenTokens.space8),
+                      ZirenTextField(
+                        key: const ValueKey('verify-name'),
+                        label: '',
+                        controller: _name,
+                        textCapitalization: TextCapitalization.words,
+                        prefixIcon: const Icon(LucideIcons.user),
+                        helperText: t.verifyNameHelp,
+                      ),
+
+                      const SizedBox(height: ZirenTokens.space20),
                       _Label(t.verifyIdPhoto),
                       const SizedBox(height: ZirenTokens.space8),
                       _PhotoTile(
@@ -347,6 +417,14 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
                                 IdCatalogue.byValue(
                                   _result?.docCheckFor(_idType).foundType,
                                 )?.label,
+                          )
+                        else if (_missingName?.isNotEmpty ?? true)
+                          IdCheckNotice(
+                            key: const ValueKey('name-mismatch'),
+                            icon: LucideIcons.user_x,
+                            tint: ZirenTokens.systemWarning,
+                            bg: ZirenTokens.systemWarningBg,
+                            text: _mismatchText(t),
                           )
                         else
                           IdCheckNotice(

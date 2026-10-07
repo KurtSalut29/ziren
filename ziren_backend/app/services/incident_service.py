@@ -45,6 +45,7 @@ from app.services.incident_routing import (  # noqa: E402,F401
 from app.services.incident_standing import (  # noqa: E402,F401
     SOS_COOLDOWN_MINUTES, SOS_SUSPEND_THRESHOLD, SOS_SUSPENSION_DAYS, SOS_TRUST_FLAG_THRESHOLD,
     _refuse_if_suspended, _update_sos_timestamp, ensure_reporting_allowed,
+    refuse_if_unverified,
 )
 
 # How long a withdrawn report stays visible in Trash before it is purged for
@@ -160,7 +161,7 @@ def submit_sos(
     # ── 1. Fetch reporter profile (identity + anti-abuse fields) ──────────────
     profile_result = (
         db.table("users")
-        .select("id, full_name, role, sos_warning_count, sos_suspended_until, sos_last_submitted_at, is_verified")
+        .select("id, full_name, role, sos_warning_count, sos_suspended_until, sos_last_submitted_at, is_verified, verification_level")
         .eq("id", reporter_id)
         .single()
         .execute()
@@ -176,6 +177,7 @@ def submit_sos(
     # One rule and one message for every kind of report - see
     # ensure_reporting_allowed.
     _refuse_if_suspended(profile.get("sos_suspended_until"))
+    refuse_if_unverified(profile.get("role"), profile.get("verification_level"))
 
     # ── 3. Cooldown check (server-side — client cooldown is advisory only) ────
     last_submitted = profile.get("sos_last_submitted_at")

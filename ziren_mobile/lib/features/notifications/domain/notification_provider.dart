@@ -44,6 +44,10 @@ enum NotificationKind {
   accountWarning,
   accountSuspended,
   accountReinstated,
+  // An administrator's decision on the resident's ID (2026-10-08): approval
+  // is what lets a resident report, so it is told at once, like a suspension.
+  accountVerified,
+  accountVerificationRejected,
   announcement,
   helpAcknowledged,
 }
@@ -141,10 +145,7 @@ class AppNotification {
   bool get isAgencyAct => kind != NotificationKind.status;
 
   /// About the account itself - there is no report to open.
-  bool get isAccount =>
-      kind == NotificationKind.accountWarning ||
-      kind == NotificationKind.accountSuspended ||
-      kind == NotificationKind.accountReinstated;
+  bool get isAccount => NotificationProvider._isAccountKind(kind);
 
   String get shortId =>
       incidentId.length >= 8 ? incidentId.substring(0, 8) : incidentId;
@@ -253,6 +254,10 @@ class NotificationProvider extends ChangeNotifier {
   RealtimeChannel? _channel;
   bool _subscribed = false;
   bool _syncing = false;
+
+  /// Asked for while a read was in flight: read once more after it. A pushed
+  /// notice must not wait out the 30-second poll because a poll was running.
+  bool _syncAgain = false;
   Timer? _retry;
   Timer? _poll;
 
@@ -596,6 +601,14 @@ class NotificationProvider extends ChangeNotifier {
           kind: NotificationKind.accountReinstated,
           status: 'account_reinstated',
         ),
+        'account.verified' => (
+          kind: NotificationKind.accountVerified,
+          status: 'account_verified',
+        ),
+        'account.verification_rejected' => (
+          kind: NotificationKind.accountVerificationRejected,
+          status: 'account_verification_rejected',
+        ),
         'announcement.published' => (
           kind: NotificationKind.announcement,
           status: 'announcement',
@@ -610,7 +623,9 @@ class NotificationProvider extends ChangeNotifier {
   static bool _isAccountKind(NotificationKind k) =>
       k == NotificationKind.accountWarning ||
       k == NotificationKind.accountSuspended ||
-      k == NotificationKind.accountReinstated;
+      k == NotificationKind.accountReinstated ||
+      k == NotificationKind.accountVerified ||
+      k == NotificationKind.accountVerificationRejected;
 
   /// Turn one stored row into a notification, or null when it is not for this
   /// app (an agency admin's own alerts share the table) or is malformed.
@@ -728,7 +743,10 @@ class NotificationProvider extends ChangeNotifier {
   /// incident row that realtime watches. Best-effort - a failure changes
   /// nothing, and realtime still delivers the live ones.
   Future<void> syncFromServer() async {
-    if (_syncing) return;
+    if (_syncing) {
+      _syncAgain = true;
+      return;
+    }
     final Session? session;
     try {
       session = Supabase.instance.client.auth.currentSession;
@@ -791,6 +809,10 @@ class NotificationProvider extends ChangeNotifier {
       debugPrint('[notifications] sync failed: $e');
     } finally {
       _syncing = false;
+    }
+    if (_syncAgain) {
+      _syncAgain = false;
+      await syncFromServer();
     }
   }
 

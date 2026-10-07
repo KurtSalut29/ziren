@@ -5,6 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/home_kit.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import '../../../shared/widgets/report_gate.dart';
 
 /// Ziren AI — placeholder for the guided-reporting assistant.
 ///
@@ -130,7 +131,10 @@ class ZirenAiScreen extends StatelessWidget {
                             backgroundColor: ZirenTokens.severityCritical,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: () => context.push('/sos-confirm'),
+                          onPressed: () async {
+                            if (await refuseReport(context)) return;
+                            if (context.mounted) context.push('/sos-confirm');
+                          },
                           icon: const Icon(LucideIcons.siren, size: 18),
                           label: const Text('SOS'),
                         ),
@@ -142,7 +146,10 @@ class ZirenAiScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             foregroundColor: ZirenTokens.textPrimary,
                           ),
-                          onPressed: () => context.push('/report'),
+                          onPressed: () async {
+                            if (await refuseReport(context)) return;
+                            if (context.mounted) context.push('/report');
+                          },
                           icon: const Icon(LucideIcons.square_pen, size: 18),
                           label: Text(t.quickReport),
                         ),

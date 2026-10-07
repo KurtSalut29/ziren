@@ -47,6 +47,7 @@ import { apiClient } from '@/lib/api/client';
 import { fetchQueue, type QueueIncident } from '@/lib/api/dispatch';
 import { alertPrefs } from '@/lib/prefs/definitions';
 import { announceArrivals, useOpened } from '@/lib/incidents/arrivals';
+import { AWAITING_STATUSES } from '@/components/incidents/incident-vocabulary';
 
 /** localStorage flag: this browser has already been asked about desktop alerts. */
 const PERMISSION_ASKED_KEY = 'ziren-desktop-alerts-asked';
@@ -239,6 +240,34 @@ export interface IncidentAlert {
  * Kept out of the hook so the rule a dispatcher depends on — what sounds the
  * alarm — is unit-tested (evaluator finding #25), not only clicked through.
  */
+/**
+ * How long a report counts as "just arrived": the same ten minutes the
+ * Incident Management page uses for its "A new report just arrived" strip.
+ */
+export const JUST_ARRIVED_MS = 10 * 60_000;
+
+/**
+ * The reports a console's FIRST poll marks as already known, without alerting.
+ *
+ * Everything that has been waiting a while, so opening the console does not
+ * fire one alert per report in the queue. NOT a report that is still waiting
+ * and arrived in the last ten minutes: it used to be swallowed here too, when
+ * it landed while the dispatcher was signing in or opening a new tab. The
+ * Incident Management page still called it "a new report just arrived" in its
+ * strip at the top, and no alert appeared on any page - which read as the
+ * alert not working there (tester report, 2026-10-07).
+ */
+export function seedKnown(queue: QueueIncident[], nowMs: number): Set<string> {
+  return new Set(
+    queue
+      .filter(i => !(
+        AWAITING_STATUSES.includes(i.status) &&
+        nowMs - new Date(i.created_at).getTime() < JUST_ARRIVED_MS
+      ))
+      .map(i => i.id),
+  );
+}
+
 export function decideAlerts(
   queue: QueueIncident[],
   seen: Set<string>,
@@ -784,17 +813,13 @@ export function useIncidentAlerts({
 
       const active = rulesRef.current ?? DEFAULT_RULES;
 
-      // First run seeds the seen-set without alerting - unless this tab
-      // already had one before a reload, in which case anything that arrived
-      // in between is still new and must alert.
+      // First run: this tab's seen-set from before a reload (anything that
+      // arrived in between is still new and alerts), or a fresh one.
       if (seenRef.current === null) {
         const restored = loadSeen();
-        if (!restored) {
-          seenRef.current = new Set(queue.map(i => i.id));
-          saveSeen(seenRef.current, queue.map(i => i.id));
-          return;
-        }
-        seenRef.current = restored;
+        // A fresh tab: what has been waiting a while is known; what arrived in
+        // the last ten minutes still alerts (seedKnown).
+        seenRef.current = restored ?? seedKnown(queue, Date.now());
       }
 
       const { fresh, arrived } = decideAlerts(queue, seenRef.current, active);

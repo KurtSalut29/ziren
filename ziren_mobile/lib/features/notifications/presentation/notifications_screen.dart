@@ -198,6 +198,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (n.isAccount) {
             if (view.primary == NoticeAction.hotlines) {
               await context.push('/hotlines');
+            } else if (view.primary == NoticeAction.verifyAgain) {
+              await context.push('/profile/verify');
             }
             return;
           }

@@ -358,3 +358,27 @@ def test_false_sos_that_suspends_says_so(db):
 def test_announcing_a_false_sos_never_raises(db):
     db.fail_on_insert.update({"notifications", "audit_logs"})
     svc.announce_false_sos(RES, incident_id="inc-7", result={"warning_count": 1}, actor=ADMIN)
+
+
+# ── The Ziren ID card's photo (user request 2026-10-08) ─────────────────────
+
+def test_a_verified_residents_card_photo_is_a_short_lived_link(db):
+    _row(db)["selfie_image_path"] = "selfies/a01.jpg"
+    with patch("app.services.user_service._signed_url", return_value="https://signed/a01") as sign:
+        out = svc.get_resident(RES, current_user=PROV)
+    assert out["photo_url"] == "https://signed/a01"
+    assert sign.call_args.args[:2] == ("resident-ids", "selfies/a01.jpg")
+    assert "selfie_image_path" not in out, "the storage path itself is never sent"
+
+
+def test_no_card_photo_for_an_account_not_verified(db):
+    _row(db).update(selfie_image_path="selfies/a01.jpg", verification_level=1)
+    with patch("app.services.user_service._signed_url", return_value="https://signed/a01") as sign:
+        out = svc.get_resident(RES, current_user=PROV)
+    assert out["photo_url"] is None
+    sign.assert_not_called()
+
+
+def test_no_photo_on_file_is_no_photo(db):
+    out = svc.get_resident(RES, current_user=PROV)
+    assert out["photo_url"] is None

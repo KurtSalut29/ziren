@@ -31,6 +31,7 @@ import {
   AlertTriangle, Ban, CalendarClock, Check, CheckCheck, ClipboardCheck, Clock,
   Flag, Handshake, Landmark, ListTree, MapPin, MessageSquare, Phone, PhoneCall,
   ShieldCheck, ShieldX, Siren, Sparkles, Star, UserCheck, UserRound, Users, X,
+  KeyRound, Crosshair, ExternalLink, Contact,
 } from 'lucide-react';
 import { ApiError } from '@/lib/api/client';
 import {
@@ -86,7 +87,7 @@ import { ActionButton } from '@/components/incidents/incident-action-button';
 import { ChatButtonBadge } from '@/components/incidents/chat-button-badge';
 import { useIncidentThread } from '@/lib/hooks/useIncidentThread';
 import {
-  Answers, DetailSkeleton, Fact, Flag as FlagChip, MaskedContact, Milestones,
+  Answers, DetailSkeleton, Fact, Flag as FlagChip, InfoTile, MaskedContact, Milestones,
   Normalisation, Row, Section, type Milestone,
 } from '@/components/incidents/incident-detail-parts';
 import { HotlineLinks } from '@/components/ui/hotline-links';
@@ -434,6 +435,11 @@ export function IncidentDetailModal({
   })();
 
   const reporter = detail?.users ?? null;
+  // Verified = an administrator approved the resident's ID (verification_level
+  // 2). Not `is_verified`, which doubles as the account's active flag and was
+  // true or false regardless of the ID (user report 2026-10-08: a verified
+  // resident shown as "Unverified").
+  const reporterVerified = (reporter?.verification_level ?? 0) >= 2;
   const reporterInitials = (reporter?.full_name ?? '')
     .split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join('') || '?';
   const answerCount = facets.what.length + facets.who.length + facets.how.length;
@@ -622,7 +628,7 @@ export function IncidentDetailModal({
                     chips, before the report itself. Nothing is drawn when there
                     is nothing to warn about. */}
                 {(detail.sos_flagged || detail.reported_from_elsewhere
-                  || (reporter && !reporter.is_verified) || (reporter?.sos_warning_count ?? 0) > 0) && (
+                  || (reporter && !reporterVerified) || (reporter?.sos_warning_count ?? 0) > 0) && (
                   <div className="flex flex-wrap gap-2" data-testid="incident-flags">
                     {detail.sos_flagged && (
                       <FlagChip icon={Siren} tone="var(--color-severity-critical)">Filed with the SOS button</FlagChip>
@@ -630,7 +636,7 @@ export function IncidentDetailModal({
                     {detail.reported_from_elsewhere && (
                       <FlagChip icon={MapPin} tone="var(--color-system-warning)">Reporter is not at the scene</FlagChip>
                     )}
-                    {reporter && !reporter.is_verified && (
+                    {reporter && !reporterVerified && (
                       <FlagChip icon={ShieldX} tone="var(--color-system-warning)">Reporter not verified</FlagChip>
                     )}
                     {reporter && reporter.sos_warning_count > 0 && (
@@ -768,24 +774,38 @@ export function IncidentDetailModal({
                         covers Biliran thinly. When the two disagree, these win,
                         so they are shown rather than hidden behind the address. */}
                     {view.showLocationDetail && detail.location?.coordinates && (
-                      <Row label="Coordinates" stacked>
-                        <span className="font-mono text-[12.5px] tabular-nums">
+                      <InfoTile
+                        action={(
+                          <a
+                            className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[12px] font-semibold text-[var(--color-system-info)] hover:underline"
+                            href={`https://www.google.com/maps?q=${detail.location.coordinates[1]},${detail.location.coordinates[0]}`}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            Open map <ExternalLink aria-hidden size={12} />
+                          </a>
+                        )}
+                        icon={Crosshair}
+                        label="Coordinates"
+                        testId="incident-coordinates"
+                      >
+                        <span className="font-mono text-[13px] tabular-nums">
                           {formatCoordinates(
                             detail.location.coordinates[1],
                             detail.location.coordinates[0],
                             geo,
                           )}
                         </span>
-                      </Row>
+                      </InfoTile>
                     )}
                     {/* The station's NAME is not repeated here. The panel beside
                         this column states it, measures the distance to it and
                         reports whether anyone there is on duty. The number
                         stays, because ringing the station is an action. */}
                     {detail.stations?.agencies?.contact_number && (
-                      <Row icon={Phone} label="Station contact" stacked>
+                      <InfoTile icon={Phone} label="Station contact" testId="incident-station-contact">
                         <HotlineLinks className="underline-offset-2" value={detail.stations.agencies.contact_number} />
-                      </Row>
+                      </InfoTile>
                     )}
                   </Section>
 
@@ -802,49 +822,56 @@ export function IncidentDetailModal({
                             </p>
                             <p
                               className="flex items-center gap-1 text-[12px] font-semibold"
-                              style={{ color: reporter.is_verified ? 'var(--color-system-success)' : 'var(--color-system-warning)' }}
+                              style={{ color: reporterVerified ? 'var(--color-system-success)' : 'var(--color-system-warning)' }}
                             >
-                              {reporter.is_verified ? <ShieldCheck size={13} /> : <ShieldX size={13} />}
-                              {reporter.is_verified ? 'Verified resident' : 'Unverified — identity not confirmed'}
+                              {reporterVerified ? <ShieldCheck size={13} /> : <ShieldX size={13} />}
+                              {reporterVerified ? 'Verified resident' : 'Unverified — identity not confirmed'}
                             </p>
                           </div>
                         </div>
-                        {/* A tel: link, and the largest thing on the card: the
-                            dispatcher's next action after reading the report is
-                            often to ring this number. */}
-                        {reporter.phone_number && (
-                          <div
-                            className="flex items-center gap-2.5 rounded-[10px] border px-3 py-2"
-                            data-testid="incident-phone"
-                            style={{
-                              borderColor: 'color-mix(in srgb, var(--color-system-success) 40%, transparent)',
-                              backgroundColor: 'color-mix(in srgb, var(--color-system-success) 9%, transparent)',
-                            }}
+                        {/* The reporter's Ziren code: they read it off their own
+                            report. Asked for on a call or by the crew on
+                            arrival, so nobody is identified by how they look or
+                            their gender (backend app/core/meet_code.py). */}
+                        {detail.meet_code && (
+                          <InfoTile
+                            icon={KeyRound}
+                            label="Ziren code — ask for it to confirm the reporter"
+                            testId="incident-meet-code"
+                            tone="var(--color-system-info)"
                           >
-                            <PhoneCall aria-hidden className="shrink-0" size={16} style={{ color: 'var(--color-system-success)' }} />
-                            <span className="min-w-0">
-                              <span className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Call the reporter</span>
-                              <span className="font-mono text-[15px] font-bold tabular-nums text-foreground">
-                                <MaskedContact
-                                  key={reporter.phone_number}
-                                  mask={privacy.maskContacts}
-                                  value={reporter.phone_number}
-                                />
-                              </span>
+                            <span className="font-mono text-[15px] font-bold tracking-[0.3em] tabular-nums">
+                              {detail.meet_code}
                             </span>
-                          </div>
+                          </InfoTile>
+                        )}
+                        {/* A tel: link: the dispatcher's next action after
+                            reading the report is often to ring this number. */}
+                        {reporter.phone_number && (
+                          <InfoTile
+                            icon={PhoneCall}
+                            label="Call the reporter"
+                            testId="incident-phone"
+                            tone="var(--color-system-success)"
+                          >
+                            <span className="font-mono text-[15px] font-bold tabular-nums">
+                              <MaskedContact
+                                key={reporter.phone_number}
+                                mask={privacy.maskContacts}
+                                value={reporter.phone_number}
+                              />
+                            </span>
+                          </InfoTile>
                         )}
                         {reporter.sos_warning_count > 0 && (
-                          <Row icon={AlertTriangle} label="False SOS history" stacked>
-                            <span style={{ color: 'var(--color-severity-critical)' }}>
-                              {reporter.sos_warning_count} prior false SOS
-                              {reporter.sos_suspended_until &&
-                                ` · suspended until ${formatDate(reporter.sos_suspended_until, display)}`}
-                            </span>
-                          </Row>
+                          <InfoTile icon={AlertTriangle} label="False SOS history" tone="var(--color-severity-critical)">
+                            {reporter.sos_warning_count} prior false SOS
+                            {reporter.sos_suspended_until &&
+                              ` · suspended until ${formatDate(reporter.sos_suspended_until, display)}`}
+                          </InfoTile>
                         )}
                         {reporter.emergency_contact_name && (
-                          <Row label="Emergency contact" stacked>
+                          <InfoTile icon={Contact} label="Emergency contact" testId="incident-emergency-contact">
                             {reporter.emergency_contact_name}
                             {reporter.emergency_contact_number && (
                               <>
@@ -857,7 +884,7 @@ export function IncidentDetailModal({
                                 />
                               </>
                             )}
-                          </Row>
+                          </InfoTile>
                         )}
                       </>
                     ) : (

@@ -98,9 +98,13 @@ _DETAIL_SELECT = (
     "verification_level, verification_method, verified_at, "
     "valid_id_type, valid_id_number, is_pwd, is_verified, "
     "emergency_contact_name, emergency_contact_number, "
-    "sos_warning_count, sos_suspended_until, "
+    "sos_warning_count, sos_suspended_until, selfie_image_path, "
     "barangays(name, municipality)"
 )
+
+#: How long the ID-card photo link lasts. Long enough to look at the card and
+#: print it; the dashboard asks again each time a resident is opened.
+PHOTO_URL_TTL_S = 900
 
 
 # ── Reading a row ────────────────────────────────────────────────────────────
@@ -329,6 +333,16 @@ def get_resident(user_id: str, *, current_user: dict | None = None) -> dict:
     row = _resident(db, user_id, _DETAIL_SELECT)
     _assert_scope(db, row, current_user)
     row.pop("role", None)
+    # The photo on the Ziren ID card: the selfie an administrator approved
+    # (user_service.decide_verification keeps it on approval). A short-lived
+    # link, never the storage path; none for an account not verified.
+    from app.services import user_service  # local: user_service is the bigger module
+
+    selfie = row.pop("selfie_image_path", None)
+    row["photo_url"] = (
+        user_service._signed_url("resident-ids", selfie, PHOTO_URL_TTL_S)
+        if selfie and int(row.get("verification_level") or 0) >= 2 else None
+    )
     row = _shape(row, _now())
 
     reports: list[dict] = []

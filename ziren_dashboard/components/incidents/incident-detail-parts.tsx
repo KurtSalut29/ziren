@@ -83,6 +83,48 @@ export function Section({
   );
 }
 
+/**
+ * One fact as a tinted box: an icon, a small label, the value, and an optional
+ * action at the right. "Where it is" and "Who reported it" both build from
+ * these, so the two cards side by side are made of the same parts and come
+ * out the same height (user report 2026-10-08: one card ended in a gap).
+ */
+export function InfoTile({
+  icon: Icon,
+  label,
+  tone,
+  action,
+  testId,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  /** Tints the box and icon. Defaults to a neutral grey. */
+  tone?: string;
+  action?: React.ReactNode;
+  testId?: string;
+  children: React.ReactNode;
+}) {
+  const color = tone ?? 'var(--color-text-secondary)';
+  return (
+    <div
+      className="flex min-w-0 items-center gap-2.5 rounded-[10px] border px-3 py-2"
+      data-testid={testId}
+      style={{
+        borderColor: `color-mix(in srgb, ${color} ${tone ? 38 : 22}%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${color} ${tone ? 8 : 5}%, transparent)`,
+      }}
+    >
+      <Icon aria-hidden className="shrink-0" size={16} style={{ color }} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="block min-w-0 break-words text-[13.5px] font-semibold leading-snug text-foreground">{children}</span>
+      </span>
+      {action && <span className="shrink-0">{action}</span>}
+    </div>
+  );
+}
+
 /** Label left, value right — one secondary fact per line. */
 export function Row({
   label,

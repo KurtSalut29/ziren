@@ -185,9 +185,6 @@ export function SupportPanel({
 
       <Card description="Everything that has a shortcut on this console." title="Keyboard">
         <RowList>
-          <Row icon={Keyboard} label="Search everything">
-            <span className="flex items-center gap-1"><Kbd>/</Kbd></span>
-          </Row>
           <Row icon={Keyboard} label="Show or hide the sidebar">
             <span className="flex items-center gap-1"><Kbd>Ctrl</Kbd><span className="text-muted-foreground">+</span><Kbd>B</Kbd></span>
           </Row>

@@ -233,10 +233,6 @@ class RegistrationRepository {
       }
     }
 
-    if (d.skippedVerification && out.isEmpty) {
-      out['residency_proof_type'] = 'none';
-    }
-
     return out;
   }
 

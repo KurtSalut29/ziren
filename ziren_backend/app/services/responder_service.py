@@ -16,6 +16,7 @@ from fastapi import HTTPException, status
 from supabase import Client
 
 from app.db.supabase_client import get_supabase
+from app.core.meet_code import meet_code
 from app.services import notification_service, responder_ack, responder_ops_service
 
 log = structlog.get_logger()
@@ -136,6 +137,9 @@ def get_incident_detail(incident_id: str, responder_id: str) -> dict:
         )
 
     row["ack"] = responder_ack.ack_state(row)
+    # Ask the reporter for it on arrival: identity by a code, never by how
+    # someone looks (app/core/meet_code.py).
+    row["meet_code"] = meet_code(row.get("id") or incident_id)
 
     # Standing local knowledge about reaching this place — cut bridges,
     # roads only a motorcycle fits down, dogs. A crew that learns about the

@@ -39,6 +39,10 @@ class PushRegistration {
   /// main.dart to reload the queue or the nearby list.
   static void Function(String kind, Map<String, dynamic> data)? onAlert;
 
+  /// A stored notice pushed while the app is OPEN (it carries the notice's
+  /// `type`). Wired in main.dart to read the notifications now.
+  static void Function(Map<String, dynamic> data)? onNotice;
+
   /// Before runApp: register the handler that raises a responder's alarm while
   /// the app is closed, and listen for alerts while it is open.
   ///
@@ -53,6 +57,10 @@ class PushRegistration {
       _foregroundSub = FirebaseMessaging.onMessage.listen((m) {
         final kind = m.data['ziren_alert'];
         if (kind is String) onAlert?.call(kind, m.data);
+        // A resident's notice (a verification decision, a warning, a message
+        // from the station). Not shown twice - the app reads its stored copy
+        // now and puts it on screen, instead of on the next 30-second poll.
+        if (m.data['type'] is String) onNotice?.call(m.data);
         // Weather reminder with the app open: still a notification, so it
         // is there after the resident leaves Home.
         if (m.data['ziren_weather'] != null) {

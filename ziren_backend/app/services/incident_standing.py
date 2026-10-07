@@ -55,8 +55,39 @@ def _refuse_if_suspended(suspended_until) -> None:
         )
 
 
+# Shown to a resident whose account an administrator has not verified yet.
+UNVERIFIED_MESSAGE = (
+    "Your account is not verified yet. Only residents verified by an "
+    "administrator can send reports. Add your valid ID and selfie from your "
+    "profile. In an emergency, call a hotline now."
+)
+
+
+def refuse_if_unverified(role, verification_level) -> None:
+    """Raise 403 for a resident an administrator has not verified (level 2).
+
+    Reversed on 2026-10-07 at the user's request: migration 012 said
+    verification must never gate reporting, and false reports from throwaway
+    accounts sent crews out. Now a resident reports only once an admin has
+    checked their ID; the app keeps the station hotlines one tap away for
+    anyone it refuses.
+
+    Only a real resident row with a real level counts. Staff accounts, and a
+    row the lookup could not read (a test double, a missing column), are not
+    refused: the same fail-open rule as the suspension check.
+    """
+    if role != "resident" or not isinstance(verification_level, int):
+        return
+    if verification_level < 2:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=UNVERIFIED_MESSAGE,
+        )
+
+
 def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
-    """Refuse a report from a resident whose account is suspended.
+    """Refuse a report from a resident whose account is suspended, or not yet
+    verified by an administrator.
 
     Suspension used to stop only the SOS button, so an account suspended for
     false reports could go on sending ordinary ones. It now stops every report.
@@ -69,7 +100,7 @@ def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
     try:
         result = (
             db.table("users")
-            .select("sos_suspended_until")
+            .select("sos_suspended_until, role, verification_level")
             .eq("id", reporter_id)
             .maybe_single()
             .execute()
@@ -80,6 +111,7 @@ def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
         return
     if isinstance(row, dict):
         _refuse_if_suspended(row.get("sos_suspended_until"))
+        refuse_if_unverified(row.get("role"), row.get("verification_level"))
 
 
 def _update_sos_timestamp(db: Client, reporter_id: str) -> None:

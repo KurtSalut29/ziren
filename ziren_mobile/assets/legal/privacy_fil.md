@@ -1,6 +1,6 @@
 # Paunawa sa Pagkapribado ng Datos
 
-**Bersyon 1.0 — epektibo simula 25 Agosto 2026**
+**Bersyon 1.1 — epektibo simula 8 Oktubre 2026**
 
 Ang Ziren ay isang sistema para sa pag-uulat ng emerhensiya at pagpapadala ng
 tulong sa Lalawigan ng Biliran. Ipinapaliwanag ng paunawang ito kung anong
@@ -90,10 +90,15 @@ para humingi ng tulong.
 
 ## 6. Gaano katagal namin itinatago
 
-- **Ang larawan ng inyong ID at mukha** ay buburahin kapag natapos nang suriin
-  ng administrator. Kung walang sumuri sa inyong account sa loob ng 90 araw,
+- **Ang larawan ng inyong ID** ay buburahin kapag natapos nang suriin ng
+  administrator. Kung walang sumuri sa inyong account sa loob ng 90 araw,
   buburahin pa rin ito. Ang mananatili ay ang uri at numero lamang ng ID,
   bilang tala ng kung ano ang sinuri.
+- **Ang larawan ng inyong mukha** ay buburahin din kapag hindi naaprubahan ang
+  inyong ID. Kapag naaprubahan, itatago ito bilang larawan sa inyong Ziren ID -
+  ang resident card na binubuksan ng administrator para makilala kayo - at
+  administrator lamang ang nakakakita nito, hindi ang mga responder o ang
+  publiko. Buburahin ito kasama ng inyong account.
 - **Mga ulat ng insidente** ay itinatago sa loob ng limang taon, bilang
   opisyal na tala ng serbisyong pang-emerhensiya.
 - **Ang inyong account** ay itinatago hanggang hilingin ninyong burahin.

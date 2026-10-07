@@ -1,6 +1,6 @@
 # Mga Tuntunin ng Paggamit
 
-**Bersyon 1.1 — epektibo simula 24 Setyembre 2026**
+**Bersyon 1.2 — epektibo simula 8 Oktubre 2026**
 
 Sa paggamit ng Ziren, sumasang-ayon kayo sa mga tuntuning ito. Mangyaring
 basahin ito bago gumawa ng account.
@@ -55,10 +55,12 @@ kayang magparehistro nang mag-isa.
 Humihingi kami ng balidong ID at larawan ng inyong mukha upang matiyak ng
 administrator na ang inyong account ay pag-aari ng tunay na taong nasa Biliran.
 
-**Maaari ninyo itong laktawan at makapag-uulat pa rin ng emerhensiya.** Ang
-beripikasyon ay nakakaapekto lamang sa nakikita ng dispatcher tungkol sa kung
-gaano kami katiyak sa inyong pagkakakilanlan. Hindi ito kailanman kondisyon
-para humingi ng tulong, at hindi nito naaantala ang ulat.
+**Ang beripikadong account lamang ang makakapagpadala ng ulat sa Ziren.**
+Dahil bawat ulat ay nagpapadala ng mga tagaresponde, kinukumpirma muna ng
+administrator na ang pangalan sa inyong account ay ang pangalan sa inyong ID, at
+na ang mukha sa inyong selfie ay ang mukha rito. Habang hinihintay ito, at
+anumang oras, maaari pa rin kayong tumawag sa mga emergency hotline - ipinapakita
+ito ng Ziren sa bawat screen kung saan nagsisimula ang ulat.
 
 Ang pagpapasa ng ID na hindi sa inyo, o binago, ay magreresulta sa
 pagsuspinde ng inyong account.

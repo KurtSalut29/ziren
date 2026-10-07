@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../shared/theme/app_tokens.dart';
-import '../../../shared/widgets/ziren_dialogs.dart';
-import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../../shared/widgets/ziren_button.dart';
 import '../../auth/presentation/widgets/auth_shell.dart';
 import '../domain/registration_draft.dart';
@@ -27,7 +25,6 @@ class RegistrationScaffold extends StatelessWidget {
     this.continueLabel = 'Continue',
     this.isLoading = false,
     this.footer,
-    this.showSkipVerification = false,
   });
 
   final RegStep step;
@@ -59,9 +56,6 @@ class RegistrationScaffold extends StatelessWidget {
   final String continueLabel;
   final bool isLoading;
   final Widget? footer;
-
-  /// Offered on the identity steps only. See [SkipVerificationLink].
-  final bool showSkipVerification;
 
   @override
   Widget build(BuildContext context) {
@@ -103,11 +97,6 @@ class RegistrationScaffold extends StatelessWidget {
             isLoading: isLoading,
             onPressed: onContinue,
           ),
-
-          if (showSkipVerification) ...[
-            const SizedBox(height: ZirenTokens.space16),
-            const SkipVerificationLink(),
-          ],
 
           if (footer != null) ...[
             const SizedBox(height: ZirenTokens.space16),
@@ -176,68 +165,6 @@ class _ProgressBar extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The escape hatch out of identity verification.
-///
-/// This is the concrete expression of the rule migration 012 states in
-/// capitals: verification must never gate reporting. Someone standing in front
-/// of a burning house cannot be made to find their barangay ID first.
-///
-/// It is a visible link, not a hidden gesture, and it says plainly what it
-/// costs. Burying it would mean the rule exists only on paper.
-class SkipVerificationLink extends StatelessWidget {
-  const SkipVerificationLink({super.key});
-
-  Future<void> _confirm(BuildContext context) async {
-    final t = AppLocalizations.of(context);
-    final draft = context.read<RegistrationDraft>();
-    final proceed = await showZirenDialog<bool>(
-      context,
-      icon: LucideIcons.shield_alert,
-      tone: ZirenTone.warning,
-      title: t.regSkipDialogTitle,
-      message: t.regSkipDialogBody,
-      // Going back is the one we want, so it is the filled button; skipping is a
-      // deliberate second act.
-      actions: [
-        ZirenDialogAction(
-          label: t.actionGoBack,
-          value: false,
-          kind: ZirenActionKind.primary,
-        ),
-        ZirenDialogAction(label: t.actionSkipForNow, value: true),
-      ],
-    );
-    if (proceed != true || !context.mounted) return;
-
-    draft.skippedVerification = true;
-    draft.validIdType = null;
-    draft.idImagePath = null;
-    draft.selfiePath = null;
-    draft.commit();
-    context.go(draft.afterSkip.path);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context);
-    return Center(
-      child: TextButton(
-        onPressed: () => _confirm(context),
-        child: Text(
-          t.regSkipLink,
-          style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-            color: ZirenTokens.textSecondary,
-            decoration: TextDecoration.underline,
-            decorationColor: ZirenTokens.textMuted,
-          ),
         ),
       ),
     );

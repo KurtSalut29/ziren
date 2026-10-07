@@ -7,25 +7,18 @@ import '../theme/app_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
-/// Invites a resident to finish identity verification.
+/// Tells a resident their account is not verified yet, and what to do.
 ///
 /// Why this exists
 /// ---------------
-/// Verification is optional by design — migration 012 is explicit that it must
-/// never gate reporting, and the registration flow has a visible "I need help
-/// right now" link past it. The cost of that choice is that someone who skips
-/// never hears about it again: their account works, nothing is wrong, and the
-/// system quietly accumulates unverified reporters.
+/// Since 2026-10-07 (user request) a resident reports only once an
+/// administrator has verified the account - false reports from throwaway
+/// accounts sent crews out. Until then, this is what explains why the report
+/// buttons ask them to verify first: on Home directly under the SOS button,
+/// and on Profile. It cannot be dismissed while it is true.
 ///
-/// This is how coverage is earned instead of enforced. It asks, in the two
-/// places a resident actually looks, and it can be dismissed.
-///
-/// What it must never do
-/// ---------------------
-/// Block anything, cover the SOS button, or read as an error. An unverified
-/// account is in good standing. The palette is deliberately systemInfo rather
-/// than a severity colour: severity tokens mean something specific in this
-/// product and must not be spent on a nudge.
+/// The palette stays systemInfo rather than a severity colour: severity tokens
+/// mean something specific in this product and must not be spent on a notice.
 class VerificationBanner extends StatelessWidget {
   const VerificationBanner({super.key, this.onDismiss});
 

@@ -176,9 +176,9 @@ class _SosConfirmScreenState extends State<SosConfirmScreen> {
                     provider.isCoolingDown
                         ? null
                         : provider.category == null
-                        ? 'Choose what kind of emergency above to continue'
+                        ? AppLocalizations.of(context).sosChooseKindHint
                         : !_legalConfirmed
-                        ? 'Confirm the checkbox above to continue'
+                        ? AppLocalizations.of(context).sosConfirmHint
                         : null,
                 onPressed: _submit,
               ),
@@ -320,8 +320,8 @@ class _CategoryPicker extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
-              child: QuickReportSectionLabel('What kind of emergency?'),
+            Expanded(
+              child: QuickReportSectionLabel(t.sosWhatKind),
             ),
             if (selected == null)
               Container(
@@ -330,9 +330,9 @@ class _CategoryPicker extends StatelessWidget {
                   color: ZirenTokens.severityCritical.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
-                  'REQUIRED',
-                  style: TextStyle(
+                child: Text(
+                  t.badgeRequired,
+                  style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: ZirenTokens.severityCritical,
@@ -344,7 +344,7 @@ class _CategoryPicker extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          'Helps send the right team to the right place.',
+          t.sosWhatKindHelp,
           style: TextStyle(fontSize: 12, color: ZirenTokens.textMuted),
         ),
         const SizedBox(height: ZirenTokens.space8),
@@ -976,9 +976,9 @@ class _ConfirmRow extends StatelessWidget {
                     color: ZirenTokens.systemError.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
-                    'REQUIRED',
-                    style: TextStyle(
+                  child: Text(
+                    AppLocalizations.of(context).badgeRequired,
+                    style: const TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w800,
                       color: ZirenTokens.systemError,
@@ -1209,8 +1209,7 @@ class _FallbackReminder extends StatelessWidget {
         const SizedBox(width: ZirenTokens.space8),
         Expanded(
           child: Text(
-            'For life-threatening emergencies, also call 911 directly. This '
-            'report is reviewed by a human dispatcher — not AI.',
+            AppLocalizations.of(context).sosFallbackReminder,
             style: TextStyle(
               fontSize: 12,
               height: 1.4,

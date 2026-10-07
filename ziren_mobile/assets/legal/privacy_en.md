@@ -1,6 +1,6 @@
 # Data Privacy Notice
 
-**Version 1.0 — effective 25 August 2026**
+**Version 1.1 — effective 8 October 2026**
 
 Ziren is an emergency incident reporting and dispatch system for the Province
 of Biliran. This notice explains what personal information we collect, why we
@@ -83,10 +83,13 @@ your identity. It is never a permission to ask for help.
 
 ## 6. How long we keep it
 
-- **Your ID and face photographs** are deleted once an administrator has
-  finished checking them. If nobody reviews your account within 90 days, they
-  are deleted anyway. Only the ID type and number remain, as a record of what
-  was checked.
+- **Your ID photograph** is deleted once an administrator has finished
+  checking it. If nobody reviews your account within 90 days, it is deleted
+  anyway. Only the ID type and number remain, as a record of what was checked.
+- **Your face photograph** is deleted too if your ID is not approved. If it is
+  approved, it is kept as the picture on your Ziren ID - the resident card
+  administrators open to recognise you - and is seen only by administrators,
+  never by responders or the public. It is deleted with your account.
 - **Incident reports** are kept for five years, as operational records of the
   emergency service.
 - **Your account** is kept until you ask us to delete it.

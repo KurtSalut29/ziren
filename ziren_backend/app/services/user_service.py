@@ -609,7 +609,8 @@ def decide_verification(
 
     [purge_images] honours the retention rule migration 015 states plainly --
     the scan exists to be checked once, and keeping it afterwards is the
-    failure mode. The row keeps valid_id_type and valid_id_number as the audit
+    failure mode. On approval the selfie is the one image kept, as the
+    photo on the resident's Ziren ID card. The row keeps valid_id_type and valid_id_number as the audit
     trail of what was checked.
     """
     db: Client = get_supabase()
@@ -650,10 +651,14 @@ def decide_verification(
     }
 
     if purge_images:
-        for bucket, key in (
-            ("resident-ids", "valid_id_image_path"),
-            ("resident-ids", "selfie_image_path"),
-        ):
+        # An APPROVED resident's selfie is kept: it is the photo on their Ziren
+        # ID card, which the dashboard shows to administrators only (user
+        # request 2026-10-08). The ID scan goes either way - it was there to be
+        # checked once. A rejected submission keeps neither.
+        purge = [("resident-ids", "valid_id_image_path")]
+        if not approve:
+            purge.append(("resident-ids", "selfie_image_path"))
+        for bucket, key in purge:
             path = current.data.get(key)
             if not path:
                 continue
@@ -691,6 +696,8 @@ def decide_verification(
                 detail="Could not record the decision.",
             )
 
+    _tell_resident_of_decision(user_id, approve=approve, at=now)
+
     return {
         "id": user_id,
         "verification_level": payload["verification_level"],
@@ -702,6 +709,35 @@ def decide_verification(
         "reviewed_at": now,
         "decision": review["verification_decision"],
     }
+
+
+def _tell_resident_of_decision(user_id: str, *, approve: bool, at: str) -> None:
+    """The resident hears the decision at once, on the phone (user report
+    2026-10-08: an approval changed nothing on the phone until the app was
+    reopened, and nothing told them). Since 2026-10-07 approval is what lets a
+    resident report, so it is not a detail to find out by chance.
+
+    The app reads the type, refreshes the account and shows its own words in
+    the resident's language; the title and body here are what the closed-app
+    push shows. Never raises: the decision is already recorded.
+    """
+    from app.services import notification_service
+
+    if approve:
+        type_ = "account.verified"
+        title = "Your account is verified"
+        body = "You can now send emergency reports in Ziren."
+    else:
+        type_ = "account.verification_rejected"
+        title = "Your ID could not be verified"
+        body = "Open Ziren and send a clear photo of your ID and a new selfie."
+    try:
+        notification_service.create_for_user(
+            str(user_id), type_=type_, title=title, body=body,
+            link=None, is_important=True, metadata={"at": at},
+        )
+    except Exception:
+        log.error("verification.notify_failed", user_id=user_id, approve=approve, exc_info=True)
 
 
 def _missing_review_columns(exc: Exception) -> bool:

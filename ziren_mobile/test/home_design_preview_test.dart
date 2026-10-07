@@ -46,7 +46,7 @@ void main() {
                   tone: ZirenTokens.connectivityOffline,
                 ),
                 HomeIdentityHeader(
-                  name: 'kurtsalut18',
+                  name: 'Maria',
                   hasUnread: true,
                   onBellTap: () {},
                   bellLabel: 'Notifications',
