@@ -180,7 +180,7 @@ export default function RespondersPage() {
 
   return (
     <div className="min-h-full">
-      <div className="space-y-4 px-6 py-5 md:px-7">
+      <div className="flex flex-col gap-4 px-6 py-5 md:px-7">
         <DemoTarget id="resp:stats"><StatStrip>
           <StatCell
             icon={<Users size={12} strokeWidth={2} />}

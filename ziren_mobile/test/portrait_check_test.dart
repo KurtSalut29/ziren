@@ -113,6 +113,38 @@ void main() {
     });
   });
 
+  group('how many people are in the photo', () {
+    FaceBox box(double l, double t, double size) =>
+        (left: l, top: t, right: l + size, bottom: t + size);
+
+    test('one face is one person', () {
+      expect(countPeople([box(100, 100, 200)]), 1);
+      expect(countPeople([]), 0);
+    });
+
+    test('a tiny second detection (a tie, a corner avatar) is not a person', () {
+      // User report 2026-10-08: a plain 2x2 of one man refused as "only you".
+      expect(countPeople([box(100, 100, 200), box(20, 500, 60)]), 1);
+    });
+
+    test('the same face found twice is one person', () {
+      expect(countPeople([box(100, 100, 200), box(110, 105, 190)]), 1);
+    });
+
+    test('two people of similar size are two, whichever is listed first', () {
+      expect(countPeople([box(0, 100, 150), box(300, 100, 200)]), 2);
+      // A sheet of four 2x2 copies.
+      expect(
+        countPeople([box(0, 0, 100), box(150, 0, 100), box(0, 150, 100), box(150, 150, 100)]),
+        4,
+      );
+    });
+
+    test('someone behind, at a fifth of the size or more, still counts', () {
+      expect(countPeople([box(100, 100, 200), box(400, 50, 95)]), 2);
+    });
+  });
+
   group('is it the same person as the selfie', () {
     test('only a clear mismatch refuses; an admin settles the rest', () {
       expect(judgePortraitMatch('no_match'), PortraitProblem.notSamePerson);

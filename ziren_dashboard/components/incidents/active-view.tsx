@@ -707,7 +707,7 @@ export function ActiveIncidentsView() {
         </div>
       </div>
 
-      <div className="space-y-4 px-6 py-5 md:px-7">
+      <div className="flex flex-col gap-4 px-6 py-5 md:px-7">
         {error && <Alert variant="error" message={error} />}
 
         {atCap && (

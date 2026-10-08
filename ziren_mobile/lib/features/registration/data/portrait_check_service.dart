@@ -108,9 +108,26 @@ class PortraitCheckService {
       debugPrint('[PortraitCheckService] $e');
       return PortraitFacts.unreadable;
     }
-    if (faces.length != 1) return PortraitFacts(faceCount: faces.length);
+    // People, not detections: a tiny or duplicate detection is not a second
+    // person (see countPeople). The largest face is the one measured.
+    final people = countPeople([
+      for (final f in faces)
+        (
+          left: f.boundingBox.left,
+          top: f.boundingBox.top,
+          right: f.boundingBox.right,
+          bottom: f.boundingBox.bottom,
+        ),
+    ]);
+    if (people != 1) return PortraitFacts(faceCount: people);
 
-    final face = faces.single;
+    final face = faces.reduce(
+      (a, b) =>
+          a.boundingBox.width * a.boundingBox.height >=
+                  b.boundingBox.width * b.boundingBox.height
+              ? a
+              : b,
+    );
     final box = face.boundingBox;
     final measured = await compute(_backgroundJob, (
       bytes: bytes,

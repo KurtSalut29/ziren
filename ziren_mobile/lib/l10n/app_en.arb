@@ -3171,7 +3171,7 @@
   "@portraitUnreadable": {"description": "First-week reporting + 2x2 ID photo (user request 2026-10-08)"},
   "portraitNoFace": "We could not find a face in that photo.",
   "@portraitNoFace": {"description": "First-week reporting + 2x2 ID photo (user request 2026-10-08)"},
-  "portraitManyFaces": "Only you should be in the photo.",
+  "portraitManyFaces": "Only you should be in the photo. If it is a screenshot or a sheet of several 2x2 copies, use a photo of just one 2x2.",
   "@portraitManyFaces": {"description": "First-week reporting + 2x2 ID photo (user request 2026-10-08)"},
   "portraitTooFar": "Your face is too small. Use a photo of your head and shoulders, or move closer.",
   "@portraitTooFar": {"description": "First-week reporting + 2x2 ID photo (user request 2026-10-08)"},

@@ -5042,7 +5042,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get portraitNoFace => 'Walang makitang mukha sa litratong iyan.';
 
   @override
-  String get portraitManyFaces => 'Ikaw lang dapat ang nasa litrato.';
+  String get portraitManyFaces => 'Ikaw lang dapat ang nasa litrato. Kung screenshot ito o sheet na maraming kopya ng 2x2, gumamit ng litrato ng iisang 2x2 lang.';
 
   @override
   String get portraitTooFar => 'Masyadong maliit ang mukha mo. Gumamit ng litrato ng ulo at balikat, o lumapit pa.';

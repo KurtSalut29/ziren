@@ -356,7 +356,7 @@ class _Guide extends StatelessWidget {
   }
 }
 
-/// The photo as it will sit on the card: square.
+/// The photo as picked, whole, in a square frame.
 class _Preview extends StatelessWidget {
   const _Preview({required this.path, required this.busy, this.onRemove});
 
@@ -374,7 +374,13 @@ class _Preview extends StatelessWidget {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(ZirenTokens.radius12),
-              child: Image.file(File(path), fit: BoxFit.cover),
+              // The WHOLE photo, not a square crop of it: the check reads
+              // all of it, and a crop hid the second face that refused a
+              // screenshot (user report 2026-10-08).
+              child: ColoredBox(
+                color: ZirenTokens.surfaceRaised,
+                child: Image.file(File(path), fit: BoxFit.contain),
+              ),
             ),
           ),
           if (busy)

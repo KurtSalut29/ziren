@@ -247,7 +247,7 @@ export function NarrativeLibrary() {
         </div>
       </div>
 
-      <div className="space-y-5 px-6 py-5 md:px-7">
+      <div className="flex flex-col gap-5 px-6 py-5 md:px-7">
         {/* ── Reports / Awaiting — the same NavTabs every multi-view screen on
             this console uses (Operational Area, Verification), so a tab reads
             the same way wherever it appears. */}

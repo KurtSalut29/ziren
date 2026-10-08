@@ -402,7 +402,7 @@ export function IncidentHistoryView({ initialStatus }: { initialStatus?: string 
         </div>
       </div>
 
-      <div className="space-y-5 px-6 py-5 md:px-7">
+      <div className="flex flex-col gap-5 px-6 py-5 md:px-7">
         {error && (
           <div className="flex items-start gap-3">
             <div className="flex-1"><Alert message={error} variant="error" /></div>

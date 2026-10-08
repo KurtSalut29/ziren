@@ -394,7 +394,7 @@ export default function OverviewPage() {
     <div className="min-h-full">
       <DemoTarget id="overview:greeting"><GreetingHeader /></DemoTarget>
 
-      <div className="space-y-4 px-6 pb-5 pt-3 md:px-7">
+      <div className="flex flex-col gap-4 px-6 pb-5 pt-3 md:px-7">
         {error && (
           <div className="flex items-start gap-3">
             <div className="flex-1"><Alert variant="error" message={error} /></div>

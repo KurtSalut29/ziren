@@ -1788,7 +1788,7 @@
   "portraitProblemTitle": "Gumamit ng ibang litrato",
   "portraitUnreadable": "Hindi mabuksan ang litratong iyan. Sumubok ng iba.",
   "portraitNoFace": "Walang makitang mukha sa litratong iyan.",
-  "portraitManyFaces": "Ikaw lang dapat ang nasa litrato.",
+  "portraitManyFaces": "Ikaw lang dapat ang nasa litrato. Kung screenshot ito o sheet na maraming kopya ng 2x2, gumamit ng litrato ng iisang 2x2 lang.",
   "portraitTooFar": "Masyadong maliit ang mukha mo. Gumamit ng litrato ng ulo at balikat, o lumapit pa.",
   "portraitTooClose": "Putol ang mukha mo. Ipakita ang buong ulo at itaas ng balikat.",
   "portraitTurned": "Tumingin nang diretso sa camera, hindi patagilid.",

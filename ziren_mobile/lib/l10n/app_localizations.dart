@@ -9532,7 +9532,7 @@ abstract class AppLocalizations {
   /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
   ///
   /// In en, this message translates to:
-  /// **'Only you should be in the photo.'**
+  /// **'Only you should be in the photo. If it is a screenshot or a sheet of several 2x2 copies, use a photo of just one 2x2.'**
   String get portraitManyFaces;
 
   /// First-week reporting + 2x2 ID photo (user request 2026-10-08)

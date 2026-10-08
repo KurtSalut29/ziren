@@ -5054,7 +5054,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get portraitNoFace => 'We could not find a face in that photo.';
 
   @override
-  String get portraitManyFaces => 'Only you should be in the photo.';
+  String get portraitManyFaces => 'Only you should be in the photo. If it is a screenshot or a sheet of several 2x2 copies, use a photo of just one 2x2.';
 
   @override
   String get portraitTooFar => 'Your face is too small. Use a photo of your head and shoulders, or move closer.';

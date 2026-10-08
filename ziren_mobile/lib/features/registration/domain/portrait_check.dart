@@ -139,6 +139,52 @@ const double kPortraitMaxBackgroundStd = 52;
 const double kPortraitTexturedEdge = 4;
 const double kPortraitTexturedStd = 35;
 
+/// A face ML Kit found, as its box: left, top, right, bottom.
+typedef FaceBox = ({double left, double top, double right, double bottom});
+
+/// A second face smaller than this share of the main face's area is not a
+/// second person in an ID photo: a pattern on a tie, a printed logo, a tiny
+/// profile picture in the corner of a screenshot. A real person beside or
+/// behind the subject is far larger than that.
+const double kPortraitOtherFaceMinShare = 0.2;
+
+/// How many people are in the photo: the largest face, plus every other face
+/// at least [kPortraitOtherFaceMinShare] of its size that is not the same face
+/// found twice (boxes overlapping by more than 30%).
+///
+/// User report 2026-10-08: a plain 2x2 of one person was refused with "Only
+/// you should be in the photo", because every detection counted, however
+/// small.
+int countPeople(List<FaceBox> boxes) {
+  if (boxes.isEmpty) return 0;
+  double area(FaceBox b) =>
+      ((b.right - b.left).clamp(0, double.infinity) *
+              (b.bottom - b.top).clamp(0, double.infinity))
+          .toDouble();
+  final sorted = [...boxes]..sort((a, b) => area(b).compareTo(area(a)));
+  final main = sorted.first;
+  final people = <FaceBox>[main];
+  for (final b in sorted.skip(1)) {
+    if (area(b) < kPortraitOtherFaceMinShare * area(main)) continue;
+    if (people.any((p) => _overlap(p, b) > 0.3)) continue;
+    people.add(b);
+  }
+  return people.length;
+}
+
+/// Intersection over union of two boxes.
+double _overlap(FaceBox a, FaceBox b) {
+  final w = math.min(a.right, b.right) - math.max(a.left, b.left);
+  final h = math.min(a.bottom, b.bottom) - math.max(a.top, b.top);
+  if (w <= 0 || h <= 0) return 0;
+  final inter = w * h;
+  final union =
+      (a.right - a.left) * (a.bottom - a.top) +
+      (b.right - b.left) * (b.bottom - b.top) -
+      inter;
+  return union <= 0 ? 0 : inter / union;
+}
+
 /// The photo half of the rule. Null: it is an ID-style photo.
 PortraitProblem? judgePortraitPhoto(PortraitFacts f) {
   if (f.faceCount < 0) return PortraitProblem.unreadable;
