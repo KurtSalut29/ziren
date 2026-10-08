@@ -382,3 +382,30 @@ def test_no_card_photo_for_an_account_not_verified(db):
 def test_no_photo_on_file_is_no_photo(db):
     out = svc.get_resident(RES, current_user=PROV)
     assert out["photo_url"] is None
+
+
+def test_the_card_photo_is_the_2x2_photo_when_there_is_one(db):
+    """2026-10-08: the 2x2 ID photo is the card's picture. The selfie is only
+    the fallback for residents approved before it existed."""
+    _row(db).update(
+        selfie_image_path="selfies/a01.jpg",
+        id_checks={"portrait": {"path": f"{RES}/portrait_9.jpg", "verdict": "match"}},
+    )
+    with patch("app.services.user_service._signed_url", return_value="https://signed/p") as sign:
+        out = svc.get_resident(RES, current_user=PROV)
+    assert out["photo_url"] == "https://signed/p"
+    assert sign.call_args.args[:2] == ("resident-ids", f"{RES}/portrait_9.jpg")
+    assert "id_checks" not in out
+
+
+def test_the_list_says_when_an_unverified_residents_week_ends(db):
+    """The admin sees who is about to be, or already is, refused for not
+    being verified (resident_trust.GRACE_DAYS)."""
+    joined = datetime.now(timezone.utc) - timedelta(days=9)
+    _row(db).update(verification_level=0, created_at=joined.isoformat())
+    out = svc.get_resident(RES, current_user=PROV)
+    assert out["reporting_locked"] is True
+    assert out["reporting_grace_ends_at"].startswith((joined + timedelta(days=7)).date().isoformat())
+    _row(db).update(verification_level=2)
+    out = svc.get_resident(RES, current_user=PROV)
+    assert out["reporting_locked"] is False and out["reporting_grace_ends_at"] is None

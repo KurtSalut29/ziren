@@ -27,6 +27,9 @@ class ProfileModel {
     this.avatarUrl,
     this.warningCount = 0,
     this.suspendedUntil,
+    this.reportingGraceEndsAt,
+    this.reportingLockedByServer = false,
+    this.verificationPending,
   });
 
   final String id;
@@ -62,8 +65,8 @@ class ProfileModel {
   /// Tiered trust: 0 unverified, 1 phone-verified, 2 resident-verified.
   ///
   /// Shown to the holder as progress and to a dispatcher as reporter
-  /// credibility. It is NEVER a permission — an unverified resident can report
-  /// an emergency exactly like anyone else (migration 012).
+  /// credibility. Since 2026-10-08 it is also a permission once a resident's
+  /// first week is over - see [reportingLocked].
   final int verificationLevel;
   final String? validIdType;
   final String? residencyProofType;
@@ -83,6 +86,41 @@ class ProfileModel {
   /// read [isSuspended], not this.
   final DateTime? suspendedUntil;
 
+  /// The end of an unverified resident's first week, when the server stops
+  /// taking their reports until an administrator verifies them (backend
+  /// app/core/resident_trust.py, GRACE_DAYS). Null once verified, and for
+  /// staff.
+  final DateTime? reportingGraceEndsAt;
+
+  /// The server's own answer at the time the profile was read.
+  final bool reportingLockedByServer;
+
+  /// An unverified resident whose first week is over: the server refuses
+  /// their reports. Read by the clock as well as from the server, because a
+  /// profile loaded on day 6 is still on screen on day 8.
+  bool get reportingLocked {
+    if (role != 'resident' || isVerifiedResident) return false;
+    if (reportingLockedByServer) return true;
+    final ends = reportingGraceEndsAt;
+    return ends != null && !DateTime.now().isBefore(ends);
+  }
+
+  /// Unverified, and still inside the first week.
+  bool get inReportingGrace =>
+      role == 'resident' &&
+      !isVerifiedResident &&
+      reportingGraceEndsAt != null &&
+      !reportingLocked;
+
+  /// Whole days left in the first week, counting today: 1 on the last day.
+  int get graceDaysLeft {
+    final ends = reportingGraceEndsAt;
+    if (ends == null) return 0;
+    final left = ends.difference(DateTime.now());
+    if (left.isNegative) return 0;
+    return (left.inHours / 24).ceil().clamp(1, 7);
+  }
+
   /// Suspended from sending reports right now. Unlike [verificationLevel],
   /// this IS a permission: the server refuses a suspended account's report.
   bool get isSuspended =>
@@ -92,15 +130,28 @@ class ProfileModel {
   bool get suspensionIndefinite =>
       isSuspended && suspendedUntil!.year >= 9000;
 
-  /// Has this account submitted anything for an admin to check?
-  ///
-  /// Distinguishes "skipped verification entirely" from "submitted and
-  /// waiting", which the two need different prompts for.
-  bool get hasSubmittedEvidence =>
-      validIdType != null ||
-      (residencyProofType != null && residencyProofType != 'none');
+  /// The server's answer to "is a submission waiting for an administrator"
+  /// (an ID photo on file, no decision yet). Null from a server older than
+  /// 2026-10-08.
+  final bool? verificationPending;
 
-  bool get isVerifiedResident => verificationLevel >= 2;
+  /// Is a submission waiting for an admin to check?
+  ///
+  /// Distinguishes "has not verified" from "submitted and waiting", which
+  /// need different prompts. Read from the server when it says: a rejection
+  /// leaves valid_id_type in place, so the old reading below kept a rejected
+  /// resident on "in review" with no way to send their ID again.
+  bool get hasSubmittedEvidence =>
+      verificationPending ??
+      (validIdType != null ||
+          (residencyProofType != null && residencyProofType != 'none'));
+
+  /// What an administrator's ID approval writes (backend
+  /// app/core/resident_trust.py). NOT `is_verified`, which on a resident is an
+  /// account-active switch.
+  static const int verifiedLevel = 2;
+
+  bool get isVerifiedResident => verificationLevel >= verifiedLevel;
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
@@ -132,6 +183,11 @@ class ProfileModel {
       suspendedUntil: DateTime.tryParse(
         json['sos_suspended_until'] as String? ?? '',
       ),
+      reportingGraceEndsAt: DateTime.tryParse(
+        json['reporting_grace_ends_at'] as String? ?? '',
+      ),
+      reportingLockedByServer: json['reporting_locked'] as bool? ?? false,
+      verificationPending: json['verification_pending'] as bool?,
     );
   }
 
@@ -174,6 +230,9 @@ class ProfileModel {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       warningCount: warningCount,
       suspendedUntil: suspendedUntil,
+      reportingGraceEndsAt: reportingGraceEndsAt,
+      reportingLockedByServer: reportingLockedByServer,
+      verificationPending: verificationPending,
     );
   }
 }

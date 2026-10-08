@@ -13,9 +13,10 @@ import structlog
 from fastapi import HTTPException, status
 from supabase import Client
 
+from app.core import id_portrait
 from app.db.supabase_client import get_supabase
 from app.models.user import UserProfile, UpdateProfileRequest
-from app.services import audit_service
+from app.services import audit_service, face_match_service
 
 log = structlog.get_logger()
 
@@ -40,6 +41,10 @@ _PROFILE_SELECT = (
     # 012 -- residency + accessibility
     "verification_level, verification_method, verified_at, "
     "valid_id_type, valid_id_number, "
+    # Only to answer "is a submission waiting for an admin" (UserProfile
+    # .verification_pending); the path itself is dropped before the row
+    # leaves, like avatar_path.
+    "valid_id_image_path, "
     "is_pwd, pwd_id_number, disability_types, accessibility_notes, "
     "preferred_contact_mode, "
     # 033 -- avatar_path is a storage key, never selected out raw to the
@@ -280,6 +285,28 @@ def _normalise_id_number(raw: str | None) -> str | None:
     return cleaned if len(cleaned) >= 4 else None
 
 
+#: Verdicts the server scored. no_face_on_id / no_face_in_selfie are decided on
+#: the phone before any score, and stay true whatever the alignment was.
+_SCORED_VERDICTS = ("match", "uncertain", "no_match")
+
+
+def _discount_stale_face_match(row: dict) -> None:
+    """A verdict scored from a pre-2026-10-08 app's crops is not evidence.
+
+    Those crops were the whole photo shrunk, not the face
+    (face_match_service.ALIGN_VERSION), so nearly every pair read "match". Shown
+    as not checked - the admin compares by eye - with the original kept beside
+    it for the record.
+    """
+    if row.get("face_match_verdict") in _SCORED_VERDICTS and not face_match_service.trusted_model(
+        row.get("face_match_model")
+    ):
+        row["face_match_stale_verdict"] = row["face_match_verdict"]
+        row["face_match_verdict"] = "unavailable"
+        row["face_match_score"] = None
+        row["face_match_stale"] = True
+
+
 def _attach_review_flags(db: Client, rows: list[dict]) -> None:
     """
     Mark each waiting submission with why a human should — or need not — look.
@@ -380,6 +407,10 @@ def _attach_review_flags(db: Client, rows: list[dict]) -> None:
         reports = reported.get(str(row["id"]), 0)
         sos = int(row.get("sos_warning_count") or 0)
         missing = not row.get("valid_id_image_path") or not row.get("selfie_image_path")
+        # The 2x2 ID photo (id_portrait), required since 2026-10-08. A
+        # submission from before that has none, and cannot be approved until
+        # the resident adds one - so it is its own bucket, like missing_evidence.
+        missing_portrait = id_portrait.portrait_path(row) is None
 
         verdict = row.get("face_match_verdict")
         # 'uncertain' and 'unavailable' are NOT flags. Both mean "a human
@@ -403,6 +434,7 @@ def _attach_review_flags(db: Client, rows: list[dict]) -> None:
             "report_count": reports,
             "sos_warning_count": sos,
             "missing_evidence": missing,
+            "missing_portrait": missing_portrait,
             "face_mismatch": face_mismatch,
             "id_unreadable": id_unreadable,
             # Missing evidence is deliberately NOT a reason to review: there is
@@ -480,6 +512,7 @@ def list_verification_queue(
     for row in rows:
         barangay = row.pop("barangays", None)
         row["barangay"] = barangay.get("name") if isinstance(barangay, dict) else None
+        _discount_stale_face_match(row)
 
     _attach_review_flags(db, rows)
 
@@ -530,11 +563,16 @@ def get_verification_detail(user_id: str, *, current_user: dict | None = None) -
 
     row = result.data
     _assert_verification_scope(row, current_user)
+    _discount_stale_face_match(row)
     barangay = row.pop("barangays", None)
     row["barangay"] = barangay.get("name") if isinstance(barangay, dict) else None
 
     row["id_image_url"] = _signed_url("resident-ids", row.get("valid_id_image_path"))
     row["selfie_url"] = _signed_url("resident-ids", row.get("selfie_image_path"))
+    # The 2x2 ID photo for the Ziren ID card, and what the phone found when it
+    # compared it with the selfie. See app/core/id_portrait.py.
+    row["portrait_url"] = _signed_url(id_portrait.BUCKET, id_portrait.portrait_path(row))
+    row["portrait"] = id_portrait.portrait_summary(row)
     row["last_review"] = _last_review(db, user_id)
 
     # The reviewer's actual job is comparing the typed name to the card, so
@@ -590,6 +628,13 @@ def _signed_url(bucket: str, path: str | None, expires: int = 300) -> str | None
         return None
 
 
+PORTRAIT_REQUIRED_MESSAGE = (
+    "This resident has not added a 2x2 ID photo yet, so there is no picture "
+    "for their Ziren ID. Reject the submission so they are asked to send the "
+    "ID, a selfie and a 2x2 ID photo again."
+)
+
+
 def decide_verification(
     user_id: str,
     *,
@@ -609,15 +654,16 @@ def decide_verification(
 
     [purge_images] honours the retention rule migration 015 states plainly --
     the scan exists to be checked once, and keeping it afterwards is the
-    failure mode. On approval the selfie is the one image kept, as the
-    photo on the resident's Ziren ID card. The row keeps valid_id_type and valid_id_number as the audit
-    trail of what was checked.
+    failure mode. On approval the 2x2 ID photo is the one image kept, as the
+    photo on the resident's Ziren ID card, and an approval without one is
+    refused (422). The row keeps valid_id_type and valid_id_number as the
+    audit trail of what was checked.
     """
     db: Client = get_supabase()
 
     current = (
         db.table("users")
-        .select("id, role, full_name, valid_id_image_path, selfie_image_path, municipality_address")
+        .select("id, role, full_name, valid_id_image_path, selfie_image_path, municipality_address, id_checks")
         .eq("id", user_id)
         .single()
         .execute()
@@ -633,6 +679,16 @@ def decide_verification(
                    "Responders are approved via /agency/responders.",
         )
     _assert_verification_scope(current.data, current_user)
+
+    portrait = id_portrait.portrait_path(current.data)
+    if approve and portrait is None:
+        # The approval is what puts a photo on the Ziren ID card, and since
+        # 2026-10-08 that photo is the 2x2 ID photo, not the selfie. A
+        # submission without one is sent back rather than approved bare.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=PORTRAIT_REQUIRED_MESSAGE,
+        )
 
     now = datetime.now(timezone.utc).isoformat()
     reviewer_name = (current_user or {}).get("full_name")
@@ -651,15 +707,17 @@ def decide_verification(
     }
 
     if purge_images:
-        # An APPROVED resident's selfie is kept: it is the photo on their Ziren
-        # ID card, which the dashboard shows to administrators only (user
-        # request 2026-10-08). The ID scan goes either way - it was there to be
-        # checked once. A rejected submission keeps neither.
-        purge = [("resident-ids", "valid_id_image_path")]
-        if not approve:
-            purge.append(("resident-ids", "selfie_image_path"))
-        for bucket, key in purge:
-            path = current.data.get(key)
+        # What is kept on APPROVAL is the 2x2 ID photo: it is the picture on
+        # the resident's Ziren ID card, which the dashboard shows to
+        # administrators only. The ID scan and the selfie were there to be
+        # checked once and go either way (2026-10-08; until then the selfie
+        # was kept as the card photo). A rejected submission keeps nothing.
+        purge = [("resident-ids", current.data.get("valid_id_image_path"), "valid_id_image_path"),
+                 ("resident-ids", current.data.get("selfie_image_path"), "selfie_image_path")]
+        if not approve and portrait:
+            purge.append((id_portrait.BUCKET, portrait, None))
+            payload["id_checks"] = id_portrait.without_portrait(current.data.get("id_checks"))
+        for bucket, path, key in purge:
             if not path:
                 continue
             try:
@@ -669,7 +727,8 @@ def decide_verification(
                 # The column is cleared regardless, and migration 015's
                 # retention query will surface anything left behind.
                 pass
-            payload[key] = None
+            if key:
+                payload[key] = None
 
     reviewer = current_user or {"id": reviewer_id}
     with audit_service.action(
@@ -730,7 +789,7 @@ def _tell_resident_of_decision(user_id: str, *, approve: bool, at: str) -> None:
     else:
         type_ = "account.verification_rejected"
         title = "Your ID could not be verified"
-        body = "Open Ziren and send a clear photo of your ID and a new selfie."
+        body = "Open Ziren and send a clear photo of your ID, a new selfie and a 2x2 ID photo."
     try:
         notification_service.create_for_user(
             str(user_id), type_=type_, title=title, body=body,

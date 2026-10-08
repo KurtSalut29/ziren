@@ -17,16 +17,19 @@ import '../../registration/domain/id_catalogue.dart';
 import '../../registration/domain/id_name_match.dart';
 import '../../registration/domain/id_photo_check.dart';
 import '../../registration/presentation/id_check_notice.dart';
+import '../../registration/presentation/portrait_picker.dart';
 import '../data/profile_repository.dart';
 import '../domain/profile_provider.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 
-/// Finish identity verification for an account that skipped it at signup.
+/// Finish identity verification for an account that chose "Verify later" at
+/// signup, or whose submission an administrator rejected.
 ///
-/// This is the other half of the "I need help right now" escape hatch. That
-/// link only defensible if there is a way back — otherwise skipping is
-/// permanent and the province ends up with a population of level-0 accounts.
+/// The other half of "Verify later": a new account reports for its first 7
+/// days, and after that only once an administrator has approved what is sent
+/// from here - the ID, a selfie and the 2x2 ID photo for the Ziren ID card
+/// (user request 2026-10-08).
 ///
 /// Deliberately simpler than the registration equivalent
 /// -----------------------------------------------------
@@ -69,6 +72,10 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
   String? _idType;
   File? _idImage;
   File? _selfie;
+
+  /// The 2x2 ID photo, and its checks once accepted (see [PortraitPicker]).
+  String? _portraitPath;
+  Map<String, dynamic>? _portraitChecks;
 
   bool _submitting = false;
   bool _reading = false;
@@ -152,6 +159,9 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
       // Required, as at registration: the administrator compares the face on
       // the ID with this one.
       _selfie != null &&
+      // The picture for the Ziren ID card, checked against that selfie.
+      _portraitPath != null &&
+      _portraitChecks != null &&
       !_submitting;
 
   Future<void> _pickId() async {
@@ -288,6 +298,17 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
         );
         payload['liveness_method'] = 'none';
       }
+      // Replaces whatever checks an earlier submission left: they described
+      // another card and another photo. See app/core/id_portrait.py.
+      payload['id_checks'] = {
+        'portrait': {
+          ..._portraitChecks!,
+          'path': await _uploads.uploadPortrait(
+            file: File(_portraitPath!),
+            userId: userId,
+          ),
+        },
+      };
 
       // Straight to Supabase, not through FastAPI. verification_level is
       // frozen by RLS either way (migration 012), so this cannot be used to
@@ -463,6 +484,18 @@ class _VerifyAccountScreenState extends State<VerifyAccountScreen> {
                         emptyLabel: t.verifyTakeSelfie,
                         onTap: _pickSelfie,
                         onRemove: () => setState(() => _selfie = null),
+                      ),
+
+                      const SizedBox(height: ZirenTokens.space20),
+                      _Label(t.portraitLabel),
+                      const SizedBox(height: ZirenTokens.space8),
+                      PortraitPicker(
+                        selfiePath: _selfie?.path,
+                        onChanged:
+                            (path, checks) => setState(() {
+                              _portraitPath = path;
+                              _portraitChecks = checks;
+                            }),
                       ),
 
                       const SizedBox(height: ZirenTokens.space32),

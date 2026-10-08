@@ -175,49 +175,55 @@
   /* NOTE: the KPI delta aliases are deliberately NOT declared in this
      block — see the :root rule below @theme for why. */
 
-  /* ── Severity (4-tier, ≥4.5:1 on #FAFAFA) ──────────── */
+  /* ── Severity (4-tier) ─────────────────────────────── */
+  /* Contrast is MEASURED, not claimed: lib/theme/contrast.test.ts fails
+     if any text colour here drops under 4.5:1 on the page, a card, a
+     raised panel, its own -bg, or a 10% chip tint. Until 2026-10-08 these
+     lines said 5.9 / 4.7 / 4.6 / 5.2:1 while the real values on the page
+     were 4.5 / 3.0 / 2.7 / 3.1:1 - every severity chip in light mode was
+     below the minimum. Same hues, darkened only as far as needed. */
   /* RULE: always pair with icon + label — never color alone */
-  --color-severity-critical:         #DC2626;   /* 5.9:1 fire, mass casualty  */
+  --color-severity-critical:         #CA2121;   /* 4.65:1 worst; fire, mass casualty */
   --color-severity-critical-bg:      #FEF2F2;
   --color-severity-critical-border:  #FECACA;
 
-  --color-severity-high:             #D97706;   /* 4.7:1 injury, armed        */
+  --color-severity-high:             #A05804;   /* 4.61:1 worst; injury, armed */
   --color-severity-high-bg:          #FFFBEB;
   --color-severity-high-border:      #FDE68A;
 
-  --color-severity-medium:           #CA8A04;   /* 4.6:1 property, minor      */
+  --color-severity-medium:           #8E6103;   /* 4.63:1 worst; property, minor */
   --color-severity-medium-bg:        #FEFCE8;
   --color-severity-medium-border:    #FEF08A;
 
-  --color-severity-low:              #16A34A;   /* 5.2:1 informational        */
+  --color-severity-low:              #107837;   /* 4.73:1 worst; informational */
   --color-severity-low-bg:           #F0FDF4;
   --color-severity-low-border:       #BBF7D0;
 
   /* ── Workflow status (incident lifecycle) ────────────── */
   /* RULE: status ≠ severity. A low-severity incident can   */
   /* be "processing"; a critical one can be "resolved".     */
-  --color-status-received:           #6B7280;
+  --color-status-received:           #646B78;   /* 4.62:1 worst */
   --color-status-received-bg:        #F9FAFB;
 
   /* processing = indigo, NOT sky-blue (#0EA5E9 = PNP only) */
   --color-status-processing:         #4F46E5;
   --color-status-processing-bg:      #EEF2FF;
 
-  --color-status-dispatched:         #FC5A05;   /* brand orange — key action  */
+  --color-status-dispatched:         #B74102;   /* brand hue, text-safe 4.68:1 (#FC5A05 was 2.6:1) */
   --color-status-dispatched-bg:      #FFF0E8;
 
-  --color-status-resolved:           #16A34A;
+  --color-status-resolved:           #107837;   /* 4.73:1 worst */
   --color-status-resolved-bg:        #F0FDF4;
 
-  --color-status-cancelled:          #9CA3AF;
+  --color-status-cancelled:          #626A79;   /* 4.66:1 worst (was 2.2:1) */
   --color-status-cancelled-bg:       #F3F4F6;
 
   /* ── System / validation ─────────────────────────────── */
-  --color-system-success:            #16A34A;
+  --color-system-success:            #107837;   /* 4.73:1 worst */
   --color-system-success-bg:         #F0FDF4;
-  --color-system-warning:            #D97706;
+  --color-system-warning:            #A05804;   /* 4.61:1 worst */
   --color-system-warning-bg:         #FFFBEB;
-  --color-system-error:              #DC2626;
+  --color-system-error:              #CA2121;   /* 4.65:1 worst */
   --color-system-error-bg:           #FEF2F2;
   /* The text/icon colour for a SOLID --color-system-success fill (Accept,
      Mark resolved). White here, same as --color-text-inverse — this hue is
@@ -225,7 +231,7 @@
      token because dark mode's success green is much lighter (see below) and
      needs the opposite text colour on the exact same fill. */
   --color-on-success:                #FFFFFF;
-  --color-system-info:               #0EA5E9;
+  --color-system-info:               #0A709E;   /* 4.66:1 worst (was 2.4:1) */
   --color-system-info-bg:            #F0F9FF;
 
   /* ── Connectivity mode ───────────────────────────────── */

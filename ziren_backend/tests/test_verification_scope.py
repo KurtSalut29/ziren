@@ -130,6 +130,7 @@ def test_decide_verification_allows_own_municipality():
     resident_row = {
         "id": NAVAL_RESIDENT, "role": "resident", "municipality_address": "Naval",
         "valid_id_image_path": None, "selfie_image_path": None,
+        "id_checks": {"portrait": {"path": f"{NAVAL_RESIDENT}/portrait_1.jpg"}},
     }
     db = _db(agency_municipality="Naval", resident_row=resident_row)
     with patch("app.services.user_service.get_supabase", return_value=db), \

@@ -754,8 +754,9 @@ export interface QueueIncident {
   } | null;
   users: {
     full_name: string;
-    is_verified: boolean;
-    /** 2 = an administrator approved the resident's ID. What "verified" means here. */
+    /** Not sent for a reporter: an account-active switch, not the ID check. */
+    is_verified?: boolean;
+    /** 2 = an administrator approved the resident's ID. Read it through isIdVerified(). */
     verification_level?: number | null;
     sos_warning_count: number;
     created_at: string;
@@ -1042,8 +1043,9 @@ export interface IncidentDetail extends QueueIncident, Partial<AfterAction> {
     id: string;
     full_name: string;
     phone_number: string | null;
-    is_verified: boolean;
-    /** 2 = an administrator approved the resident's ID. What "verified" means here. */
+    /** Not sent for a reporter: an account-active switch, not the ID check. */
+    is_verified?: boolean;
+    /** 2 = an administrator approved the resident's ID. Read it through isIdVerified(). */
     verification_level?: number | null;
     sos_warning_count: number;
     sos_suspended_until: string | null;

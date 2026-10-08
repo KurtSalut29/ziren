@@ -35,6 +35,7 @@ import { severityKey } from '@/components/map/map-legend';
 import {
   CancelModal, DispatchModal, FlagSosModal, RejectReportModal,
 } from '@/components/incidents/dispatch-action-modals';
+import { isIdVerified } from '@/lib/residents/trust';
 
 export default function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -423,9 +424,9 @@ export default function IncidentDetailPage({ params }: { params: Promise<{ id: s
               )}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11.5px] font-semibold">
                 <span className="flex items-center gap-1.5"
-                  style={{ color: incident.users.is_verified ? 'var(--color-system-success)' : 'var(--color-text-muted)' }}>
-                  {incident.users.is_verified ? <Check size={12} strokeWidth={2.5} /> : <AlertTriangle size={12} strokeWidth={2} />}
-                  {incident.users.is_verified ? 'Verified reporter' : 'Unverified reporter'}
+                  style={{ color: isIdVerified(incident.users) ? 'var(--color-system-success)' : 'var(--color-text-muted)' }}>
+                  {isIdVerified(incident.users) ? <Check size={12} strokeWidth={2.5} /> : <AlertTriangle size={12} strokeWidth={2} />}
+                  {isIdVerified(incident.users) ? 'Verified reporter' : 'Unverified reporter'}
                 </span>
                 {incident.users.sos_warning_count > 0 && (
                   <span className="flex items-center gap-1.5" style={{ color: 'var(--color-severity-critical)' }}>

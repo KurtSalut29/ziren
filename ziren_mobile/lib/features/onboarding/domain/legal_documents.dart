@@ -29,11 +29,15 @@ abstract final class LegalDocuments {
   /// Bumping either of these re-prompts every existing account.
   // 1.1 (2026-10-08): an approved selfie is kept as the photo on the Ziren
   // ID card (administrators only); the ID scan is still deleted.
-  static const String privacyVersion = '1.1';
+  // 1.2 (2026-10-08): the 2x2 ID photo is collected and kept as that photo
+  // instead; the selfie is deleted once checked; the face comparison is said.
+  static const String privacyVersion = '1.2';
   // 1.1 (2026-09-24): the connectivity section no longer describes an SMS
   // delivery path — the app now sends reports over the internet only.
   // 1.2 (2026-10-08): only a verified account sends reports (was: anyone).
-  static const String termsVersion = '1.2';
+  // 1.3 (2026-10-08): a new account reports for its first 7 days, then only
+  // once verified; the 2x2 ID photo is part of verification.
+  static const String termsVersion = '1.3';
 
   /// Filipino is the app's default and the language most of Biliran reads
   /// most comfortably; English is the fallback for anything not translated.

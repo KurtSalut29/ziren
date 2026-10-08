@@ -116,6 +116,11 @@ class FaceMatchClient {
             body: jsonEncode({
               'id_face': idFaceB64,
               'selfie_face': selfieFaceB64,
+              // The crop alignment these were made with. Builds before
+              // 2026-10-08 mirrored the landmarks and sent the whole photo
+              // shrunk; the server no longer scores those (ALIGN_VERSION in
+              // face_match_service.py, templateOrder in face_align_service).
+              'align': 2,
             }),
             // Generous. This is one CPU inference on a 13 MB network, but it
             // may be the first call after a cold start, which pays the model

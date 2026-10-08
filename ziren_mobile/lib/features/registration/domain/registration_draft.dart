@@ -17,6 +17,7 @@ enum RegStep {
   idType,
   idCapture,
   selfie,
+  portrait,
   review,
 }
 
@@ -30,6 +31,7 @@ extension RegStepRoute on RegStep {
     RegStep.idType => '/register/id-type',
     RegStep.idCapture => '/register/id-capture',
     RegStep.selfie => '/register/selfie',
+    RegStep.portrait => '/register/portrait',
     RegStep.review => '/register/review',
   };
 }
@@ -140,10 +142,21 @@ class RegistrationDraft extends ChangeNotifier {
   String? livenessMethod;
   DateTime? livenessAssertedAt;
 
-  // There is no skipping the ID and selfie any more (user request,
-  // 2026-10-07): an account reports only once an administrator has checked
-  // it. A draft saved by an older build with "skipped" set is read as not
-  // skipped, and the review step sends it back for the missing evidence.
+  /// A resident who chose "Verify later" (user request 2026-10-08): the
+  /// account is created without identity evidence and may report for its
+  /// first 7 days (backend app/core/resident_trust.py), then only once an
+  /// administrator has verified it from the Profile > Verify screen. Nothing
+  /// half-collected is sent: it is all of the evidence or none of it.
+  ///
+  /// (2026-10-07 removed skipping outright; a draft saved then has it false.)
+  bool skippedVerification = false;
+
+  /// The 2x2 ID photo - the picture on the Ziren ID card - and what checking
+  /// it found (domain/portrait_check.dart): stored under
+  /// users.id_checks.portrait. Null checks mean "not checked against the
+  /// current selfie", which is not a pass.
+  String? portraitPath;
+  Map<String, dynamic>? portraitChecks;
 
   /// Text ML Kit read off the ID, kept so the review screen can show what was
   /// matched and what was not. Never trusted over what the person typed.
@@ -206,9 +219,21 @@ class RegistrationDraft extends ChangeNotifier {
       RegStep.idType,
       RegStep.idCapture,
       RegStep.selfie,
+      RegStep.portrait,
       RegStep.review,
     ];
   }
+
+  /// Where "Verify later" lands: the review, past every identity step.
+  RegStep get afterSkip => RegStep.review;
+
+  /// The identity steps, where "Verify later" is offered (residents only).
+  static const identitySteps = {
+    RegStep.idType,
+    RegStep.idCapture,
+    RegStep.selfie,
+    RegStep.portrait,
+  };
 
   int indexOf(RegStep step) {
     final i = steps.indexOf(step);
@@ -224,29 +249,51 @@ class RegistrationDraft extends ChangeNotifier {
   }
 
   RegStep? previous(RegStep from) {
-    final i = steps.indexOf(from);
+    var i = steps.indexOf(from);
     if (i <= 0) return null;
-    return steps[i - 1];
+    // After "Verify later" the identity steps were passed over, so Back from
+    // the review passes over them too. Walking back into one with the flag
+    // still set would let them fill it in and then send none of it; the
+    // review's "Verify now instead" is the way back in.
+    while (i > 0) {
+      final step = steps[--i];
+      if (!(skippedVerification &&
+          !isResponder &&
+          identitySteps.contains(step))) {
+        return step;
+      }
+    }
+    return null;
   }
 
   /// The first step whose evidence is missing, or null when the account can
-  /// be submitted: the ID (photo, type, a name that matches it) for a
-  /// resident, the agency ID (with a matching name) for a responder, and a
-  /// selfie for both.
+  /// be submitted: the ID (photo, type, a name that matches it), the selfie
+  /// and a checked 2x2 ID photo for a resident; the agency ID (with a
+  /// matching name) and a selfie for a responder. A resident who chose
+  /// "Verify later" sends none of it, so nothing is missing.
   RegStep? get missingEvidence {
     if (isResponder) {
       if (agencyIdImagePath == null || agencyIdNameMatched != true) {
         return RegStep.responderDetails;
       }
-    } else {
-      if (validIdType == null) return RegStep.idType;
-      if (idImagePath == null || ocrNameMatched != true) {
-        return RegStep.idCapture;
-      }
+      if (selfiePath == null) return RegStep.selfie;
+      return null;
+    }
+    if (skippedVerification) return null;
+    if (validIdType == null) return RegStep.idType;
+    if (idImagePath == null || ocrNameMatched != true) {
+      return RegStep.idCapture;
     }
     if (selfiePath == null) return RegStep.selfie;
+    if (portraitPath == null || portraitChecks == null) {
+      return RegStep.portrait;
+    }
     return null;
   }
+
+  /// Whether identity evidence goes with the account: a responder's always,
+  /// a resident's unless they chose "Verify later".
+  bool get sendsIdentityEvidence => isResponder || !skippedVerification;
 
   // ── Mutation ────────────────────────────────────────────────
 
@@ -288,6 +335,9 @@ class RegistrationDraft extends ChangeNotifier {
     selfiePath = null;
     livenessMethod = null;
     livenessAssertedAt = null;
+    skippedVerification = false;
+    portraitPath = null;
+    portraitChecks = null;
     ocrRawText = null;
     ocrNameMatched = null;
     idNumberSource = null;
@@ -340,6 +390,9 @@ class RegistrationDraft extends ChangeNotifier {
     'selfiePath': selfiePath,
     'livenessMethod': livenessMethod,
     'livenessAssertedAt': livenessAssertedAt?.toIso8601String(),
+    'skippedVerification': skippedVerification,
+    'portraitPath': portraitPath,
+    'portraitChecks': portraitChecks,
     'ocrNameMatched': ocrNameMatched,
     'idNumberSource': idNumberSource,
     'idChecks': idChecks,
@@ -389,6 +442,9 @@ class RegistrationDraft extends ChangeNotifier {
     livenessAssertedAt = DateTime.tryParse(
       m['livenessAssertedAt'] as String? ?? '',
     );
+    skippedVerification = m['skippedVerification'] as bool? ?? false;
+    portraitPath = m['portraitPath'] as String?;
+    portraitChecks = (m['portraitChecks'] as Map?)?.cast<String, dynamic>();
     ocrNameMatched = m['ocrNameMatched'] as bool?;
     idNumberSource = m['idNumberSource'] as String?;
     idChecks = (m['idChecks'] as Map?)?.cast<String, dynamic>();

@@ -196,8 +196,9 @@ class UserProfile(BaseModel):
     sos_suspended_until:        datetime | None = None
     # Phase 012 — structured residency.
     # verification_level is tiered trust: 0 unverified, 1 phone-verified,
-    # 2 resident-verified. It is shown to dispatchers as reporter credibility
-    # and MUST NOT be used to gate incident submission.
+    # 2 resident-verified. Shown to dispatchers as reporter credibility, and
+    # since 2026-10-08 it gates reporting once a resident's first week is over
+    # (see reporting_locked below).
     barangay_id:                UUID | None = None
     verification_level:         int        = 0
     verification_method:        str | None = None
@@ -217,6 +218,20 @@ class UserProfile(BaseModel):
     # the client. None until the user uploads a picture; the app falls back
     # to initials.
     avatar_url:                 str | None = None
+
+    # 2026-10-08 -- a new resident may report for their first week unverified
+    # (app/core/resident_trust.GRACE_DAYS). Computed from role, created_at and
+    # verification_level in model_validate, never stored: the end of that week
+    # (None once verified, and for staff), and whether it has passed, which is
+    # when the server starts refusing their reports.
+    reporting_grace_ends_at:    datetime | None = None
+    reporting_locked:           bool       = False
+    # A submission is waiting in the verification queue: an ID photo is on
+    # file and no decision has been made on it. A rejection purges the photo,
+    # so a rejected resident reads False here and is asked to verify again -
+    # the app used to read valid_id_type, which a rejection leaves in place,
+    # and showed "in review" forever.
+    verification_pending:       bool       = False
 
     # Phase 020 -- structured identity, consent record, verification evidence.
     #
@@ -284,6 +299,18 @@ class UserProfile(BaseModel):
                 # reference table is authoritative, so prefer it.
                 if barangays.get("municipality"):
                     obj["municipality_address"] = barangays["municipality"]
+
+            from app.core.resident_trust import grace_ends_at, grace_expired
+            role = obj.get("role")
+            level = obj.get("verification_level")
+            created = obj.get("created_at")
+            ends = grace_ends_at(role, level, created)
+            obj["reporting_grace_ends_at"] = ends
+            obj["reporting_locked"] = grace_expired(role, level, created)
+            scan = obj.pop("valid_id_image_path", None)
+            obj["verification_pending"] = bool(scan) and not (
+                isinstance(level, int) and level >= 2
+            )
 
         return super().model_validate(obj, *args, **kwargs)
 

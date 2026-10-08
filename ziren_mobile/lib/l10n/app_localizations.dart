@@ -440,13 +440,13 @@ abstract class AppLocalizations {
   /// No description provided for @consentSummaryReporting.
   ///
   /// In en, this message translates to:
-  /// **'Reports can be sent once an administrator verifies your account. Emergency hotlines always work.'**
+  /// **'New accounts can send reports for their first 7 days. After that, reports can be sent once an administrator verifies your account. Emergency hotlines always work.'**
   String get consentSummaryReporting;
 
   /// No description provided for @consentSummaryPhotos.
   ///
   /// In en, this message translates to:
-  /// **'Your ID photo is deleted once checked. Your face photo stays private, as the picture on your Ziren ID that only administrators see.'**
+  /// **'Your ID photo and selfie are deleted once checked. Your 2x2 ID photo stays private, as the picture on your Ziren ID that only administrators see.'**
   String get consentSummaryPhotos;
 
   /// No description provided for @consentSummaryNotHotline.
@@ -1904,7 +1904,7 @@ abstract class AppLocalizations {
   /// No description provided for @regVerificationSkipped.
   ///
   /// In en, this message translates to:
-  /// **'Verification skipped'**
+  /// **'Verifying later'**
   String get regVerificationSkipped;
 
   /// No description provided for @valueNotGiven.
@@ -2036,13 +2036,13 @@ abstract class AppLocalizations {
   /// No description provided for @regSkippedNotice.
   ///
   /// In en, this message translates to:
-  /// **'Your account will work straight away and you can report emergencies. Finish verification later from your profile.'**
+  /// **'You can send reports for 7 days. Verify your account from your profile before then, or reporting pauses until an administrator verifies you.'**
   String get regSkippedNotice;
 
   /// No description provided for @regSkipDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Skip verification for now?'**
+  /// **'Verify later?'**
   String get regSkipDialogTitle;
 
   /// No description provided for @actionGoBack.
@@ -2054,19 +2054,19 @@ abstract class AppLocalizations {
   /// No description provided for @actionSkipForNow.
   ///
   /// In en, this message translates to:
-  /// **'Skip for now'**
+  /// **'Verify later'**
   String get actionSkipForNow;
 
   /// No description provided for @regSkipDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Your account will be created and you can report emergencies straight away.\n\nA dispatcher will see that your identity has not been checked yet. You can finish this any time from your profile.'**
+  /// **'Your account will be created and you can send reports for the next 7 days.\n\nAfter 7 days, only verified accounts can report. Before then, add your valid ID, a selfie and a 2x2 ID photo from your profile.'**
   String get regSkipDialogBody;
 
   /// No description provided for @regSkipLink.
   ///
   /// In en, this message translates to:
-  /// **'I need help right now - skip this'**
+  /// **'Verify later (within 7 days)'**
   String get regSkipLink;
 
   /// No description provided for @profilePersonalInfo.
@@ -2348,19 +2348,19 @@ abstract class AppLocalizations {
   /// No description provided for @verifyIntro.
   ///
   /// In en, this message translates to:
-  /// **'Only residents verified by an administrator can send reports. Show a valid ID with your name on it and take a selfie - an administrator compares the two.'**
+  /// **'New accounts can send reports for 7 days; after that, only residents verified by an administrator can. Show a valid ID with your name on it, take a selfie and add a 2x2 ID photo - an administrator compares them.'**
   String get verifyIntro;
 
   /// No description provided for @verifySentBody.
   ///
   /// In en, this message translates to:
-  /// **'An administrator will check your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.'**
+  /// **'An administrator will check your ID. Once it is approved, you can always send reports. In an emergency, call a hotline now.'**
   String get verifySentBody;
 
   /// No description provided for @verifyPrivacyNote.
   ///
   /// In en, this message translates to:
-  /// **'Your photos are private and never shown to responders. The ID photo is deleted once an administrator has checked it; your selfie is kept as the picture on your Ziren ID.'**
+  /// **'Your photos are private and never shown to responders. The ID photo and the selfie are deleted once an administrator has checked them; your 2x2 ID photo is kept as the picture on your Ziren ID.'**
   String get verifyPrivacyNote;
 
   /// No description provided for @bannerInReview.
@@ -2390,13 +2390,13 @@ abstract class AppLocalizations {
   /// No description provided for @bannerInReviewBody.
   ///
   /// In en, this message translates to:
-  /// **'An administrator is checking your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.'**
+  /// **'An administrator is checking your ID. You can send reports again as soon as it is approved. In an emergency, call a hotline now.'**
   String get bannerInReviewBody;
 
   /// No description provided for @bannerFinishBody.
   ///
   /// In en, this message translates to:
-  /// **'Add your valid ID and a selfie. Reports can be sent once an administrator verifies your account. In an emergency, call a hotline now.'**
+  /// **'Your 7 days to report without verifying are over. Add your valid ID, a selfie and a 2x2 ID photo; you can report again once an administrator verifies you. In an emergency, call a hotline now.'**
   String get bannerFinishBody;
 
   /// No description provided for @badgeRequired.
@@ -9094,19 +9094,19 @@ abstract class AppLocalizations {
   /// Verified-only reporting and ID name match (2026-10-07)
   ///
   /// In en, this message translates to:
-  /// **'Your ID and selfie are needed to finish registering. Ziren checks every account so that emergency reports come from real people.'**
+  /// **'Your ID, selfie and 2x2 ID photo are needed to verify your account - or tap \"Verify later\" to finish within 7 days.'**
   String get regVerificationRequired;
 
   /// Verified-only reporting and ID name match (2026-10-07)
   ///
   /// In en, this message translates to:
-  /// **'Verify your account to send reports'**
+  /// **'Your 7 days to verify are over'**
   String get reportNeedsVerificationTitle;
 
   /// Verified-only reporting and ID name match (2026-10-07)
   ///
   /// In en, this message translates to:
-  /// **'To keep false reports out, only residents verified by an administrator can send reports. Add your valid ID and a selfie. In an emergency right now, call a hotline.'**
+  /// **'New accounts can send reports for their first 7 days. To report again, verify your account: add your valid ID, a selfie and a 2x2 ID photo. In an emergency right now, call a hotline.'**
   String get reportNeedsVerificationBody;
 
   /// Verified-only reporting and ID name match (2026-10-07)
@@ -9118,7 +9118,7 @@ abstract class AppLocalizations {
   /// Verified-only reporting and ID name match (2026-10-07)
   ///
   /// In en, this message translates to:
-  /// **'Your ID is being checked. You can send reports as soon as an administrator approves it. In an emergency right now, call a hotline.'**
+  /// **'Your 7 days are over and your ID is still being checked. You can send reports again as soon as an administrator approves it. In an emergency right now, call a hotline.'**
   String get reportPendingVerificationBody;
 
   /// Verified-only reporting and ID name match (2026-10-07)
@@ -9262,7 +9262,7 @@ abstract class AppLocalizations {
   /// Verification decision notice (user report 2026-10-08)
   ///
   /// In en, this message translates to:
-  /// **'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, and a new selfie.'**
+  /// **'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, a new selfie and a 2x2 ID photo.'**
   String get accountVerifyRejectedBody;
 
   /// Verification decision notice (user report 2026-10-08)
@@ -9402,6 +9402,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'today'**
   String get weatherMeterToday;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day left to verify your account} other{{days} days left to verify your account}}'**
+  String bannerGraceTitle(int days);
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Last day to verify your account'**
+  String get bannerGraceLastDay;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'You can send reports until {date}. After that, only verified accounts can report. Add your valid ID, a selfie and a 2x2 ID photo.'**
+  String bannerGraceBody(String date);
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'An administrator is checking your ID. You can send reports until {date}, and after that as soon as you are approved.'**
+  String bannerGraceReviewBody(String date);
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Reports paused until you are verified'**
+  String get bannerLockedTitle;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your 2x2 ID photo'**
+  String get portraitStepTitle;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'This is the picture on your Ziren ID. Use a 2x2 ID photo, or take one now.'**
+  String get portraitStepSubtitle;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'2x2 ID photo'**
+  String get portraitLabel;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Like a 2x2 ID photo'**
+  String get portraitGuideTitle;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Plain background, like a white wall'**
+  String get portraitGuidePlain;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Face the camera, head straight, eyes open'**
+  String get portraitGuideFace;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Only you, from the shoulders up'**
+  String get portraitGuideOnlyYou;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'No sunglasses, cap or face mask'**
+  String get portraitGuideNoCover;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get portraitTakePhoto;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from gallery'**
+  String get portraitChoosePhoto;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your photo and comparing it with your selfie…'**
+  String get portraitChecking;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good - the same face as your selfie. This goes on your Ziren ID.'**
+  String get portraitAccepted;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Photo accepted. An administrator will compare it with your selfie.'**
+  String get portraitAcceptedReview;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Please use another photo'**
+  String get portraitProblemTitle;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'We could not open that photo. Try another one.'**
+  String get portraitUnreadable;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find a face in that photo.'**
+  String get portraitNoFace;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Only you should be in the photo.'**
+  String get portraitManyFaces;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your face is too small. Use a photo of your head and shoulders, or move closer.'**
+  String get portraitTooFar;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your face is cut off. Show your whole head and the top of your shoulders.'**
+  String get portraitTooClose;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Look straight at the camera, not to the side.'**
+  String get portraitTurned;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your head straight, not tilted.'**
+  String get portraitTilted;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your eyes open, and take off sunglasses.'**
+  String get portraitEyesClosed;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Your eyes, nose and mouth must be clearly visible. Take off a mask or anything covering your face.'**
+  String get portraitNoFeatures;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'The background must be plain, like in a 2x2 ID photo. Stand in front of a plain wall.'**
+  String get portraitBusyBackground;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'This does not look like the person in your selfie. Use a 2x2 photo of yourself.'**
+  String get portraitNotSamePerson;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'Take your selfie first, so we can compare it with this photo.'**
+  String get portraitNoSelfie;
+
+  /// First-week reporting + 2x2 ID photo (user request 2026-10-08)
+  ///
+  /// In en, this message translates to:
+  /// **'2x2 ID photo attached - it goes on your Ziren ID.'**
+  String get regPortraitAttached;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

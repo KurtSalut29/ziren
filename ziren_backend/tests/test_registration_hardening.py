@@ -135,26 +135,73 @@ def test_verification_level_defaults_to_zero():
     )
 
 
-def test_reporting_needs_an_admin_verified_resident():
+def test_reporting_needs_verification_after_the_first_week():
     """
-    Reversed 2026-10-07 at the user's request: false reports from throwaway
-    accounts sent crews out, so a resident reports only once an administrator
-    has verified them (verification_level 2). The app keeps the hotlines one
-    tap away for anyone refused.
+    2026-10-07: a resident reported only once an administrator verified them.
+    2026-10-08: softened - a new resident may report for their first 7 days,
+    and after that only an approval lets them report again. A submission still
+    waiting for an admin (level 0 or 1) does not.
     """
     import pytest
+    from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException
+    from app.core.resident_trust import GRACE_DAYS
     from app.services.incident_standing import refuse_if_unverified, UNVERIFIED_MESSAGE
 
+    now = datetime.now(timezone.utc)
+    new = (now - timedelta(days=GRACE_DAYS) + timedelta(minutes=5)).isoformat()
+    old = (now - timedelta(days=GRACE_DAYS, minutes=5)).isoformat()
+
+    assert GRACE_DAYS == 7
     for level in (0, 1):
+        refuse_if_unverified("resident", level, new)        # first week: allowed
         with pytest.raises(HTTPException) as e:
-            refuse_if_unverified("resident", level)
+            refuse_if_unverified("resident", level, old)    # week over: refused
         assert e.value.status_code == 403
         assert e.value.detail == UNVERIFIED_MESSAGE
-    refuse_if_unverified("resident", 2)          # verified: allowed
+    refuse_if_unverified("resident", 2, old)                # verified: allowed again
     for role in ("responder", "agency_admin", "provincial_admin"):
-        refuse_if_unverified(role, 0)            # staff are not residents
-    refuse_if_unverified("resident", None)       # unreadable: fails open
+        refuse_if_unverified(role, 0, old)                  # staff are not residents
+    refuse_if_unverified("resident", None, old)             # unreadable level: fails open
+    refuse_if_unverified("resident", 0, None)               # no sign-up time: fails open
+    refuse_if_unverified("resident", 0, "not a date")
+
+
+def test_grace_window_edges():
+    """The week ends exactly GRACE_DAYS after sign-up, in UTC, whatever offset
+    the row's timestamp was written with."""
+    from datetime import datetime, timezone
+    from app.core.resident_trust import grace_ends_at, grace_expired
+
+    joined = "2026-10-01T08:00:00+08:00"          # 00:00 UTC
+    ends = grace_ends_at("resident", 0, joined)
+    assert ends == datetime(2026, 10, 8, 0, 0, tzinfo=timezone.utc)
+    assert not grace_expired("resident", 0, joined, now=datetime(2026, 10, 7, 23, 59, tzinfo=timezone.utc))
+    assert grace_expired("resident", 0, joined, now=datetime(2026, 10, 8, 0, 0, tzinfo=timezone.utc))
+    assert grace_ends_at("resident", 2, joined) is None      # verified: no deadline
+    assert grace_ends_at("responder", 0, joined) is None
+
+
+def test_profile_tells_the_app_when_the_week_ends():
+    """/users/me carries the deadline, so the app can count the days down and
+    gate the report button by the same rule the server applies."""
+    from datetime import datetime, timedelta, timezone
+    from app.models.user import UserProfile
+
+    base = {
+        "id": "00000000-0000-0000-0000-000000000001", "email": "a@b.c",
+        "full_name": "Maria", "role": "resident", "approval_status": "not_required",
+        "agency_id": None, "badge_id": None, "is_verified": True,
+    }
+    fresh = UserProfile.model_validate({**base, "created_at": datetime.now(timezone.utc).isoformat(),
+                                        "verification_level": 0})
+    assert fresh.reporting_grace_ends_at is not None and fresh.reporting_locked is False
+    stale = UserProfile.model_validate({**base, "verification_level": 0,
+                                        "created_at": (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()})
+    assert stale.reporting_locked is True
+    done = UserProfile.model_validate({**base, "verification_level": 2,
+                                       "created_at": (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()})
+    assert done.reporting_grace_ends_at is None and done.reporting_locked is False
 
 
 def test_every_report_path_checks_verification():
@@ -164,6 +211,10 @@ def test_every_report_path_checks_verification():
 
     assert "refuse_if_unverified" in inspect.getsource(incident_standing.ensure_reporting_allowed)
     assert "refuse_if_unverified" in inspect.getsource(incident_service.submit_sos)
+    # Both lookups carry the sign-up time, or the first-week rule reads None
+    # and silently lets every unverified account report forever.
+    assert 'verification_level, created_at")' in inspect.getsource(incident_standing.ensure_reporting_allowed)
+    assert 'verification_level, created_at")' in inspect.getsource(incident_service.submit_sos)
     assert "ensure_reporting_allowed(db, reporter_id)" in inspect.getsource(incident_service.submit_incident)
 
 
@@ -338,3 +389,25 @@ def test_agency_admin_can_release_misassigned_responder():
         "Pinning agency_id in WITH CHECK is exactly what trapped responders "
         "in Naval."
     )
+
+
+def test_profile_says_when_a_submission_is_waiting_and_never_sends_the_path():
+    """A rejection purges the ID photo; the app must then ask the resident to
+    verify again, not show "in review" forever."""
+    from datetime import datetime, timezone
+    from app.models.user import UserProfile
+
+    base = {
+        "id": "00000000-0000-0000-0000-000000000001", "email": "a@b.c",
+        "full_name": "Maria", "role": "resident", "approval_status": "not_required",
+        "agency_id": None, "badge_id": None, "is_verified": True,
+        "created_at": datetime.now(timezone.utc).isoformat(), "valid_id_type": "philsys",
+    }
+    waiting = UserProfile.model_validate({**base, "verification_level": 0,
+                                          "valid_id_image_path": "u/id_1.jpg"})
+    assert waiting.verification_pending is True
+    assert "valid_id_image_path" not in waiting.model_dump()
+    rejected = UserProfile.model_validate({**base, "verification_level": 0, "valid_id_image_path": None})
+    assert rejected.verification_pending is False
+    approved = UserProfile.model_validate({**base, "verification_level": 2, "valid_id_image_path": "u/id_1.jpg"})
+    assert approved.verification_pending is False

@@ -174,10 +174,10 @@ def _fixture():
             {"id": "b4", "name": "Poblacion", "municipality": "Almeria"},
         ],
         "users": [
-            {"id": "u1", "role": "resident", "barangay_id": "b1", "is_verified": True, "is_pwd": False, "date_of_birth": "1950-03-20", "created_at": iso(ago(days=3))},
-            {"id": "u2", "role": "resident", "barangay_id": "b1", "is_verified": False, "is_pwd": True, "date_of_birth": "2019-03-21", "created_at": iso(ago(days=90))},
-            {"id": "u3", "role": "resident", "barangay_id": "b2", "is_verified": True, "is_pwd": False, "date_of_birth": "1990-01-01", "created_at": iso(ago(days=10))},
-            {"id": "u4", "role": "resident", "barangay_id": "b4", "is_verified": True, "is_pwd": False, "date_of_birth": "2020-01-01", "created_at": iso(ago(days=1))},
+            {"id": "u1", "role": "resident", "barangay_id": "b1", "is_verified": False, "verification_level": 2, "is_pwd": False, "date_of_birth": "1950-03-20", "created_at": iso(ago(days=3))},
+            {"id": "u2", "role": "resident", "barangay_id": "b1", "is_verified": True, "verification_level": 0, "is_pwd": True, "date_of_birth": "2019-03-21", "created_at": iso(ago(days=90))},
+            {"id": "u3", "role": "resident", "barangay_id": "b2", "is_verified": False, "verification_level": 2, "is_pwd": False, "date_of_birth": "1990-01-01", "created_at": iso(ago(days=10))},
+            {"id": "u4", "role": "resident", "barangay_id": "b4", "is_verified": False, "verification_level": 2, "is_pwd": False, "date_of_birth": "2020-01-01", "created_at": iso(ago(days=1))},
             {"id": "r1", "role": "responder", "agency_id": A1, "full_name": "Juan Cruz", "badge_id": "B-1",
              "approval_status": "approved", "availability": "on_duty", "location": {"coordinates": [124.4, 11.56]},
              "location_updated_at": iso(ago(minutes=5))},
@@ -612,6 +612,19 @@ def test_residents_are_only_the_areas_own_barangays(db):
     assert (k["senior_residents"], k["child_residents"]) == (1, 1)
     assert k["vulnerable_residents"] == 2                         # u1 and u2; u2 is in two groups but counted once
     assert k["new_residents"] == 2                                # u1 (3 days), u3 (10 days); u2 is 90 days old
+
+
+def test_verified_means_the_id_was_approved_not_that_the_account_is_switched_on(db):
+    # Week 10: is_verified is an account-active switch (False at sign-up,
+    # toggled by the Provincial Admin's suspend/reactivate). The fixture used
+    # to mark "verified" residents with it, so the count matched a wrong rule.
+    # u1 and u3 were approved (level 2) and never toggled: verified. u2 was
+    # reactivated (is_verified True) but never sent an ID: not verified.
+    k = area()["kpis"]
+    assert k["verified_residents"] == 2
+    by = {x["name"]: x for x in area()["barangays"]["items"]}
+    assert by["Caraycaray"]["verified"] == 1      # u1, not u2
+    assert by["Larrazabal"]["verified"] == 1      # u3
 
 
 def test_barangay_table_lists_every_barangay_and_attributes_by_address(db):

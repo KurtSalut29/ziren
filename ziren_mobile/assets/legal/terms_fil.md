@@ -1,6 +1,6 @@
 # Mga Tuntunin ng Paggamit
 
-**Bersyon 1.2 — epektibo simula 8 Oktubre 2026**
+**Bersyon 1.3 — epektibo simula 8 Oktubre 2026**
 
 Sa paggamit ng Ziren, sumasang-ayon kayo sa mga tuntuning ito. Mangyaring
 basahin ito bago gumawa ng account.
@@ -52,17 +52,22 @@ kayang magparehistro nang mag-isa.
 
 ## 4. Pagpapatunay ng pagkakakilanlan
 
-Humihingi kami ng balidong ID at larawan ng inyong mukha upang matiyak ng
+Humihingi kami ng balidong ID, selfie at 2x2 ID photo upang matiyak ng
 administrator na ang inyong account ay pag-aari ng tunay na taong nasa Biliran.
+Ang 2x2 ID photo ay dapat bagong larawan ng sarili ninyong mukha; ito ang
+magiging larawan sa inyong Ziren ID.
 
-**Ang beripikadong account lamang ang makakapagpadala ng ulat sa Ziren.**
-Dahil bawat ulat ay nagpapadala ng mga tagaresponde, kinukumpirma muna ng
+**Makakapagpadala ng ulat ang bagong account sa unang 7 araw nito. Pagkatapos
+noon, ang beripikadong account lamang ang makakapagpadala ng ulat sa Ziren.**
+Dahil bawat ulat ay nagpapadala ng mga tagaresponde, kinukumpirma ng
 administrator na ang pangalan sa inyong account ay ang pangalan sa inyong ID, at
-na ang mukha sa inyong selfie ay ang mukha rito. Habang hinihintay ito, at
-anumang oras, maaari pa rin kayong tumawag sa mga emergency hotline - ipinapakita
-ito ng Ziren sa bawat screen kung saan nagsisimula ang ulat.
+na ang mukha sa inyong selfie at 2x2 ID photo ay ang mukha rito. Kung matapos
+ang 7 araw bago kayo ma-verify, makakapag-ulat kayo ulit kapag naaprubahan na ng
+administrator ang inyong account. Anumang oras, maaari pa rin kayong tumawag sa
+mga emergency hotline - ipinapakita ito ng Ziren sa bawat screen kung saan
+nagsisimula ang ulat.
 
-Ang pagpapasa ng ID na hindi sa inyo, o binago, ay magreresulta sa
+Ang pagpapasa ng ID o larawan na hindi sa inyo, o binago, ay magreresulta sa
 pagsuspinde ng inyong account.
 
 ## 5. Lokasyon

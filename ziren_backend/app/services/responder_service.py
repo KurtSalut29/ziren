@@ -73,7 +73,7 @@ def get_my_queue(responder_id: str) -> list[dict]:
             # address string to work with.
             "location, "
             "stations(name, address, agencies(agency_type, municipality, name)), "
-            "users!incidents_reporter_id_fkey(full_name, phone_number, is_verified, sos_warning_count)"
+            "users!incidents_reporter_id_fkey(full_name, phone_number, verification_level, sos_warning_count)"
         )
         .eq("assigned_responder_id", responder_id)
         .in_("status", ["dispatched", "en_route", "arrived"])
@@ -111,7 +111,7 @@ def get_incident_detail(incident_id: str, responder_id: str) -> dict:
             # and one that knows they use a wheelchair arrives prepared to
             # carry them. See migration 012.
             "users!incidents_reporter_id_fkey("
-            "full_name, phone_number, is_verified, sos_warning_count, "
+            "full_name, phone_number, sos_warning_count, "
             "emergency_contact_name, emergency_contact_number, "
             "is_pwd, disability_types, accessibility_notes, "
             "preferred_contact_mode, verification_level, "

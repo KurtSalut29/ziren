@@ -12,8 +12,9 @@ import 'ziren_dialogs.dart';
 /// opens. Returns true when it was refused (and told why, with the station
 /// hotlines one tap away); false when it may go on.
 ///
-/// Two reasons to refuse: a suspension, and - since 2026-10-07, at the user's
-/// request - a resident an administrator has not verified yet. The server
+/// Two reasons to refuse: a suspension, and a resident whose first 7 days are
+/// over without an administrator verifying them (2026-10-07 verified-only,
+/// softened 2026-10-08 to a first week; backend resident_trust.py). The server
 /// enforces both (incident_standing.py); this only saves someone from filling
 /// in a report that cannot be sent.
 Future<bool> refuseReport(BuildContext context) async {
@@ -27,7 +28,8 @@ Future<bool> refuseIfUnverified(BuildContext context) async {
   final profile = provider.profile;
   // Unknown or staff: not ours to refuse, the server decides.
   if (profile == null || profile.role != 'resident') return false;
-  if (profile.isVerifiedResident) return false;
+  // Verified, or still in the first week: the Home banner counts the days.
+  if (!profile.reportingLocked) return false;
 
   // Answer the tap at once from what is already known. This used to wait for
   // a fresh profile first (up to 6 s on a slow line), and a tap that shows
@@ -53,7 +55,7 @@ Future<bool> refuseIfUnverified(BuildContext context) async {
       .loadProfile(force: true)
       .timeout(const Duration(seconds: 8))
       .then((_) {
-        approved = provider.profile?.isVerifiedResident == true;
+        approved = provider.profile?.reportingLocked == false;
         closeIfApproved();
       })
       .catchError((_) {});

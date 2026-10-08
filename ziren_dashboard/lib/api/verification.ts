@@ -34,6 +34,12 @@ export interface ReviewFlags {
   /** No ID photo or no selfie — the comparison cannot be made at all. */
   missing_evidence: boolean;
   /**
+   * No 2x2 ID photo (2026-10-08): there is no picture for the Ziren ID card, so
+   * the server refuses to approve; rejecting asks the resident to send it all
+   * again. Absent on an older backend.
+   */
+  missing_portrait?: boolean;
+  /**
    * The automatic ID/selfie comparison disagreed, or found no face on the card.
    *
    * A PRE-SCREEN, NOT A VERDICT, and the wording on screen has to keep saying
@@ -89,12 +95,35 @@ export interface VerificationSummary {
   face_match_verdict?: string | null;
   face_match_model?: string | null;
   face_match_checked_at?: string | null;
+  /**
+   * Scored by an app build before 2026-10-08, whose face crops were the whole
+   * photo shrunk rather than the face, so nearly everything read "match". The
+   * server then reports the verdict as "unavailable" and keeps the original in
+   * face_match_stale_verdict.
+   */
+  face_match_stale?: boolean;
+  face_match_stale_verdict?: string | null;
 
   /** On-device checks of the ID photo. Shape is open — see migration 023. */
   id_checks?: Record<string, unknown> | null;
 
   /** How valid_id_number got there: 'typed' | 'ocr' | 'ocr_edited'. */
   id_number_source?: string | null;
+}
+
+/**
+ * The phone's checks of the 2x2 ID photo (backend app/core/id_portrait.py). A
+ * photo with no face, more than one face, a turned head, a busy background or
+ * a face that does not match the selfie never gets this far: the phone refuses
+ * it. What is left is advisory, like every on-device check.
+ */
+export interface PortraitCheck {
+  /** match | uncertain | unavailable — against the selfie. */
+  verdict?: string | null;
+  score?: number | null;
+  model?: string | null;
+  checked_at?: string | null;
+  face_ratio?: number | null;
 }
 
 /** One submission, with signed URLs valid for ~5 minutes. */
@@ -116,6 +145,14 @@ export interface VerificationDetail extends VerificationSummary {
   /** Null when the object is missing or the signature could not be minted. */
   id_image_url: string | null;
   selfie_url: string | null;
+  /**
+   * The 2x2 ID photo, the picture on the Ziren ID card (2026-10-08), and what
+   * the resident's phone found when it compared it with the selfie. Both
+   * absent on an older backend and null for a submission made before the
+   * photo existed.
+   */
+  portrait_url?: string | null;
+  portrait?: PortraitCheck | null;
   /** The latest identity decision and who made it (evaluator finding #7).
    *  Null when no decision has been recorded since migration 044. */
   last_review?: {

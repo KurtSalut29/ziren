@@ -41,6 +41,7 @@ import {
 } from '@/lib/api/residents';
 import { ID_TYPE_LABELS } from '@/lib/api/verification';
 import { ZirenIdCard } from './ziren-id-card';
+import { reportingState } from '@/lib/residents/trust';
 import { formatDate, formatDateTime } from '@/lib/format/datetime';
 import { displayPrefs } from '@/lib/prefs/definitions';
 import { useNotice } from '@/lib/toast';
@@ -391,7 +392,10 @@ function _Row({ row, onOpen, display }: {
             </p>
           </>
         ) : (
-          <span className="text-[13px] text-muted-foreground">Not verified</span>
+          <>
+            <span className="text-[13px] text-muted-foreground">Not verified</span>
+            <_ReportingLine row={row} />
+          </>
         )}
       </DataTd>
       <DataTd align="right">
@@ -553,7 +557,7 @@ function DetailDialog({ open, detail, error, onClose, onAction }: {
                   <_Info icon={ShieldCheck} label="Verified">
                     {detail.verified
                       ? `${detail.verified_at ? formatDate(detail.verified_at, display) : 'Yes'} · ${METHOD_LABEL[detail.verification_method ?? ''] ?? 'method not recorded'}`
-                      : 'Not verified'}
+                      : <>Not verified <_ReportingLine row={detail} /></>}
                   </_Info>
                   <_Info icon={Phone} label="Emergency contact">
                     {detail.emergency_contact_name
@@ -992,5 +996,31 @@ function ActionDialog({ mode, detail, token, onClose, onDone }: {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Whether an unverified resident can still report: for their first 7 days,
+ * then only once verified (2026-10-08, lib/residents/trust.ts). Said beside
+ * "Not verified" so the admin sees who is about to be refused.
+ */
+function _ReportingLine({ row }: { row: ResidentAccount }) {
+  const state = reportingState(row);
+  if (state.kind === 'verified') return null;
+  if (state.kind === 'grace') {
+    return (
+      <span className="block text-meta text-muted-foreground" data-testid="reporting-state">
+        Can report for {state.daysLeft} more day{state.daysLeft === 1 ? '' : 's'}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="block text-meta font-semibold"
+      data-testid="reporting-state"
+      style={{ color: 'var(--color-system-warning)' }}
+    >
+      Reporting paused until verified
+    </span>
   );
 }

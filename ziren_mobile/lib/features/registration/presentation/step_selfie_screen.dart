@@ -380,6 +380,7 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
       if (!mounted) return;
       final d = context.read<RegistrationDraft>();
       d.selfiePath = shot.path;
+      d.portraitChecks = null; // compared with the previous selfie, if any
       // 'none' is a real value in migration 020's liveness_method CHECK, and
       // recording it honestly matters: the reviewing admin should be able to
       // tell a photo that passed a challenge from one that simply was not
@@ -478,6 +479,9 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
     d.faceMatchScore = null;
     d.faceMatchModel = null;
     d.faceMatchCheckedAt = null;
+    // The 2x2 ID photo was compared with the selfie being replaced; the
+    // portrait step checks it again against the new one.
+    d.portraitChecks = null;
     _match = null;
     _matching = false;
     d.commit();
@@ -586,7 +590,8 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
                       ),
                     ),
                   ),
-                  // Balances the back button: there is no skipping this step.
+                  // Balances the back button. "Verify later" sits under the
+                  // shutter, where its full sentence fits.
                   const SizedBox(width: 48),
                 ],
               ),
@@ -723,6 +728,11 @@ class _StepSelfieScreenState extends State<StepSelfieScreen>
                 onPressed: () => _captureNow(viaChallenge: false),
               ),
             ),
+            if (SkipVerificationLink.offeredOn(context, RegStep.selfie))
+              const Padding(
+                padding: EdgeInsets.only(bottom: ZirenTokens.space8),
+                child: SkipVerificationLink(),
+              ),
           ],
         ),
       ),

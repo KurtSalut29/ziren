@@ -1,6 +1,8 @@
-// A resident reports only once an administrator has verified the account, and
-// registration cannot finish without the ID and selfie (user request
-// 2026-10-07). The server enforces it too (incident_standing.py).
+// A new resident reports for their first 7 days; after that only once an
+// administrator has verified the account (user request 2026-10-08, softening
+// 2026-10-07's verified-only rule). Registration sends all of the evidence -
+// ID, selfie, 2x2 ID photo - or, with "Verify later", none of it. The server
+// enforces the same rule (incident_standing.py, resident_trust.py).
 
 import 'dart:async';
 
@@ -55,7 +57,14 @@ class _SlowProfile extends ProfileProvider {
   }
 }
 
-ProfileModel _resident({int level = 0, String? idType, String role = 'resident'}) => ProfileModel(
+/// By default the first week is over (yesterday), so the rule bites.
+ProfileModel _resident({
+  int level = 0,
+  String? idType,
+  String role = 'resident',
+  DateTime? graceEnds,
+  bool? pending,
+}) => ProfileModel(
   id: 'u1',
   email: 'resident@example.com',
   fullName: 'Juan Dela Cruz',
@@ -64,13 +73,20 @@ ProfileModel _resident({int level = 0, String? idType, String role = 'resident'}
   isVerified: false,
   verificationLevel: level,
   validIdType: idType,
+  reportingGraceEndsAt:
+      level >= 2 || role != 'resident'
+          ? null
+          : (graceEnds ?? DateTime.now().subtract(const Duration(days: 1))),
+  verificationPending: pending,
 );
+
+const _locked = 'Your 7 days to verify are over';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('registration cannot finish without its evidence', () {
-    test('a resident needs the ID type, a photo whose name matches, and a selfie', () {
+    test('a resident needs the ID type, a matching photo, a selfie and a 2x2 photo', () {
       final d = RegistrationDraft();
       expect(d.missingEvidence, RegStep.idType);
       d.validIdType = 'philsys';
@@ -81,7 +97,14 @@ void main() {
       d.ocrNameMatched = true;
       expect(d.missingEvidence, RegStep.selfie);
       d.selfiePath = '/tmp/me.jpg';
+      expect(d.missingEvidence, RegStep.portrait);
+      d.portraitPath = '/tmp/2x2.jpg'; // picked, but refused or not checked yet
+      expect(d.missingEvidence, RegStep.portrait);
+      d.portraitChecks = {'verdict': 'match', 'score': 0.71};
       expect(d.missingEvidence, isNull);
+      expect(d.steps, contains(RegStep.portrait));
+      expect(d.next(RegStep.selfie), RegStep.portrait);
+      expect(d.next(RegStep.portrait), RegStep.review);
     });
 
     test('a responder needs the agency ID with a matching name, and a selfie', () {
@@ -93,16 +116,45 @@ void main() {
       expect(d.missingEvidence, RegStep.selfie);
       d.selfiePath = '/tmp/me.jpg';
       expect(d.missingEvidence, isNull);
+      expect(d.steps, isNot(contains(RegStep.portrait))); // residents only
     });
 
-    test('a draft an older build saved as "skipped" is not let through', () async {
-      SharedPreferences.setMockInitialValues({
-        'registration_draft_v1':
-            '{"role":"resident","firstName":"Juan","lastName":"Cruz","skippedVerification":true}',
-      });
+    test('"Verify later": nothing is missing, and nothing is sent', () {
+      final d = RegistrationDraft()
+        ..validIdType = 'philsys'
+        ..idImagePath = '/tmp/id.jpg'; // half-collected before choosing
+      expect(d.missingEvidence, RegStep.idCapture);
+      d.skippedVerification = true;
+      expect(d.missingEvidence, isNull);
+      expect(d.sendsIdentityEvidence, isFalse);
+      // A responder cannot leave their agency ID for later.
+      final r = RegistrationDraft()
+        ..role = 'responder'
+        ..skippedVerification = true;
+      expect(r.missingEvidence, RegStep.responderDetails);
+      expect(r.sendsIdentityEvidence, isTrue);
+    });
+
+    test('Back from the review after "Verify later" passes the identity steps', () {
       final d = RegistrationDraft();
-      expect(await d.restore(), isTrue);
-      expect(d.missingEvidence, RegStep.idType);
+      expect(d.previous(RegStep.review), RegStep.portrait);
+      d.skippedVerification = true;
+      expect(d.previous(RegStep.review), RegStep.contact);
+      expect(d.previous(RegStep.contact), RegStep.address);
+    });
+
+    test('"Verify later" and the 2x2 photo survive a restart', () async {
+      final d = RegistrationDraft()
+        ..skippedVerification = true
+        ..portraitPath = '/tmp/2x2.jpg'
+        ..portraitChecks = {'verdict': 'uncertain', 'score': 0.3};
+      d.commit();
+      await Future<void>.delayed(Duration.zero);
+      final back = RegistrationDraft();
+      expect(await back.restore(), isTrue);
+      expect(back.skippedVerification, isTrue);
+      expect(back.portraitPath, '/tmp/2x2.jpg');
+      expect(back.portraitChecks, {'verdict': 'uncertain', 'score': 0.3});
     });
   });
 
@@ -143,16 +195,48 @@ void main() {
       return refused.isCompleted ? refused.future : null;
     }
 
+    testWidgets('in the first week an unverified resident goes straight on', (tester) async {
+      final p = _FakeProfile(
+        _resident(graceEnds: DateTime.now().add(const Duration(days: 3))),
+      );
+      expect(await start(tester, p), isFalse);
+      expect(find.text(_locked), findsNothing);
+      expect(p.reloads, 0); // nothing to look up: the server takes the report
+    });
+
+    testWidgets('the week ends while the profile is on screen: refused by the clock', (tester) async {
+      // Loaded with a deadline that has since passed; the server said "not
+      // locked" when it was read.
+      final p = _FakeProfile(
+        _resident(graceEnds: DateTime.now().subtract(const Duration(minutes: 1))),
+      );
+      expect(p.profile!.reportingLockedByServer, isFalse);
+      await start(tester, p);
+      expect(find.text(_locked), findsOneWidget);
+      await tester.tap(find.text('Got it'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('rejected (nothing pending any more): asked to verify again', (tester) async {
+      // valid_id_type survives a rejection; the server's "pending" does not.
+      final p = _FakeProfile(_resident(idType: 'philsys', pending: false));
+      await start(tester, p);
+      expect(find.text(_locked), findsOneWidget);
+      expect(find.text('Verify my account'), findsOneWidget);
+      await tester.tap(find.text('Got it'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a verified resident goes straight on', (tester) async {
       final p = _FakeProfile(_resident(level: 2));
       expect(await start(tester, p), isFalse);
-      expect(find.text('Verify your account to send reports'), findsNothing);
+      expect(find.text(_locked), findsNothing);
     });
 
     testWidgets('an unverified resident is told why, with a hotline and Verify', (tester) async {
       final p = _FakeProfile(_resident());
       await start(tester, p);
-      expect(find.text('Verify your account to send reports'), findsOneWidget);
+      expect(find.text(_locked), findsOneWidget);
       expect(find.text('Emergency hotlines'), findsOneWidget);
       expect(find.text('Verify my account'), findsOneWidget);
       // It still looks again, beside the dialog: an approval may have landed.
@@ -166,11 +250,11 @@ void main() {
       final done = await tapReport(tester, p);
       await tester.pump(); // the tap
       await tester.pump(const Duration(milliseconds: 400)); // the dialog's fade
-      expect(find.text('Verify your account to send reports'), findsOneWidget);
+      expect(find.text(_locked), findsOneWidget);
       expect(p.reloads, 1); // the fresh look is still under way
       p.answer(_resident());
       await tester.pumpAndSettle();
-      expect(find.text('Verify your account to send reports'), findsOneWidget);
+      expect(find.text(_locked), findsOneWidget);
       await tester.tap(find.text('Got it'));
       await tester.pumpAndSettle();
       expect(await done.future, isTrue);

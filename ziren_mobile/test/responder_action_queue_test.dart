@@ -268,6 +268,7 @@ void main() {
   });
 
   _coordinateTests();
+  _reporterTrustTests();
 
   group('Wire contracts', () {
     test('decline reason keys match the backend CHECK constraint', () {
@@ -409,6 +410,36 @@ void _coordinateTests() {
         expect(m.latitude, isNull, reason: 'location=$loc');
         expect(m.longitude, isNull, reason: 'location=$loc');
       }
+    });
+  });
+}
+
+/// The reporter badge on the responder screen (Week 10). It read `is_verified`,
+/// which on a resident is an account-active switch, so an approved reporter
+/// showed as unverified and a reactivated one with no ID as verified.
+void _reporterTrustTests() {
+  group('ResponderIncidentModel — reporter verified', () {
+    ResponderIncidentModel withReporter(Map<String, dynamic> reporter) =>
+        ResponderIncidentModel.fromJson({
+          'id': 'inc-1',
+          'report_text': 'May sunog',
+          'status': 'dispatched',
+          'created_at': '2026-09-05T08:00:00Z',
+          'users': reporter,
+        });
+
+    test('an approved ID is verified, whatever is_verified says', () {
+      final m = withReporter({'full_name': 'Ana', 'verification_level': 2, 'is_verified': false});
+      expect(m.reporterVerified, isTrue);
+    });
+
+    test('a switched-on account with no approved ID is not', () {
+      final m = withReporter({'full_name': 'Ana', 'verification_level': 0, 'is_verified': true});
+      expect(m.reporterVerified, isFalse);
+    });
+
+    test('waiting for review is not verified yet', () {
+      expect(withReporter({'verification_level': 1}).reporterVerified, isFalse);
     });
   });
 }

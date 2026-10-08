@@ -1,6 +1,6 @@
 # Paunawa sa Pagkapribado ng Datos
 
-**Bersyon 1.1 — epektibo simula 8 Oktubre 2026**
+**Bersyon 1.2 — epektibo simula 8 Oktubre 2026**
 
 Ang Ziren ay isang sistema para sa pag-uulat ng emerhensiya at pagpapadala ng
 tulong sa Lalawigan ng Biliran. Ipinapaliwanag ng paunawang ito kung anong
@@ -25,6 +25,7 @@ magkasamang personal information controllers ng sistemang ito.
 - Inyong tirahan: munisipalidad, barangay, purok o sitio, at kalye
 - Larawan ng balidong ID, at ang uri at numero nito
 - Larawan ng inyong mukha, na kukunin sa panahon ng pagpapatunay
+- 2x2 ID photo ninyo, para sa inyong Ziren ID
 
 **Kung sasabihin ninyo sa amin**
 
@@ -62,6 +63,10 @@ kaya hindi na sila susubok tumawag at masasayang ang minuto sa inyong pintuan.
 **Para matiyak na tunay kayong tao sa Biliran.** Ang mga pekeng ulat ay
 naglalayo ng mga crew mula sa tunay na emerhensiya. Sa pamamagitan ng inyong
 ID at larawan ng mukha, matitiyak ng administrator na totoo ang inyong account.
+Ikinukumpara rin ng app ang mukha sa inyong 2x2 ID photo sa inyong selfie, sa
+inyong telepono at sa aming server, para walang makapaglagay ng larawan ng ibang
+tao sa Ziren ID; puntos lamang ang itinatago ng paghahambing, hindi kopya ng
+inyong mukha.
 
 **Para mapabuti ang serbisyo.** Sinusuri namin ang mga ulat upang mapabilis ang
 pagpapadala ng tulong. Ang ganitong pagsusuri ay gumagamit ng impormasyong
@@ -81,8 +86,8 @@ para humingi ng tulong.
   inyong ulat, contact details, at impormasyon sa accessibility.
 - **Ang tumutugong crew** — nakikita ang kailangan nila para matagpuan kayo at
   makapaghanda.
-- **Mga administrator na nagpapatunay** — nakikita ang larawan ng inyong ID at
-  ng inyong mukha. Hindi ito nakikita ng mga responder, dahil wala silang
+- **Mga administrator na nagpapatunay** — nakikita ang larawan ng inyong ID,
+  ang inyong selfie at ang inyong 2x2 ID photo. Hindi ito nakikita ng mga responder, dahil wala silang
   kinalaman sa pagpapatunay ng pagkakakilanlan.
 - **Wala nang iba.** Hindi namin ibinebenta ang inyong impormasyon, hindi
   ibinabahagi para sa advertising, at hindi ibinibigay kaninuman sa labas ng
@@ -94,7 +99,9 @@ para humingi ng tulong.
   administrator. Kung walang sumuri sa inyong account sa loob ng 90 araw,
   buburahin pa rin ito. Ang mananatili ay ang uri at numero lamang ng ID,
   bilang tala ng kung ano ang sinuri.
-- **Ang larawan ng inyong mukha** ay buburahin din kapag hindi naaprubahan ang
+- **Ang inyong selfie** ay buburahin kapag natapos nang suriin ng
+  administrator, maaprubahan man o hindi ang inyong ID.
+- **Ang inyong 2x2 ID photo** ay buburahin din kapag hindi naaprubahan ang
   inyong ID. Kapag naaprubahan, itatago ito bilang larawan sa inyong Ziren ID -
   ang resident card na binubuksan ng administrator para makilala kayo - at
   administrator lamang ang nakakakita nito, hindi ang mga responder o ang

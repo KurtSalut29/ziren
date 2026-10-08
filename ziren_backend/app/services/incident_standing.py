@@ -11,6 +11,7 @@ import structlog
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from supabase import Client
+from app.core.resident_trust import grace_expired
 from app.services.incident_rows import _parse_dt
 
 log = structlog.get_logger()
@@ -55,30 +56,31 @@ def _refuse_if_suspended(suspended_until) -> None:
         )
 
 
-# Shown to a resident whose account an administrator has not verified yet.
+# Shown to a resident whose first week is over and whom an administrator has
+# not verified yet.
 UNVERIFIED_MESSAGE = (
-    "Your account is not verified yet. Only residents verified by an "
-    "administrator can send reports. Add your valid ID and selfie from your "
-    "profile. In an emergency, call a hotline now."
+    "Your 7 days to verify your account are over. Only residents verified by "
+    "an administrator can send reports now. Add your valid ID, selfie and 2x2 "
+    "ID photo from your profile. In an emergency, call a hotline now."
 )
 
 
-def refuse_if_unverified(role, verification_level) -> None:
-    """Raise 403 for a resident an administrator has not verified (level 2).
+def refuse_if_unverified(role, verification_level, created_at=None) -> None:
+    """Raise 403 for a resident past their first week and not yet verified.
 
-    Reversed on 2026-10-07 at the user's request: migration 012 said
-    verification must never gate reporting, and false reports from throwaway
-    accounts sent crews out. Now a resident reports only once an admin has
-    checked their ID; the app keeps the station hotlines one tap away for
-    anyone it refuses.
+    History: migration 012 said verification must never gate reporting. On
+    2026-10-07 the user reversed that (false reports from throwaway accounts
+    sent crews out) and a resident reported only at level 2. On 2026-10-08 it
+    was softened: a new resident may report for GRACE_DAYS after signing up,
+    so nobody is refused on day one, and after that only an administrator's
+    approval lets them report again. The rule itself lives in
+    app/core/resident_trust.py.
 
-    Only a real resident row with a real level counts. Staff accounts, and a
-    row the lookup could not read (a test double, a missing column), are not
-    refused: the same fail-open rule as the suspension check.
+    Only a real resident row with a real level and sign-up time counts. Staff
+    accounts, and a row the lookup could not read (a test double, a missing
+    column), are not refused: the same fail-open rule as the suspension check.
     """
-    if role != "resident" or not isinstance(verification_level, int):
-        return
-    if verification_level < 2:
+    if grace_expired(role, verification_level, created_at):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=UNVERIFIED_MESSAGE,
@@ -86,8 +88,8 @@ def refuse_if_unverified(role, verification_level) -> None:
 
 
 def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
-    """Refuse a report from a resident whose account is suspended, or not yet
-    verified by an administrator.
+    """Refuse a report from a resident whose account is suspended, or whose
+    first week is over without an administrator verifying them.
 
     Suspension used to stop only the SOS button, so an account suspended for
     false reports could go on sending ordinary ones. It now stops every report.
@@ -100,7 +102,7 @@ def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
     try:
         result = (
             db.table("users")
-            .select("sos_suspended_until, role, verification_level")
+            .select("sos_suspended_until, role, verification_level, created_at")
             .eq("id", reporter_id)
             .maybe_single()
             .execute()
@@ -111,7 +113,7 @@ def ensure_reporting_allowed(db: Client, reporter_id: str) -> None:
         return
     if isinstance(row, dict):
         _refuse_if_suspended(row.get("sos_suspended_until"))
-        refuse_if_unverified(row.get("role"), row.get("verification_level"))
+        refuse_if_unverified(row.get("role"), row.get("verification_level"), row.get("created_at"))
 
 
 def _update_sos_timestamp(db: Client, reporter_id: str) -> None:

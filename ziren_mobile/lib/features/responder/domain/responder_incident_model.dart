@@ -1,5 +1,6 @@
 import '../../../core/config/locale_provider.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../settings/domain/profile_model.dart';
 import 'responder_ack.dart';
 import 'responder_vocabulary.dart';
 
@@ -178,7 +179,11 @@ class ResponderIncidentModel {
       reporterName: reporter?['full_name'] as String?,
       reporterPhone: reporter?['phone_number'] as String?,
       meetCode: json['meet_code'] as String?,
-      reporterVerified: reporter?['is_verified'] as bool? ?? false,
+      // The ID approval, not `is_verified` (an account-active switch that
+      // showed approved reporters as unverified - Week 10).
+      reporterVerified:
+          ((reporter?['verification_level'] as num?)?.toInt() ?? 0) >=
+          ProfileModel.verifiedLevel,
       reporterWarningCount: reporter?['sos_warning_count'] as int? ?? 0,
       emergencyContactName: reporter?['emergency_contact_name'] as String?,
       emergencyContactNumber: reporter?['emergency_contact_number'] as String?,

@@ -88,7 +88,8 @@ class TestBands:
         threshold change months later is invisible without this.
         """
         result = fm.compare(_buf(), _buf())
-        assert result["model"] == fm.MODEL_NAME
+        # Tagged with the crop alignment it was scored from (ALIGN_VERSION).
+        assert result["model"] == fm.SCORED_MODEL == "buffalo_s/w600k_mbf@align2"
         assert result["threshold_match"] == fm.MATCH_AT
         assert result["threshold_no_match"] == fm.NO_MATCH_BELOW
 
@@ -141,7 +142,7 @@ class TestDescriptions:
 class TestTheEndpoint:
     def test_a_malformed_crop_is_a_422_that_says_why(self):
         r = client.post(
-            "/auth/face-match", json={"id_face": "AAAA", "selfie_face": "AAAA"}
+            "/auth/face-match", json={"id_face": "AAAA", "selfie_face": "AAAA", "align": 2}
         )
         assert r.status_code == 422
         assert "raw RGB" in r.json()["detail"]
@@ -237,3 +238,36 @@ class TestFlipInvariance:
         assert result["score"] == max(
             result["score_direct"], result["score_flipped"]
         )
+
+
+class TestOldAppBuilds:
+    """App builds before 2026-10-08 sent crops that were the whole photo
+    shrunk, not the face (eyes and mouth mirrored onto the template), and this
+    model scores any two non-faces as a match. They are not scored."""
+
+    def test_an_old_build_is_answered_unavailable_not_scored(self, monkeypatch):
+        called = []
+        monkeypatch.setattr(fm, "compare", lambda *a: called.append(a))
+        r = client.post("/auth/face-match", json={"id_face": _buf(), "selfie_face": _buf()})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["verdict"] == "unavailable" and body["score"] is None
+        assert body["message"]
+        assert called == []
+
+    def test_stored_verdicts_from_old_builds_are_shown_as_not_checked(self):
+        from app.services.user_service import _discount_stale_face_match
+
+        old = {"face_match_verdict": "match", "face_match_score": 0.83, "face_match_model": fm.MODEL_NAME}
+        _discount_stale_face_match(old)
+        assert old["face_match_verdict"] == "unavailable" and old["face_match_score"] is None
+        assert old["face_match_stale"] is True and old["face_match_stale_verdict"] == "match"
+
+        new = {"face_match_verdict": "no_match", "face_match_score": 0.1, "face_match_model": fm.SCORED_MODEL}
+        _discount_stale_face_match(new)
+        assert new["face_match_verdict"] == "no_match" and "face_match_stale" not in new
+
+        # Decided on the phone before any score: true whatever the alignment.
+        no_face = {"face_match_verdict": "no_face_on_id", "face_match_model": None}
+        _discount_stale_face_match(no_face)
+        assert no_face["face_match_verdict"] == "no_face_on_id"

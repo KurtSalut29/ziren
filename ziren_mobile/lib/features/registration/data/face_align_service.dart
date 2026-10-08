@@ -64,15 +64,27 @@ class FaceCrop {
 /// corners — are exactly the five InsightFace aligns on, which is what makes
 /// this possible on-device without a second model.
 ///
-/// A NOTE ON WHICH EYE IS WHICH
+/// WHICH EYE IS WHICH: BY POSITION, NOT BY NAME
 ///
-/// ML Kit names landmarks from the SUBJECT's point of view:
-/// `FaceLandmarkType.leftEye` is the person's own left eye, which appears on
-/// the RIGHT of a normal photograph. The InsightFace template is in IMAGE
-/// coordinates — its first point sits at x=38 of 112, on the left of the frame.
-/// So the mapping crosses over, and getting it wrong produces a face warped
-/// through a mirror: still a face, still scoring, and quietly wrong. The
-/// crossover is spelled out at [_template] rather than left to be noticed.
+/// The InsightFace template is in IMAGE coordinates - its first point sits at
+/// x=38 of 112, on the left of the frame. This used to map ML Kit's `rightEye`
+/// there, on the reading that ML Kit names landmarks from the subject's point
+/// of view. On a real phone it does not: logged 2026-10-08 on the Infinix,
+/// `leftEye` (111, 326) and `rightEye` (223, 328) on a front-facing portrait -
+/// the "left" eye is on the left of the picture.
+///
+/// The crossover therefore swapped both eyes and both mouth corners, and a
+/// similarity transform cannot fit a mirrored point set: the least-squares
+/// scale collapsed to a fraction of the real one, and every "aligned face" was
+/// the whole photograph shrunk into 112 x 112 with the face a dot in it. The
+/// recogniser has no notion of "not a face" (face_match_service.py), so every
+/// pair scored as a match - Biden against Harris 0.83. Every ID/selfie
+/// verdict stored before this fix was measured on such crops.
+///
+/// So the points are put in template order by where they ARE: of the two
+/// eyes, the one further left goes first, and the same for the mouth corners
+/// ([templateOrder]). Correct whatever a plugin version calls them, for any
+/// head that is not upside down.
 class FaceAlignService {
   FaceAlignService()
     : _detector = FaceDetector(
@@ -185,21 +197,42 @@ class FaceAlignService {
   /// missing point would produce a plausible-looking crop that is warped in a
   /// way nobody downstream can detect.
   List<List<double>>? _fivePoints(Face face) {
-    // Note the crossover: ML Kit's RIGHT eye is the one on the LEFT of the
-    // image, which is template point 0. See the class docstring.
-    final l = [
-      face.landmarks[FaceLandmarkType.rightEye],
-      face.landmarks[FaceLandmarkType.leftEye],
-      face.landmarks[FaceLandmarkType.noseBase],
-      face.landmarks[FaceLandmarkType.rightMouth],
-      face.landmarks[FaceLandmarkType.leftMouth],
-    ];
-    if (l.any((p) => p == null)) return null;
-    return [
-      for (final p in l) [p!.position.x.toDouble(), p.position.y.toDouble()],
-    ];
+    List<double>? at(FaceLandmarkType t) {
+      final p = face.landmarks[t]?.position;
+      return p == null ? null : [p.x.toDouble(), p.y.toDouble()];
+    }
+
+    return templateOrder(
+      eyes: [at(FaceLandmarkType.leftEye), at(FaceLandmarkType.rightEye)],
+      nose: at(FaceLandmarkType.noseBase),
+      mouth: [at(FaceLandmarkType.leftMouth), at(FaceLandmarkType.rightMouth)],
+    );
   }
 }
+
+/// The five points in [_template]'s order - eye on the left of the image,
+/// eye on the right, nose, mouth corner on the left, on the right - decided by
+/// x position, never by the landmark's name (see the class comment for the
+/// defect the names caused). Null when any point is missing.
+@visibleForTesting
+List<List<double>>? templateOrder({
+  required List<List<double>?> eyes,
+  required List<double>? nose,
+  required List<List<double>?> mouth,
+}) {
+  if (nose == null || eyes.any((p) => p == null) || mouth.any((p) => p == null)) {
+    return null;
+  }
+  List<List<double>> byX(List<List<double>?> pair) =>
+      [pair[0]!, pair[1]!]..sort((a, b) => a[0].compareTo(b[0]));
+  return [...byX(eyes), nose, ...byX(mouth)];
+}
+
+/// Align [source] on five points already in template order. A seam for tests:
+/// the isolate job does the same after decoding.
+@visibleForTesting
+Uint8List alignForTest(img.Image source, List<List<double>> points) =>
+    _warp(source, points);
 
 // ── Isolate work ────────────────────────────────────────────
 //
@@ -210,11 +243,12 @@ class FaceAlignService {
 /// The canonical 112x112 destination, in IMAGE coordinates.
 ///
 /// The standard InsightFace five-point template. Order is:
-///   0  eye on the left of the image   <- ML Kit's RIGHT eye
-///   1  eye on the right of the image  <- ML Kit's LEFT eye
+///   0  eye on the left of the image
+///   1  eye on the right of the image
 ///   2  nose base
-///   3  mouth corner on the left       <- ML Kit's RIGHT mouth
-///   4  mouth corner on the right      <- ML Kit's LEFT mouth
+///   3  mouth corner on the left of the image
+///   4  mouth corner on the right of the image
+/// By position, whatever ML Kit names them - see [templateOrder].
 const List<List<double>> _template = [
   [38.2946, 51.6963],
   [73.5318, 51.5014],

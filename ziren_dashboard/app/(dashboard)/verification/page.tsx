@@ -14,17 +14,20 @@
  *
  * The reviewer's job on this page is one comparison: does the name and number
  * typed into the account match the card in the photograph, and is the face in
- * the selfie the face on the card. Everything here is arranged around making
- * that one comparison fast, and around the two rules that constrain it:
+ * the selfie and the 2x2 ID photo the face on the card. Everything here is
+ * arranged around making that one comparison fast, and around the two rules
+ * that constrain it:
  *
- *   1. Verification IS permission since 2026-10-07 (user request, reversing
- *      migration 012): only a resident approved here can send reports. The
- *      server enforces it (incident_standing.refuse_if_unverified).
+ *   1. Verification IS permission (2026-10-07, softened 2026-10-08): a new
+ *      resident may report for their first 7 days, and after that only once
+ *      approved here. The server enforces it (incident_standing
+ *      .refuse_if_unverified, app/core/resident_trust.py).
  *
  *   2. The images are retained only to be checked once. Deciding purges them
  *      by default, per migration 015's retention rule - except an APPROVED
- *      resident's selfie, kept as the photo on their Ziren ID card (2026-10-08).
- *      The ID type and number stay on the row as the audit trail.
+ *      resident's 2x2 ID photo, kept as the photo on their Ziren ID card
+ *      (2026-10-08). The ID type and number stay on the row as the audit
+ *      trail.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -160,9 +163,9 @@ const PURPOSE: Record<VerificationTab, {
 }> = {
   residents: {
     title: 'Resident identity check',
-    what: 'A resident submitted a government ID and a selfie. You compare the two and the name on the account.',
+    what: 'A resident submitted a government ID, a selfie and a 2x2 ID photo. You compare the faces and the name on the account.',
     who: () => 'Any admin — Agency or Provincial. Residents belong to no agency, so there is one shared queue.',
-    effect: 'Adds a “verified” mark dispatchers can read. It never blocks anyone: an unverified resident can still report an emergency.',
+    effect: 'A new resident can report for their first 7 days. After that only residents you verify here can send reports, and the 2x2 photo becomes their Ziren ID picture.',
   },
   accounts: {
     title: 'Resident accounts',
@@ -327,7 +330,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
       setNotice({
         type: 'success',
         text: approve
-          ? `${selected.full_name} verified and moved to Resident accounts. Their ID photo was deleted; the selfie is kept as the photo on their Ziren ID.`
+          ? `${selected.full_name} verified and moved to Resident accounts. Their ID photo and selfie were deleted; the 2x2 photo is kept as the photo on their Ziren ID.`
           : `${selected.full_name} left unverified. Their submitted images have been deleted.`,
       });
       setSelected(null);
@@ -396,7 +399,7 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
       const verb = approve ? 'verified' : 'rejected';
       setNotice(
         res.failed.length === 0
-          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}${approve ? ' and moved to Resident accounts' : ''}. ${approve ? 'Their ID photographs were deleted; each selfie is kept as the photo on their Ziren ID.' : 'Their photographs were deleted.'}` }
+          ? { type: 'success', text: `${res.decided} resident${res.decided === 1 ? '' : 's'} ${verb}${approve ? ' and moved to Resident accounts' : ''}. ${approve ? 'Their ID photographs and selfies were deleted; each 2x2 photo is kept as the photo on their Ziren ID.' : 'Their photographs were deleted.'}` }
           : { type: 'error', text: `${res.decided} ${verb}, ${res.failed.length} could not be: ${res.failed[0].reason}` },
       );
       setPicked(new Set());
@@ -608,8 +611,8 @@ function ResidentVerificationTab({ onSeeAccounts }: { onSeeAccounts: () => void 
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmBulk === 'approve'
-                ? 'Their ID photographs will be deleted as part of this decision, per the retention policy; each selfie is kept as the photo on their Ziren ID.'
-                : 'Their ID photographs and selfies will be deleted as part of this decision, per the retention policy.'}{' '}
+                ? 'Their ID photographs and selfies will be deleted as part of this decision, per the retention policy; each 2x2 photo is kept as the photo on their Ziren ID. A resident without a 2x2 photo is not verified - reject them so they send it.'
+                : 'Their ID photographs, selfies and 2x2 photos will be deleted as part of this decision, per the retention policy.'}{' '}
               This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -771,9 +774,18 @@ function QueueRow({
               label="Photo missing"
             />
           )}
+          {/* Sent before the 2x2 photo existed: there is no picture for the
+              Ziren ID, and the server will not approve it. */}
+          {!flags?.missing_evidence && flags?.missing_portrait && (
+            <FlagChip
+              color="var(--color-text-muted)"
+              icon={<ImageOff className="size-3" />}
+              label="No 2x2 photo"
+            />
+          )}
           {!flags || (
             flags.duplicate_id_count === 0 && flags.sos_warning_count === 0 && flags.report_count === 0 &&
-            !flags.face_mismatch && !flags.id_unreadable && !flags.missing_evidence
+            !flags.face_mismatch && !flags.id_unreadable && !flags.missing_evidence && !flags.missing_portrait
           ) ? <span className="text-muted-foreground">—</span> : null}
         </div>
       </DataTd>
@@ -820,8 +832,11 @@ function ReviewModal({
   const warnings = detail.review_flags?.sos_warning_count ?? 0;
   // With a photograph missing the comparison cannot be made at all, so
   // Verify is not offered: it would record "a person compared a face to a
-  // card" about a card nobody could see.
+  // card" about a card nobody could see. Nor without the 2x2 ID photo: the
+  // approval is what puts it on the Ziren ID card, and the server refuses an
+  // approval without one (user_service.PORTRAIT_REQUIRED_MESSAGE).
   const canCompare = Boolean(detail.id_image_url && detail.selfie_url);
+  const canVerify = canCompare && Boolean(detail.portrait_url);
 
   return (
     /* Radix, not the project's own Modal. That component's header states it
@@ -856,7 +871,7 @@ function ReviewModal({
               </DialogTitle>
               <DialogDescription className="mt-0.5">
                 Does the name and number on the account match the card, and is the
-                face in the selfie the face on the card?
+                face in the selfie and the 2x2 photo the face on the card?
               </DialogDescription>
             </div>
           </div>
@@ -888,15 +903,17 @@ function ReviewModal({
             {/* Step 1: the two photographs, side by side and whole. They were
                 cropped to fill their boxes, which cut the number off a card
                 photographed at an angle - the one thing being compared. */}
-            <ReviewCard icon={ScanFace} step="1" title="Compare the two photographs">
-              <div className="grid gap-3 sm:grid-cols-2">
+            <ReviewCard icon={ScanFace} step="1" title="Compare the photographs">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <Evidence label="ID document" url={detail.id_image_url} />
                 <Evidence label="Selfie" url={detail.selfie_url} />
+                <Evidence label="2x2 photo · Ziren ID" url={detail.portrait_url ?? null} />
               </div>
 
-              {/* Directly under the two photographs, because it is about them. */}
-              <div className="mt-3">
+              {/* Directly under the photographs, because it is about them. */}
+              <div className="mt-3 flex flex-col gap-2">
                 <_FaceMatchSummary detail={detail} />
+                <_PortraitSummary detail={detail} />
               </div>
 
               {detail.liveness_method === 'none' && (
@@ -931,9 +948,9 @@ function ReviewModal({
             <p className="flex items-start gap-2.5 rounded-[12px] border border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--color-text-secondary)]">
               <Trash2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <span>
-                Deciding <strong className="font-semibold text-foreground">deletes the ID photograph</strong>, which
-                is the retention rule for identity documents; the ID type and number
-                stay on the record. Approving keeps the selfie as the photo on the resident&apos;s
+                Deciding <strong className="font-semibold text-foreground">deletes the ID photograph and the selfie</strong>,
+                which is the retention rule for identity documents; the ID type and number
+                stay on the record. Approving keeps the 2x2 photo as the picture on the resident&apos;s
                 Ziren ID (rejecting deletes it too), and moves them to{' '}
                 <strong className="font-semibold text-foreground">Resident accounts</strong>, where they can send reports.
               </span>
@@ -945,7 +962,7 @@ function ReviewModal({
           className="grid shrink-0 grid-cols-2 gap-2 border-t border-[var(--color-surface-border)] bg-[var(--color-surface-card)] px-4 py-3 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-6"
           data-testid="review-actions"
         >
-          {canCompare ? (
+          {canVerify ? (
             <ActionButton
               color="var(--color-system-success)"
               hint="The card, the face and the typed details all match"
@@ -957,7 +974,9 @@ function ReviewModal({
           ) : (
             <p className="col-span-2 flex items-center gap-2 text-[12.5px] text-[var(--color-text-secondary)] sm:col-span-1" data-testid="review-cannot-verify">
               <ImageOff aria-hidden="true" className="size-4 shrink-0" style={{ color: 'var(--color-system-warning)' }} />
-              A photograph is missing, so this cannot be verified.
+              {canCompare
+                ? 'No 2x2 photo for their Ziren ID yet. Reject it so they send the ID, a selfie and a 2x2 photo again.'
+                : 'A photograph is missing, so this cannot be verified.'}
             </p>
           )}
           <ActionButton
@@ -1208,7 +1227,7 @@ function BulkBar({
           </span>
         ) : (
           <>
-            {hint} · Every ID photograph in the batch is deleted on decision (an approved selfie stays as the Ziren ID photo), and
+            {hint} · Every ID photograph and selfie in the batch is deleted on decision (an approved 2x2 photo stays as the Ziren ID photo), and
             each row is recorded against your account.
           </>
         )}
@@ -1246,6 +1265,47 @@ function BulkBar({
  * a 0.36 threshold learns something a chip reading "no match" would have
  * hidden from them entirely.
  */
+/**
+ * The 2x2 photo against the selfie, as the resident's phone compared them.
+ *
+ * Unlike the ID/selfie check above, a clear mismatch never reaches this page:
+ * the phone refuses that photo outright, because two recent photographs of one
+ * person score high and a stranger's 2x2 is exactly what the check is for. So
+ * this only ever says "same face", "not sure - look", or "not checked".
+ */
+function _PortraitSummary({ detail }: { detail: VerificationDetail }) {
+  if (!detail.portrait_url) return null;
+  const p = detail.portrait ?? null;
+  const verdict = p?.verdict ?? 'unavailable';
+  const sure = verdict === 'match';
+  return (
+    <div
+      className="rounded-[var(--radius-card)] px-4 py-3"
+      data-testid="portrait-summary"
+      style={{ backgroundColor: sure ? 'var(--color-system-success-bg)' : 'var(--color-surface-raised)' }}
+    >
+      <p
+        className="flex flex-wrap items-baseline gap-x-2 text-[13px] font-semibold"
+        style={{ color: sure ? 'var(--color-system-success)' : 'var(--color-text-secondary)' }}
+      >
+        <span>2x2 photo and selfie</span>
+        {typeof p?.score === 'number' && (
+          <span className="font-mono text-[12px] font-normal tabular-nums text-[var(--color-text-muted)]">
+            score {p.score.toFixed(2)}
+          </span>
+        )}
+      </p>
+      <p className="mt-1 text-meta text-[var(--color-text-secondary)]">
+        {sure
+          ? 'The same face, by the automatic check. It was also checked as an ID-style photo: one face, facing the camera, plain background.'
+          : verdict === 'uncertain'
+            ? 'The automatic check could not tell for sure. Look at the 2x2 photo beside the selfie before approving.'
+            : 'Not compared automatically (the phone could not reach the server). Compare the 2x2 photo with the selfie yourself.'}
+      </p>
+    </div>
+  );
+}
+
 function _FaceMatchSummary({ detail }: { detail: VerificationDetail }) {
   const verdict = detail.face_match_verdict ?? null;
   const checks = (detail.id_checks ?? null) as Record<string, unknown> | null;
@@ -1294,7 +1354,13 @@ function _FaceMatchSummary({ detail }: { detail: VerificationDetail }) {
     },
   };
 
-  const reading = verdict ? READING[verdict] : null;
+  const reading = detail.face_match_stale
+    ? {
+        text: 'This was checked by an older version of the app, whose face check did not work (it compared the whole photo, so almost everything read as a match). Its result is not shown. Compare the photographs yourself.',
+        tone: 'var(--color-text-muted)',
+        bg: 'var(--color-surface-raised)',
+      }
+    : verdict ? READING[verdict] : null;
 
   // Every ID check that has an opinion, as a short phrase. Keys absent on
   // older rows simply produce no line, which is correct — "we did not check"

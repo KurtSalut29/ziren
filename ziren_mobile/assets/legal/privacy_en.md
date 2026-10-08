@@ -1,6 +1,6 @@
 # Data Privacy Notice
 
-**Version 1.1 — effective 8 October 2026**
+**Version 1.2 — effective 8 October 2026**
 
 Ziren is an emergency incident reporting and dispatch system for the Province
 of Biliran. This notice explains what personal information we collect, why we
@@ -24,6 +24,7 @@ act jointly as the personal information controllers for this system.
 - Your address: municipality, barangay, purok or sitio, and street
 - A photograph of a valid ID, and the ID type and number
 - A photograph of your face, taken during the identity check
+- A 2x2 ID photo of you, for your Ziren ID
 
 **If you tell us**
 
@@ -57,8 +58,11 @@ speech disability, that reaches the crew before they arrive, so they do not
 attempt voice contact and waste minutes at your door.
 
 **To confirm you are a real person in Biliran.** False emergency reports send
-crews away from real emergencies. Your ID and face photograph let an
-administrator confirm your account is genuine.
+crews away from real emergencies. Your ID and face photographs let an
+administrator confirm your account is genuine. The app also compares the face
+in your 2x2 ID photo with your selfie, on your phone and on our server, so that
+nobody can put someone else's picture on a Ziren ID; the comparison keeps only
+a score, never a copy of your face.
 
 **To improve the service.** We review reports to make dispatch faster. Any
 analysis of this kind uses information with names and contact details removed.
@@ -75,7 +79,8 @@ your identity. It is never a permission to ask for help.
 - **Dispatchers and administrators** at the responding agency see your report,
   your contact details, and your accessibility information.
 - **The responding crew** sees what they need to find you and arrive prepared.
-- **Verifying administrators** see your ID photograph and your face photograph.
+- **Verifying administrators** see your ID photograph, your selfie and your
+  2x2 ID photo.
   Responders cannot see these — they play no part in identity checks.
 - **Nobody else.** We do not sell your information, share it for advertising,
   or give it to anyone outside the emergency services, except where a law or a
@@ -86,7 +91,9 @@ your identity. It is never a permission to ask for help.
 - **Your ID photograph** is deleted once an administrator has finished
   checking it. If nobody reviews your account within 90 days, it is deleted
   anyway. Only the ID type and number remain, as a record of what was checked.
-- **Your face photograph** is deleted too if your ID is not approved. If it is
+- **Your selfie** is deleted once an administrator has finished checking it,
+  whether your ID is approved or not.
+- **Your 2x2 ID photo** is deleted too if your ID is not approved. If it is
   approved, it is kept as the picture on your Ziren ID - the resident card
   administrators open to recognise you - and is seen only by administrators,
   never by responders or the public. It is deleted with your account.

@@ -198,10 +198,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get consentSummaryLocation => 'We use your location and contact details so responders can find you.';
 
   @override
-  String get consentSummaryReporting => 'Reports can be sent once an administrator verifies your account. Emergency hotlines always work.';
+  String get consentSummaryReporting => 'New accounts can send reports for their first 7 days. After that, reports can be sent once an administrator verifies your account. Emergency hotlines always work.';
 
   @override
-  String get consentSummaryPhotos => 'Your ID photo is deleted once checked. Your face photo stays private, as the picture on your Ziren ID that only administrators see.';
+  String get consentSummaryPhotos => 'Your ID photo and selfie are deleted once checked. Your 2x2 ID photo stays private, as the picture on your Ziren ID that only administrators see.';
 
   @override
   String get consentSummaryNotHotline => 'Ziren does not replace 911. Call directly if the app cannot reach the network.';
@@ -956,7 +956,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regVerifyNowInstead => 'Verify now instead';
 
   @override
-  String get regVerificationSkipped => 'Verification skipped';
+  String get regVerificationSkipped => 'Verifying later';
 
   @override
   String get valueNotGiven => 'Not given';
@@ -1022,22 +1022,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regSelfieAttached => 'Selfie attached for identity checking.';
 
   @override
-  String get regSkippedNotice => 'Your account will work straight away and you can report emergencies. Finish verification later from your profile.';
+  String get regSkippedNotice => 'You can send reports for 7 days. Verify your account from your profile before then, or reporting pauses until an administrator verifies you.';
 
   @override
-  String get regSkipDialogTitle => 'Skip verification for now?';
+  String get regSkipDialogTitle => 'Verify later?';
 
   @override
   String get actionGoBack => 'Go back';
 
   @override
-  String get actionSkipForNow => 'Skip for now';
+  String get actionSkipForNow => 'Verify later';
 
   @override
-  String get regSkipDialogBody => 'Your account will be created and you can report emergencies straight away.\n\nA dispatcher will see that your identity has not been checked yet. You can finish this any time from your profile.';
+  String get regSkipDialogBody => 'Your account will be created and you can send reports for the next 7 days.\n\nAfter 7 days, only verified accounts can report. Before then, add your valid ID, a selfie and a 2x2 ID photo from your profile.';
 
   @override
-  String get regSkipLink => 'I need help right now - skip this';
+  String get regSkipLink => 'Verify later (within 7 days)';
 
   @override
   String get profilePersonalInfo => 'Personal Info';
@@ -1180,13 +1180,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get verifyNotSignedIn => 'You are not signed in.';
 
   @override
-  String get verifyIntro => 'Only residents verified by an administrator can send reports. Show a valid ID with your name on it and take a selfie - an administrator compares the two.';
+  String get verifyIntro => 'New accounts can send reports for 7 days; after that, only residents verified by an administrator can. Show a valid ID with your name on it, take a selfie and add a 2x2 ID photo - an administrator compares them.';
 
   @override
-  String get verifySentBody => 'An administrator will check your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.';
+  String get verifySentBody => 'An administrator will check your ID. Once it is approved, you can always send reports. In an emergency, call a hotline now.';
 
   @override
-  String get verifyPrivacyNote => 'Your photos are private and never shown to responders. The ID photo is deleted once an administrator has checked it; your selfie is kept as the picture on your Ziren ID.';
+  String get verifyPrivacyNote => 'Your photos are private and never shown to responders. The ID photo and the selfie are deleted once an administrator has checked them; your 2x2 ID photo is kept as the picture on your Ziren ID.';
 
   @override
   String get bannerInReview => 'Verification in review';
@@ -1201,10 +1201,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bannerNotNow => 'Not now';
 
   @override
-  String get bannerInReviewBody => 'An administrator is checking your ID. You can send reports as soon as it is approved. In an emergency, call a hotline now.';
+  String get bannerInReviewBody => 'An administrator is checking your ID. You can send reports again as soon as it is approved. In an emergency, call a hotline now.';
 
   @override
-  String get bannerFinishBody => 'Add your valid ID and a selfie. Reports can be sent once an administrator verifies your account. In an emergency, call a hotline now.';
+  String get bannerFinishBody => 'Your 7 days to report without verifying are over. Add your valid ID, a selfie and a 2x2 ID photo; you can report again once an administrator verifies you. In an emergency, call a hotline now.';
 
   @override
   String get badgeRequired => 'REQUIRED';
@@ -4809,19 +4809,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regAgencyIdNameOk => 'The name on your ID matches.';
 
   @override
-  String get regVerificationRequired => 'Your ID and selfie are needed to finish registering. Ziren checks every account so that emergency reports come from real people.';
+  String get regVerificationRequired => 'Your ID, selfie and 2x2 ID photo are needed to verify your account - or tap \"Verify later\" to finish within 7 days.';
 
   @override
-  String get reportNeedsVerificationTitle => 'Verify your account to send reports';
+  String get reportNeedsVerificationTitle => 'Your 7 days to verify are over';
 
   @override
-  String get reportNeedsVerificationBody => 'To keep false reports out, only residents verified by an administrator can send reports. Add your valid ID and a selfie. In an emergency right now, call a hotline.';
+  String get reportNeedsVerificationBody => 'New accounts can send reports for their first 7 days. To report again, verify your account: add your valid ID, a selfie and a 2x2 ID photo. In an emergency right now, call a hotline.';
 
   @override
   String get reportPendingVerificationTitle => 'Waiting for an administrator';
 
   @override
-  String get reportPendingVerificationBody => 'Your ID is being checked. You can send reports as soon as an administrator approves it. In an emergency right now, call a hotline.';
+  String get reportPendingVerificationBody => 'Your 7 days are over and your ID is still being checked. You can send reports again as soon as an administrator approves it. In an emergency right now, call a hotline.';
 
   @override
   String get reportVerifyNow => 'Verify my account';
@@ -4897,7 +4897,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountVerifyRejectedTitle => 'Your ID could not be verified';
 
   @override
-  String get accountVerifyRejectedBody => 'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, and a new selfie.';
+  String get accountVerifyRejectedBody => 'An administrator could not confirm who you are from the photos. Send a clear photo of your ID, with your name exactly as printed on it, a new selfie and a 2x2 ID photo.';
 
   @override
   String get accountVerifyAgain => 'Verify again';
@@ -4977,4 +4977,112 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get weatherMeterToday => 'today';
+
+  @override
+  String bannerGraceTitle(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days left to verify your account',
+      one: '1 day left to verify your account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bannerGraceLastDay => 'Last day to verify your account';
+
+  @override
+  String bannerGraceBody(String date) {
+    return 'You can send reports until $date. After that, only verified accounts can report. Add your valid ID, a selfie and a 2x2 ID photo.';
+  }
+
+  @override
+  String bannerGraceReviewBody(String date) {
+    return 'An administrator is checking your ID. You can send reports until $date, and after that as soon as you are approved.';
+  }
+
+  @override
+  String get bannerLockedTitle => 'Reports paused until you are verified';
+
+  @override
+  String get portraitStepTitle => 'Your 2x2 ID photo';
+
+  @override
+  String get portraitStepSubtitle => 'This is the picture on your Ziren ID. Use a 2x2 ID photo, or take one now.';
+
+  @override
+  String get portraitLabel => '2x2 ID photo';
+
+  @override
+  String get portraitGuideTitle => 'Like a 2x2 ID photo';
+
+  @override
+  String get portraitGuidePlain => 'Plain background, like a white wall';
+
+  @override
+  String get portraitGuideFace => 'Face the camera, head straight, eyes open';
+
+  @override
+  String get portraitGuideOnlyYou => 'Only you, from the shoulders up';
+
+  @override
+  String get portraitGuideNoCover => 'No sunglasses, cap or face mask';
+
+  @override
+  String get portraitTakePhoto => 'Take a photo';
+
+  @override
+  String get portraitChoosePhoto => 'Choose from gallery';
+
+  @override
+  String get portraitChecking => 'Checking your photo and comparing it with your selfie…';
+
+  @override
+  String get portraitAccepted => 'Looks good - the same face as your selfie. This goes on your Ziren ID.';
+
+  @override
+  String get portraitAcceptedReview => 'Photo accepted. An administrator will compare it with your selfie.';
+
+  @override
+  String get portraitProblemTitle => 'Please use another photo';
+
+  @override
+  String get portraitUnreadable => 'We could not open that photo. Try another one.';
+
+  @override
+  String get portraitNoFace => 'We could not find a face in that photo.';
+
+  @override
+  String get portraitManyFaces => 'Only you should be in the photo.';
+
+  @override
+  String get portraitTooFar => 'Your face is too small. Use a photo of your head and shoulders, or move closer.';
+
+  @override
+  String get portraitTooClose => 'Your face is cut off. Show your whole head and the top of your shoulders.';
+
+  @override
+  String get portraitTurned => 'Look straight at the camera, not to the side.';
+
+  @override
+  String get portraitTilted => 'Keep your head straight, not tilted.';
+
+  @override
+  String get portraitEyesClosed => 'Keep your eyes open, and take off sunglasses.';
+
+  @override
+  String get portraitNoFeatures => 'Your eyes, nose and mouth must be clearly visible. Take off a mask or anything covering your face.';
+
+  @override
+  String get portraitBusyBackground => 'The background must be plain, like in a 2x2 ID photo. Stand in front of a plain wall.';
+
+  @override
+  String get portraitNotSamePerson => 'This does not look like the person in your selfie. Use a 2x2 photo of yourself.';
+
+  @override
+  String get portraitNoSelfie => 'Take your selfie first, so we can compare it with this photo.';
+
+  @override
+  String get regPortraitAttached => '2x2 ID photo attached - it goes on your Ziren ID.';
 }

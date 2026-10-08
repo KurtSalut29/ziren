@@ -42,8 +42,8 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
   }
 
   Future<void> _submit(RegistrationDraft d, AuthProvider auth) async {
-    // No account without its evidence (a draft saved by an older build may
-    // have skipped it). Back to the first step that is missing something.
+    // No account with half of its evidence: all of it, or "Verify later" and
+    // none of it. Back to the first step that is missing something.
     final missing = d.missingEvidence;
     if (missing != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -138,6 +138,8 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
             const SizedBox(height: ZirenTokens.space20),
           ],
 
+          if (!d.isResponder && d.skippedVerification) _SkippedNotice(draft: d),
+
           _Group(
             title: t.regGroupAboutYou,
             step: RegStep.personal,
@@ -209,7 +211,7 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
                 ),
               ],
             )
-          else
+          else if (!d.skippedVerification)
             _Group(
               title: t.regGroupIdentity,
               step: RegStep.idType,
@@ -226,7 +228,7 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
               ],
             ),
 
-          if (d.selfiePath != null) ...[
+          if (d.selfiePath != null && d.sendsIdentityEvidence) ...[
             const SizedBox(height: ZirenTokens.space8),
             Row(
               children: [
@@ -250,6 +252,39 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
                 ),
                 TextButton(
                   onPressed: () => context.go(RegStep.selfie.path),
+                  child: Text(t.actionChange),
+                ),
+              ],
+            ),
+          ],
+
+          if (!d.isResponder &&
+              d.sendsIdentityEvidence &&
+              d.portraitPath != null) ...[
+            const SizedBox(height: ZirenTokens.space8),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(ZirenTokens.radius8),
+                  child: Image.file(
+                    File(d.portraitPath!),
+                    width: 52,
+                    height: 52,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: ZirenTokens.space12),
+                Expanded(
+                  child: Text(
+                    t.regPortraitAttached,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: ZirenTokens.textSecondary,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go(RegStep.portrait.path),
                   child: Text(t.actionChange),
                 ),
               ],
@@ -285,6 +320,74 @@ class _StepReviewScreenState extends State<StepReviewScreen> {
     'prefer_not_to_say' => 'Prefer not to say',
     _ => null,
   };
+}
+
+/// Said on the review after "Verify later": what it means, and the way back.
+class _SkippedNotice extends StatelessWidget {
+  const _SkippedNotice({required this.draft});
+
+  final RegistrationDraft draft;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: ZirenTokens.space16),
+      padding: const EdgeInsets.all(ZirenTokens.space16),
+      decoration: BoxDecoration(
+        color: ZirenTokens.systemWarningBg,
+        borderRadius: BorderRadius.circular(ZirenTokens.radius16),
+        border: Border.all(
+          color: ZirenTokens.systemWarning.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                LucideIcons.calendar_clock,
+                size: 18,
+                color: ZirenTokens.systemWarning,
+              ),
+              const SizedBox(width: ZirenTokens.space8),
+              Flexible(
+                child: Text(
+                  t.regVerificationSkipped,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: ZirenTokens.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: ZirenTokens.space8),
+          Text(
+            t.regSkippedNotice,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              color: ZirenTokens.textSecondary,
+            ),
+          ),
+          const SizedBox(height: ZirenTokens.space8),
+          TextButton(
+            key: const ValueKey('reg-verify-now-instead'),
+            onPressed: () {
+              draft.skippedVerification = false;
+              draft.commit();
+              context.go(draft.missingEvidence?.path ?? RegStep.idType.path);
+            },
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            child: Text(t.regVerifyNowInstead),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Group extends StatelessWidget {

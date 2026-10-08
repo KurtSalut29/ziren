@@ -36,6 +36,11 @@ export interface ResidentAccount {
   valid_id_type: string | null;
   /** verification_level is 2 or more. */
   verified: boolean;
+  /** When an unverified resident's first 7 days end (null once verified), and
+   *  whether they have: the server then refuses their reports (2026-10-08).
+   *  Absent on an older backend. */
+  reporting_grace_ends_at?: string | null;
+  reporting_locked?: boolean;
   warning_count: number;
   suspension: Suspension;
   standing: Standing;
@@ -89,7 +94,8 @@ export interface ResidentDetail extends ResidentAccount {
   is_pwd: boolean;
   emergency_contact_name: string | null;
   emergency_contact_number: string | null;
-  /** The approved selfie, as the photo on the Ziren ID: a short-lived signed
+  /** The photo on the Ziren ID - the approved 2x2 ID photo, or for a resident
+   *  approved before it existed the selfie kept then: a short-lived signed
    *  link, null when not verified or none on file (2026-10-08). */
   photo_url?: string | null;
   rejected_report_count: number;

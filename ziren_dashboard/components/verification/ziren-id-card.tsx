@@ -5,10 +5,13 @@
  *
  * User request 2026-10-08: opening a verified resident should show Ziren's own
  * ID card — their photograph, their particulars, the number Ziren knows them
- * by — "yung talagang ID talaga". The photograph is the selfie the
- * administrator approved: user_service.decide_verification keeps it on
- * approval (the ID scan itself is still deleted), and the server hands it out
- * as a short-lived signed link, to administrators only.
+ * by — "yung talagang ID talaga". The photograph is the 2x2 ID photo the
+ * administrator approved (the same day's follow-up: an ID-style photo, its
+ * face checked against the selfie on the phone - app/core/id_portrait.py);
+ * user_service.decide_verification keeps it on approval and deletes the ID
+ * scan and the selfie. A resident approved before then keeps the selfie as
+ * their photo. The server hands it out as a short-lived signed link, to
+ * administrators only.
  *
  * WHAT IS ON IT, AND WHAT IS NOT
  *

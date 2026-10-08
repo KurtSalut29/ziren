@@ -1,6 +1,6 @@
 # Terms of Use
 
-**Version 1.2 — effective 8 October 2026**
+**Version 1.3 — effective 8 October 2026**
 
 By using Ziren you agree to these terms. Please read them before you create an
 account.
@@ -46,17 +46,22 @@ may register on behalf of someone who cannot register themselves.
 
 ## 4. Identity verification
 
-We ask for a valid ID and a photograph of your face so an administrator can
-confirm that your account belongs to a real person in Biliran.
+We ask for a valid ID, a selfie and a 2x2 ID photo so an administrator can
+confirm that your account belongs to a real person in Biliran. The 2x2 ID photo
+must be a recent photo of your own face; it becomes the picture on your Ziren
+ID.
 
-**Only a verified account can send reports through Ziren.** Because every
-report sends a crew, an administrator first confirms that the name on your
-account is the name on your ID and that the face in your selfie is the face on
-it. Until then, and at any time, you can still call the emergency hotlines -
-Ziren shows them on every screen where a report would start.
+**A new account can send reports for its first 7 days. After that, only a
+verified account can send reports through Ziren.** Because every report sends
+a crew, an administrator confirms that the name on your account is the name on
+your ID and that the face in your selfie and your 2x2 ID photo is the face on
+it. If your 7 days end before you are verified, you can report again as soon
+as an administrator approves your account. At any time you can still call the
+emergency hotlines - Ziren shows them on every screen where a report would
+start.
 
-Submitting an ID that is not yours, or that has been altered, will result in
-your account being suspended.
+Submitting an ID or a photo that is not yours, or that has been altered, will
+result in your account being suspended.
 
 ## 5. Location
 

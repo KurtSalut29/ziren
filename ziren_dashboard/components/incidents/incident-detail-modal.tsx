@@ -91,6 +91,7 @@ import {
   Normalisation, Row, Section, type Milestone,
 } from '@/components/incidents/incident-detail-parts';
 import { HotlineLinks } from '@/components/ui/hotline-links';
+import { isIdVerified } from '@/lib/residents/trust';
 
 const SEV_COLOR: Record<string, string> = {
   critical: 'var(--color-severity-critical)',
@@ -435,11 +436,10 @@ export function IncidentDetailModal({
   })();
 
   const reporter = detail?.users ?? null;
-  // Verified = an administrator approved the resident's ID (verification_level
-  // 2). Not `is_verified`, which doubles as the account's active flag and was
-  // true or false regardless of the ID (user report 2026-10-08: a verified
-  // resident shown as "Unverified").
-  const reporterVerified = (reporter?.verification_level ?? 0) >= 2;
+  // Verified = an administrator approved the resident's ID, not `is_verified`
+  // (an account-active switch): lib/residents/trust.ts (user report
+  // 2026-10-08: a verified resident shown as "Unverified").
+  const reporterVerified = isIdVerified(reporter);
   const reporterInitials = (reporter?.full_name ?? '')
     .split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]?.toUpperCase()).join('') || '?';
   const answerCount = facets.what.length + facets.who.length + facets.how.length;

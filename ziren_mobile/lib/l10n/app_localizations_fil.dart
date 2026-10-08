@@ -186,10 +186,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get consentSummaryLocation => 'Ginagamit namin ang inyong lokasyon at contact details para matagpuan kayo ng mga responder.';
 
   @override
-  String get consentSummaryReporting => 'Makakapagpadala ng ulat kapag na-verify na ng administrator ang inyong account. Laging gumagana ang mga emergency hotline.';
+  String get consentSummaryReporting => 'Makakapagpadala ng ulat ang bagong account sa unang 7 araw nito. Pagkatapos noon, makakapagpadala lang kapag na-verify na ng administrator ang inyong account. Laging gumagana ang mga emergency hotline.';
 
   @override
-  String get consentSummaryPhotos => 'Buburahin ang larawan ng ID ninyo kapag nasuri na. Pribado ang larawan ng mukha ninyo, bilang larawan sa Ziren ID na administrator lang ang nakakakita.';
+  String get consentSummaryPhotos => 'Buburahin ang larawan ng ID at ang selfie ninyo kapag nasuri na. Pribado ang 2x2 ID photo ninyo, bilang larawan sa Ziren ID na administrator lang ang nakakakita.';
 
   @override
   String get consentSummaryNotHotline => 'Hindi kapalit ng 911 ang Ziren. Tumawag nang direkta kung hindi maabot ng app ang network.';
@@ -944,7 +944,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get regVerifyNowInstead => 'Mag-verify na lang ngayon';
 
   @override
-  String get regVerificationSkipped => 'Nilaktawan ang beripikasyon';
+  String get regVerificationSkipped => 'Mamaya na ang beripikasyon';
 
   @override
   String get valueNotGiven => 'Hindi ibinigay';
@@ -1010,22 +1010,22 @@ class AppLocalizationsFil extends AppLocalizations {
   String get regSelfieAttached => 'Nakakabit ang selfie para sa pagsusuri ng pagkakakilanlan.';
 
   @override
-  String get regSkippedNotice => 'Gagana agad ang account ninyo at makakapag-ulat kayo ng emerhensiya. Tapusin ang beripikasyon mamaya sa inyong profile.';
+  String get regSkippedNotice => 'Makakapagpadala kayo ng ulat sa loob ng 7 araw. I-verify ang account mula sa inyong profile bago noon, kung hindi ay hihinto ang pag-uulat hanggang ma-verify kayo ng administrator.';
 
   @override
-  String get regSkipDialogTitle => 'Laktawan muna ang beripikasyon?';
+  String get regSkipDialogTitle => 'Mamaya na mag-verify?';
 
   @override
   String get actionGoBack => 'Bumalik';
 
   @override
-  String get actionSkipForNow => 'Laktawan muna';
+  String get actionSkipForNow => 'Mamaya na';
 
   @override
-  String get regSkipDialogBody => 'Magagawa ang account ninyo at makakapag-ulat agad kayo ng emerhensiya.\n\nMakikita ng dispatcher na hindi pa nasusuri ang pagkakakilanlan ninyo. Matatapos ninyo ito anumang oras sa inyong profile.';
+  String get regSkipDialogBody => 'Magagawa ang account ninyo at makakapagpadala kayo ng ulat sa susunod na 7 araw.\n\nPagkalipas ng 7 araw, ang mga verified na account lang ang makakapag-ulat. Bago noon, idagdag ang balidong ID, selfie at 2x2 ID photo ninyo mula sa inyong profile.';
 
   @override
-  String get regSkipLink => 'Kailangan ko ng tulong ngayon - laktawan ito';
+  String get regSkipLink => 'Mamaya na mag-verify (sa loob ng 7 araw)';
 
   @override
   String get profilePersonalInfo => 'Personal na Impormasyon';
@@ -1168,13 +1168,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get verifyNotSignedIn => 'Hindi kayo naka-sign in.';
 
   @override
-  String get verifyIntro => 'Ang mga residenteng na-verify ng administrator lang ang makakapagpadala ng report. Ipakita ang valid ID na may pangalan mo at kumuha ng selfie - pinaghahambing ito ng administrator.';
+  String get verifyIntro => 'Makakapagpadala ng report ang bagong account sa loob ng 7 araw; pagkatapos noon, ang mga na-verify lang ng administrator. Ipakita ang valid ID na may pangalan mo, kumuha ng selfie at magdagdag ng 2x2 ID photo - pinaghahambing ito ng administrator.';
 
   @override
-  String get verifySentBody => 'Susuriin ng administrator ang ID mo. Makakapagpadala ka na ng report kapag naaprubahan ito. Kung may emergency ngayon, tumawag sa hotline.';
+  String get verifySentBody => 'Susuriin ng administrator ang ID mo. Kapag naaprubahan ito, lagi ka nang makakapagpadala ng report. Kung may emergency ngayon, tumawag sa hotline.';
 
   @override
-  String get verifyPrivacyNote => 'Pribado ang mga larawan ninyo at hindi ipinapakita sa mga responder. Buburahin ang larawan ng ID kapag nasuri na ng administrator; itatago ang selfie bilang larawan sa inyong Ziren ID.';
+  String get verifyPrivacyNote => 'Pribado ang mga larawan ninyo at hindi ipinapakita sa mga responder. Buburahin ang larawan ng ID at ang selfie kapag nasuri na ng administrator; itatago ang 2x2 ID photo bilang larawan sa inyong Ziren ID.';
 
   @override
   String get bannerInReview => 'Sinusuri ang beripikasyon';
@@ -1189,10 +1189,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get bannerNotNow => 'Mamaya na lang';
 
   @override
-  String get bannerInReviewBody => 'Sinusuri ng administrator ang iyong ID. Makakapag-ulat ka kapag naaprubahan na ito. Kung may emergency, tumawag agad sa hotline.';
+  String get bannerInReviewBody => 'Sinusuri ng administrator ang iyong ID. Makakapag-ulat ka ulit kapag naaprubahan na ito. Kung may emergency, tumawag agad sa hotline.';
 
   @override
-  String get bannerFinishBody => 'Idagdag ang iyong balidong ID at selfie. Makakapag-ulat ka kapag na-verify na ng administrator ang account mo. Kung may emergency, tumawag agad sa hotline.';
+  String get bannerFinishBody => 'Tapos na ang 7 araw na makakapag-ulat ka nang hindi verified. Idagdag ang balidong ID, selfie at 2x2 ID photo mo; makakapag-ulat ka ulit kapag na-verify ka na ng administrator. Kung may emergency, tumawag agad sa hotline.';
 
   @override
   String get badgeRequired => 'KAILANGAN';
@@ -4797,19 +4797,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String get regAgencyIdNameOk => 'Tugma ang pangalan sa ID mo.';
 
   @override
-  String get regVerificationRequired => 'Kailangan ang ID at selfie mo para matapos ang pag-register. Sinusuri ng Ziren ang bawat account para galing sa totoong tao ang bawat ulat.';
+  String get regVerificationRequired => 'Kailangan ang ID, selfie at 2x2 ID photo mo para ma-verify ang account - o pindutin ang \"Mamaya na mag-verify\" at tapusin ito sa loob ng 7 araw.';
 
   @override
-  String get reportNeedsVerificationTitle => 'I-verify ang account para makapag-ulat';
+  String get reportNeedsVerificationTitle => 'Tapos na ang 7 araw para mag-verify';
 
   @override
-  String get reportNeedsVerificationBody => 'Para maiwasan ang maling ulat, ang mga residenteng na-verify ng administrator lang ang makakapagpadala ng ulat. Idagdag ang balidong ID at selfie mo. Kung may emergency ngayon, tumawag sa hotline.';
+  String get reportNeedsVerificationBody => 'Makakapagpadala ng ulat ang bagong account sa unang 7 araw nito. Para makapag-ulat ulit, i-verify ang account mo: idagdag ang balidong ID, selfie at 2x2 ID photo. Kung may emergency ngayon, tumawag sa hotline.';
 
   @override
   String get reportPendingVerificationTitle => 'Hinihintay ang administrator';
 
   @override
-  String get reportPendingVerificationBody => 'Sinusuri pa ang ID mo. Makakapagpadala ka ng ulat kapag naaprubahan na ito ng administrator. Kung may emergency ngayon, tumawag sa hotline.';
+  String get reportPendingVerificationBody => 'Tapos na ang 7 araw mo at sinusuri pa ang ID mo. Makakapagpadala ka ulit ng ulat kapag naaprubahan na ito ng administrator. Kung may emergency ngayon, tumawag sa hotline.';
 
   @override
   String get reportVerifyNow => 'I-verify ang account ko';
@@ -4885,7 +4885,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get accountVerifyRejectedTitle => 'Hindi na-verify ang ID mo';
 
   @override
-  String get accountVerifyRejectedBody => 'Hindi makumpirma ng administrator kung sino ka mula sa mga litrato. Magpadala ng malinaw na litrato ng ID mo, kasama ang pangalan mo gaya ng nakasulat dito, at bagong selfie.';
+  String get accountVerifyRejectedBody => 'Hindi makumpirma ng administrator kung sino ka mula sa mga litrato. Magpadala ng malinaw na litrato ng ID mo, kasama ang pangalan mo gaya ng nakasulat dito, bagong selfie at 2x2 ID photo.';
 
   @override
   String get accountVerifyAgain => 'Mag-verify ulit';
@@ -4965,4 +4965,112 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get weatherMeterToday => 'ngayong araw';
+
+  @override
+  String bannerGraceTitle(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days araw na lang para i-verify ang account mo',
+      one: '1 araw na lang para i-verify ang account mo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bannerGraceLastDay => 'Huling araw para i-verify ang account mo';
+
+  @override
+  String bannerGraceBody(String date) {
+    return 'Makakapagpadala ka ng ulat hanggang $date. Pagkatapos noon, ang mga verified na account lang ang makakapag-ulat. Idagdag ang balidong ID, selfie at 2x2 ID photo mo.';
+  }
+
+  @override
+  String bannerGraceReviewBody(String date) {
+    return 'Sinusuri ng administrator ang ID mo. Makakapagpadala ka ng ulat hanggang $date, at pagkatapos noon kapag naaprubahan ka na.';
+  }
+
+  @override
+  String get bannerLockedTitle => 'Nakahinto ang pag-uulat hanggang ma-verify ka';
+
+  @override
+  String get portraitStepTitle => 'Ang 2x2 ID photo mo';
+
+  @override
+  String get portraitStepSubtitle => 'Ito ang larawan sa Ziren ID mo. Gumamit ng 2x2 ID photo, o kumuha ngayon.';
+
+  @override
+  String get portraitLabel => '2x2 ID photo';
+
+  @override
+  String get portraitGuideTitle => 'Gaya ng 2x2 ID photo';
+
+  @override
+  String get portraitGuidePlain => 'Plain na background, gaya ng puting pader';
+
+  @override
+  String get portraitGuideFace => 'Nakaharap sa camera, tuwid ang ulo, dilat ang mata';
+
+  @override
+  String get portraitGuideOnlyYou => 'Ikaw lang, mula balikat pataas';
+
+  @override
+  String get portraitGuideNoCover => 'Walang sunglasses, sumbrero o face mask';
+
+  @override
+  String get portraitTakePhoto => 'Kumuha ng litrato';
+
+  @override
+  String get portraitChoosePhoto => 'Pumili sa gallery';
+
+  @override
+  String get portraitChecking => 'Sinusuri ang litrato at ikinukumpara sa selfie mo…';
+
+  @override
+  String get portraitAccepted => 'Ayos - parehong mukha ng selfie mo. Ito ang ilalagay sa Ziren ID mo.';
+
+  @override
+  String get portraitAcceptedReview => 'Tinanggap ang litrato. Ikukumpara ito ng administrator sa selfie mo.';
+
+  @override
+  String get portraitProblemTitle => 'Gumamit ng ibang litrato';
+
+  @override
+  String get portraitUnreadable => 'Hindi mabuksan ang litratong iyan. Sumubok ng iba.';
+
+  @override
+  String get portraitNoFace => 'Walang makitang mukha sa litratong iyan.';
+
+  @override
+  String get portraitManyFaces => 'Ikaw lang dapat ang nasa litrato.';
+
+  @override
+  String get portraitTooFar => 'Masyadong maliit ang mukha mo. Gumamit ng litrato ng ulo at balikat, o lumapit pa.';
+
+  @override
+  String get portraitTooClose => 'Putol ang mukha mo. Ipakita ang buong ulo at itaas ng balikat.';
+
+  @override
+  String get portraitTurned => 'Tumingin nang diretso sa camera, hindi patagilid.';
+
+  @override
+  String get portraitTilted => 'Panatilihing tuwid ang ulo, hindi nakatagilid.';
+
+  @override
+  String get portraitEyesClosed => 'Idilat ang mga mata, at tanggalin ang sunglasses.';
+
+  @override
+  String get portraitNoFeatures => 'Dapat malinaw ang mata, ilong at bibig mo. Tanggalin ang mask o anumang nakatakip sa mukha.';
+
+  @override
+  String get portraitBusyBackground => 'Dapat plain ang background, gaya ng sa 2x2 ID photo. Tumayo sa harap ng plain na pader.';
+
+  @override
+  String get portraitNotSamePerson => 'Hindi ito mukhang ang tao sa selfie mo. Gumamit ng sarili mong 2x2 na litrato.';
+
+  @override
+  String get portraitNoSelfie => 'Kumuha muna ng selfie, para maikumpara ito sa litratong ito.';
+
+  @override
+  String get regPortraitAttached => 'Nakakabit ang 2x2 ID photo - ito ang nasa Ziren ID mo.';
 }

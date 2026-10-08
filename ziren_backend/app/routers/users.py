@@ -37,6 +37,7 @@ from app.models.user import UserProfile, UpdateProfileRequest, MessageResponse
 from app.services import user_service, audit_service, resident_account_service
 from app.core.rate_limit import limiter
 from app.db.supabase_client import get_supabase, new_supabase_client
+from app.core.resident_trust import VERIFIED_LEVEL
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -1263,9 +1264,9 @@ def platform_counts(
 
     residents = _count("users", lambda q: q.eq("role", "resident"))
     # verification_level >= 2 is what decide_verification writes on approval.
-    # is_verified is NOT the same flag and lags behind it on some rows.
+    # is_verified is NOT the same flag (see app/core/resident_trust.py).
     residents_verified = _count(
-        "users", lambda q: q.eq("role", "resident").gte("verification_level", 2)
+        "users", lambda q: q.eq("role", "resident").gte("verification_level", VERIFIED_LEVEL)
     )
 
     responders = _count(

@@ -11,11 +11,16 @@ from tests.audit_helpers import patch_audit_action
 from tests.test_verification_scope import KAWAYAN_RESIDENT, NAVAL_ADMIN, NAVAL_RESIDENT, _db
 from app.services import user_service
 
+# A submission made with this build: the 2x2 ID photo sits in id_checks, in
+# the resident's own folder (app/core/id_portrait.py).
+PORTRAIT = f"{NAVAL_RESIDENT}/portrait_1.jpg"
+CHECKS = {"readable": True, "portrait": {"path": PORTRAIT, "verdict": "match", "score": 0.7}}
+
 
 def _decide(*, approve, resident_municipality="Naval", resident_id=NAVAL_RESIDENT, notify=None):
     row = {
         "id": resident_id, "role": "resident", "municipality_address": resident_municipality,
-        "valid_id_image_path": None, "selfie_image_path": None,
+        "valid_id_image_path": None, "selfie_image_path": None, "id_checks": CHECKS,
     }
     db = _db(agency_municipality="Naval", resident_row=row)
     with patch("app.services.user_service.get_supabase", return_value=db), \
@@ -71,7 +76,7 @@ def test_the_bulk_decision_tells_each_resident(approve):
     with patch.object(user_service, "_tell_resident_of_decision", side_effect=lambda uid, **kw: calls.append(uid)):
         row = {
             "id": NAVAL_RESIDENT, "role": "resident", "municipality_address": "Naval",
-            "valid_id_image_path": None, "selfie_image_path": None,
+            "valid_id_image_path": None, "selfie_image_path": None, "id_checks": CHECKS,
         }
         db = _db(agency_municipality="Naval", resident_row=row)
         with patch("app.services.user_service.get_supabase", return_value=db), \
@@ -86,10 +91,11 @@ def test_the_bulk_decision_tells_each_resident(approve):
     assert calls == [NAVAL_RESIDENT]
 
 
-def _decide_with_images(approve):
+def _decide_with_images(approve, checks=CHECKS):
     row = {
         "id": NAVAL_RESIDENT, "role": "resident", "municipality_address": "Naval",
         "valid_id_image_path": "ids/n06.jpg", "selfie_image_path": "selfies/n06.jpg",
+        "id_checks": checks,
     }
     db = _db(agency_municipality="Naval", resident_row=row)
     with patch("app.services.user_service.get_supabase", return_value=db), \
@@ -105,14 +111,53 @@ def _decide_with_images(approve):
     return removed, written
 
 
-def test_an_approval_keeps_the_selfie_for_the_id_card_and_drops_the_scan():
+def test_an_approval_keeps_the_2x2_photo_for_the_id_card_and_drops_the_rest():
+    """2026-10-08: the card's photo is the 2x2 ID photo, so the selfie goes
+    with the ID scan once an administrator has compared them."""
     removed, written = _decide_with_images(True)
-    assert removed == [["ids/n06.jpg"]]
-    assert written["valid_id_image_path"] is None
-    assert "selfie_image_path" not in written
-
-
-def test_a_rejection_keeps_neither_image():
-    removed, written = _decide_with_images(False)
     assert removed == [["ids/n06.jpg"], ["selfies/n06.jpg"]]
     assert written["valid_id_image_path"] is None and written["selfie_image_path"] is None
+    assert "id_checks" not in written            # the portrait stays on file
+
+
+def test_a_rejection_keeps_no_image():
+    removed, written = _decide_with_images(False)
+    assert removed == [["ids/n06.jpg"], ["selfies/n06.jpg"], [PORTRAIT]]
+    assert written["valid_id_image_path"] is None and written["selfie_image_path"] is None
+    assert written["id_checks"] == {"readable": True}   # portrait gone, other checks kept
+
+
+def test_an_approval_without_a_2x2_photo_is_refused():
+    """A submission from before the 2x2 photo existed cannot be approved bare:
+    there would be no picture for the Ziren ID card."""
+    row = {
+        "id": NAVAL_RESIDENT, "role": "resident", "municipality_address": "Naval",
+        "valid_id_image_path": "ids/n06.jpg", "selfie_image_path": "selfies/n06.jpg",
+        "id_checks": {"readable": True},
+    }
+    db = _db(agency_municipality="Naval", resident_row=row)
+    with patch("app.services.user_service.get_supabase", return_value=db),          patch("app.services.geographic_service.get_supabase", return_value=db),          patch("app.services.notification_service.create_for_user") as tell,          patch_audit_action():
+        with pytest.raises(HTTPException) as e:
+            user_service.decide_verification(
+                NAVAL_RESIDENT, approve=True, method="government_id",
+                reviewer_id=NAVAL_ADMIN["id"], purge_images=True, current_user=NAVAL_ADMIN,
+            )
+    assert e.value.status_code == 422
+    assert "2x2" in e.value.detail
+    db.storage.from_.return_value.remove.assert_not_called()   # nothing deleted
+    tell.assert_not_called()
+
+
+def test_a_portrait_in_someone_elses_folder_is_not_used():
+    """The resident writes id_checks themselves; a path outside their own
+    folder would put another person's photo on their card."""
+    from app.core import id_portrait
+
+    mine = {"id": "u1", "id_checks": {"portrait": {"path": "u1/portrait_1.jpg", "verdict": "match"}}}
+    theirs = {"id": "u1", "id_checks": {"portrait": {"path": "u2/portrait_1.jpg"}}}
+    sneaky = {"id": "u1", "id_checks": {"portrait": {"path": "u1/../u2/portrait_1.jpg"}}}
+    assert id_portrait.portrait_path(mine) == "u1/portrait_1.jpg"
+    assert id_portrait.portrait_summary(mine) == {"verdict": "match"}   # no path leaves
+    assert id_portrait.portrait_path(theirs) is None
+    assert id_portrait.portrait_path(sneaky) is None
+    assert id_portrait.portrait_path({"id": "u1", "id_checks": None}) is None

@@ -50,6 +50,7 @@ from typing import Any, Callable, Iterable
 from app.db.supabase_client import get_supabase
 from app.services import responder_ack
 from app.services.report_service import _DEFAULT_TARGET_MINUTES, _DISPATCH_TARGET_MINUTES
+from app.core.resident_trust import id_verified
 
 #: The Philippines has no daylight saving, so a fixed offset is exact and needs
 #: no tz database (which Windows Python does not ship).
@@ -537,7 +538,8 @@ def build_barangays(
         slot = by_resident[u.get("barangay_id")]
         v = vulnerability(u, today)
         slot["residents"] += 1
-        slot["verified"] += 1 if u.get("is_verified") else 0
+        # ID approved, not is_verified (an account-active switch): resident_trust.
+        slot["verified"] += 1 if id_verified(u) else 0
         slot["pwd"] += 1 if v["pwd"] else 0
         slot["seniors"] += 1 if v["senior"] else 0
         slot["children"] += 1 if v["child"] else 0
@@ -931,7 +933,7 @@ def get_operational_area(
 
     def _residents():
         return _fetch_all(
-            lambda: db.table("users").select("id, barangay_id, is_verified, is_pwd, date_of_birth, created_at")
+            lambda: db.table("users").select("id, barangay_id, verification_level, is_pwd, date_of_birth, created_at")
             .eq("role", "resident").in_("barangay_id", barangay_ids)
         )
 
@@ -1012,7 +1014,7 @@ def get_operational_area(
         "resolution": response["resolution"],
         "dispatch_compliance": response["dispatch_compliance"],
         "residents": len(residents),
-        "verified_residents": sum(1 for u in residents if u.get("is_verified")),
+        "verified_residents": sum(1 for u in residents if id_verified(u)),
         "pwd_residents": sum(1 for u in residents if u.get("is_pwd")),
         "senior_residents": sum(1 for u in residents if vulnerability(u, now)["senior"]),
         "child_residents": sum(1 for u in residents if vulnerability(u, now)["child"]),

@@ -179,6 +179,14 @@ class RegistrationRepository {
   ) async {
     final out = <String, dynamic>{};
 
+    // "Verify later": nothing about identity is sent, not even what was
+    // collected before the choice. The account reports for its first 7 days
+    // and is verified from Profile > Verify (see RegistrationDraft).
+    if (!d.sendsIdentityEvidence) {
+      out['residency_proof_type'] = 'none';
+      return out;
+    }
+
     if (!d.isResponder && d.validIdType != null) {
       out['valid_id_type'] = d.validIdType;
       out['residency_proof_type'] = IdCatalogue.residencyProofFor(
@@ -193,7 +201,20 @@ class RegistrationRepository {
           out['id_number_source'] = d.idNumberSource;
         }
       }
-      if (d.idChecks != null) out['id_checks'] = d.idChecks;
+      final checks = <String, dynamic>{...?d.idChecks};
+      // The 2x2 ID photo for the Ziren ID card, in the same open-shaped
+      // column as the other on-device checks (migration 023; backend
+      // app/core/id_portrait.py). Sent only once accepted.
+      if (d.portraitPath != null && d.portraitChecks != null) {
+        checks['portrait'] = {
+          ...d.portraitChecks!,
+          'path': await _idUploads.uploadPortrait(
+            file: File(d.portraitPath!),
+            userId: userId,
+          ),
+        };
+      }
+      if (checks.isNotEmpty) out['id_checks'] = checks;
       if (d.idImagePath != null) {
         out['valid_id_image_path'] = await _idUploads.uploadId(
           file: File(d.idImagePath!),

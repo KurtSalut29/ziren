@@ -75,6 +75,9 @@ class FaceMatchRequest(BaseModel):
 
     id_face: str
     selfie_face: str
+    #: Which crop alignment made these (face_match_service.ALIGN_VERSION).
+    #: Absent from app builds before 2026-10-08, whose crops were not faces.
+    align: int = 1
 
 
 @router.post("/accept-invite", response_model=AuthResponse)
@@ -208,6 +211,19 @@ def face_match(request: Request, body: FaceMatchRequest):
     would make the client render it as a failure and tell the person something
     is broken when nothing is.
     """
+    if body.align < face_match_service.ALIGN_VERSION:
+        # An app build whose crops were the whole photo, not the face: any
+        # score would be a number about nothing. Unavailable, so the admin
+        # compares by eye - the supported state, not an error.
+        return {
+            "model": face_match_service.MODEL_NAME,
+            "threshold_match": face_match_service.MATCH_AT,
+            "threshold_no_match": face_match_service.NO_MATCH_BELOW,
+            "score": None,
+            "verdict": "unavailable",
+            "available": False,
+            "message": face_match_service.describe("unavailable", None),
+        }
     try:
         result = face_match_service.compare(body.id_face, body.selfie_face)
     except ValueError as exc:

@@ -98,7 +98,7 @@ _DETAIL_SELECT = (
     "verification_level, verification_method, verified_at, "
     "valid_id_type, valid_id_number, is_pwd, is_verified, "
     "emergency_contact_name, emergency_contact_number, "
-    "sos_warning_count, sos_suspended_until, selfie_image_path, "
+    "sos_warning_count, sos_suspended_until, selfie_image_path, id_checks, "
     "barangays(name, municipality)"
 )
 
@@ -174,6 +174,14 @@ def _shape(row: dict, now: datetime) -> dict:
         else "warned" if row["warning_count"] > 0 else "good"
     )
     row["verified"] = int(row.get("verification_level") or 0) >= 2
+    # The first week a new resident may report unverified, and whether it is
+    # over (app/core/resident_trust.py). Lets the admin see who is about to
+    # be, or already is, refused for not being verified.
+    from app.core.resident_trust import grace_ends_at, grace_expired
+    level = row.get("verification_level")
+    ends = grace_ends_at("resident", level, row.get("created_at"))
+    row["reporting_grace_ends_at"] = ends.isoformat() if ends else None
+    row["reporting_locked"] = grace_expired("resident", level, row.get("created_at"), now)
     return row
 
 
@@ -333,15 +341,19 @@ def get_resident(user_id: str, *, current_user: dict | None = None) -> dict:
     row = _resident(db, user_id, _DETAIL_SELECT)
     _assert_scope(db, row, current_user)
     row.pop("role", None)
-    # The photo on the Ziren ID card: the selfie an administrator approved
-    # (user_service.decide_verification keeps it on approval). A short-lived
-    # link, never the storage path; none for an account not verified.
+    # The photo on the Ziren ID card: the 2x2 ID photo an administrator
+    # approved (app/core/id_portrait.py), or, for a resident approved before
+    # 2026-10-08, the selfie that was kept then. A short-lived link, never the
+    # storage path; none for an account not verified.
+    from app.core import id_portrait
     from app.services import user_service  # local: user_service is the bigger module
 
-    selfie = row.pop("selfie_image_path", None)
+    photo = id_portrait.portrait_path(row) or row.get("selfie_image_path")
+    row.pop("selfie_image_path", None)
+    row.pop("id_checks", None)
     row["photo_url"] = (
-        user_service._signed_url("resident-ids", selfie, PHOTO_URL_TTL_S)
-        if selfie and int(row.get("verification_level") or 0) >= 2 else None
+        user_service._signed_url(id_portrait.BUCKET, photo, PHOTO_URL_TTL_S)
+        if photo and int(row.get("verification_level") or 0) >= 2 else None
     )
     row = _shape(row, _now())
 

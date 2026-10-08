@@ -26,6 +26,7 @@ from app.services import proximity
 from app.services import responder_ack
 from app.services import triage_service
 from app.services.rubric_service import evaluate as rubric_evaluate
+from app.core.resident_trust import REPORTER_DETAIL_EMBED, REPORTER_EMBED
 
 log = structlog.get_logger()
 
@@ -378,9 +379,8 @@ def get_incident_history(
             # answers with an error. Each is named by its constraint, and the
             # responder gets an alias so the two don't collide in the row.
             "responder:users!incidents_assigned_responder_id_fkey(full_name), "
-            "users!incidents_reporter_id_fkey("
-            "  full_name, is_verified, verification_level, sos_warning_count, created_at"
-            ")",
+            # The reporter's columns are defined once (app/core/resident_trust.py).
+            + REPORTER_EMBED,
             count="exact",
         )
         # Newest first, unlike the queue. A queue is worked oldest-first
@@ -626,9 +626,7 @@ def get_incident_queue(dispatcher: dict) -> list[dict]:
             # from the responder-dispatch machinery above.
             "review_status, rejection_reason, clarification_note, clarification_requested_at, "
             "stations(name, agencies(agency_type, municipality, name)), "
-            "users!incidents_reporter_id_fkey("
-            "  full_name, is_verified, verification_level, sos_warning_count, created_at"
-            ")"
+            + REPORTER_EMBED
         )
         .in_("status", ["received", "processing", "dispatched", "en_route", "arrived"])
         # NEWEST first here, oldest first in the response. The two are not in
@@ -965,11 +963,7 @@ def get_incident_detail_admin(incident_id: str, dispatcher: dict) -> dict:
             "responder:users!incidents_assigned_responder_id_fkey("
             "  full_name, badge_id, location, location_updated_at"
             "), "
-            "users!incidents_reporter_id_fkey("
-            "  id, full_name, phone_number, is_verified, verification_level, sos_warning_count, "
-            "  sos_suspended_until, created_at, "
-            "  emergency_contact_name, emergency_contact_number"
-            ")"
+            + REPORTER_DETAIL_EMBED
         )
         .eq("id", incident_id)
         .single()

@@ -28,6 +28,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/efferd/ui/alert-dialog';
+import { isIdVerified } from '@/lib/residents/trust';
 
 export function AcceptReportDialog({
   open,
@@ -119,11 +120,11 @@ export function AcceptReportDialog({
                     <span className="truncate">{reporter.full_name}</span>
                     <span
                       className="shrink-0 rounded-full px-1.5 py-px text-[10.5px] font-semibold"
-                      style={(reporter.verification_level ?? 0) >= 2
+                      style={isIdVerified(reporter)
                         ? { background: 'var(--color-system-success-bg)', color: 'var(--color-system-success)' }
                         : { background: 'var(--color-system-warning-bg)', color: 'var(--color-system-warning)' }}
                     >
-                      {(reporter.verification_level ?? 0) >= 2 ? 'Verified' : 'Not verified'}
+                      {isIdVerified(reporter) ? 'Verified' : 'Not verified'}
                     </span>
                   </p>
                 )}

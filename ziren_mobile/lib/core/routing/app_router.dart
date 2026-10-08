@@ -20,6 +20,7 @@ import '../../features/registration/presentation/step_contact_screen.dart';
 import '../../features/registration/presentation/step_id_capture_screen.dart';
 import '../../features/registration/presentation/step_id_type_screen.dart';
 import '../../features/registration/presentation/step_personal_screen.dart';
+import '../../features/registration/presentation/step_portrait_screen.dart';
 import '../../features/registration/presentation/step_responder_screen.dart';
 import '../../features/registration/presentation/step_review_screen.dart';
 import '../../features/registration/presentation/step_role_screen.dart';
@@ -143,6 +144,10 @@ class ZirenRouter {
           GoRoute(
             path: '/register/selfie',
             builder: (_, __) => const StepSelfieScreen(),
+          ),
+          GoRoute(
+            path: '/register/portrait',
+            builder: (_, __) => const StepPortraitScreen(),
           ),
           GoRoute(
             path: '/register/review',

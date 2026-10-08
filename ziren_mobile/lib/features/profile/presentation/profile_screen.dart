@@ -9,6 +9,7 @@ import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../../shared/widgets/loading_indicator.dart';
 import '../../../shared/widgets/profile_kit.dart';
+import '../../../shared/widgets/verification_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../../demo/presentation/demo_anchor.dart';
@@ -407,16 +408,26 @@ class _VerificationCard extends StatelessWidget {
             ? LucideIcons.hourglass
             : LucideIcons.shield_check;
 
+    // The first 7 days an unverified resident may still report (see
+    // VerificationBanner, which says the same on Home).
+    final bool grace = p?.inReportingGrace ?? false;
+    final String until =
+        grace ? VerificationBanner.deadline(t, p!.reportingGraceEndsAt!) : '';
+
     final String title =
         verified
             ? t.profileAccountVerified
             : submitted
             ? t.bannerInReview
+            : grace
+            ? t.bannerGraceTitle(p!.graceDaysLeft)
             : t.bannerFinishVerifying;
 
     final String subtitle =
         verified
             ? t.profileAccountVerifiedBody
+            : grace
+            ? (submitted ? t.bannerGraceReviewBody(until) : t.bannerGraceBody(until))
             : submitted
             ? t.bannerInReviewBody
             : t.bannerFinishBody;

@@ -89,6 +89,15 @@ class IdUploadService {
   Future<String> uploadSelfie({required File file, required String userId}) =>
       _upload(file: file, userId: userId, prefix: 'selfie');
 
+  /// Upload the 2x2 ID photo and return its storage path.
+  ///
+  /// Same bucket and folder as the selfie, for the same reason. Unlike the
+  /// other two it is KEPT once an administrator approves the account: it is
+  /// the picture on the resident's Ziren ID card (backend
+  /// user_service.decide_verification, Privacy Notice 1.2).
+  Future<String> uploadPortrait({required File file, required String userId}) =>
+      _upload(file: file, userId: userId, prefix: 'portrait');
+
   /// Upload the scan and return its storage path.
   ///
   /// [userId] must be the authenticated user's own id — storage RLS scopes

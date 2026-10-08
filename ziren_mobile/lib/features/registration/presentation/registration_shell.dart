@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../shared/theme/app_tokens.dart';
 import '../../../shared/widgets/ziren_button.dart';
+import '../../../shared/widgets/ziren_dialogs.dart';
 import '../../auth/presentation/widgets/auth_shell.dart';
 import '../domain/registration_draft.dart';
 import '../../../l10n/app_localizations.dart';
@@ -101,6 +103,11 @@ class RegistrationScaffold extends StatelessWidget {
           if (footer != null) ...[
             const SizedBox(height: ZirenTokens.space16),
             footer!,
+          ],
+
+          if (SkipVerificationLink.offeredOn(context, step)) ...[
+            const SizedBox(height: ZirenTokens.space8),
+            const SkipVerificationLink(),
           ],
 
           // Only on the first step. Someone who already has an account and
@@ -207,6 +214,74 @@ class RegField extends StatelessWidget {
         const SizedBox(height: ZirenTokens.space8),
         child,
       ],
+    );
+  }
+}
+
+/// "Verify later": a resident may finish registering without the ID, selfie
+/// and 2x2 ID photo, and report for their first 7 days (user request
+/// 2026-10-08; backend app/core/resident_trust.py). After that only an
+/// administrator's approval lets them report, so the dialog says so before
+/// they choose it, and the Home banner counts the days down.
+///
+/// Offered on the identity steps only, and only to residents - a responder's
+/// agency ID is how their station approves them at all.
+class SkipVerificationLink extends StatelessWidget {
+  const SkipVerificationLink({super.key});
+
+  static bool offeredOn(BuildContext context, RegStep step) {
+    final draft = context.read<RegistrationDraft>();
+    return !draft.isResponder && RegistrationDraft.identitySteps.contains(step);
+  }
+
+  Future<void> _confirm(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    final draft = context.read<RegistrationDraft>();
+    final proceed = await showZirenDialog<bool>(
+      context,
+      icon: LucideIcons.calendar_clock,
+      tone: ZirenTone.warning,
+      title: t.regSkipDialogTitle,
+      message: t.regSkipDialogBody,
+      // Verifying now is the one we want, so it is the filled button;
+      // leaving it for later is a deliberate second act.
+      actions: [
+        ZirenDialogAction(
+          label: t.regVerifyNowInstead,
+          value: false,
+          kind: ZirenActionKind.primary,
+        ),
+        ZirenDialogAction(label: t.actionSkipForNow, value: true),
+      ],
+    );
+    if (proceed != true || !context.mounted) return;
+
+    // All of it or none of it: a half-finished submission in the admin's
+    // queue is one they can only reject.
+    draft.skippedVerification = true;
+    draft.commit();
+    context.go(draft.afterSkip.path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return Center(
+      child: TextButton(
+        key: const ValueKey('reg-verify-later'),
+        onPressed: () => _confirm(context),
+        child: Text(
+          t.regSkipLink,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            color: ZirenTokens.textSecondary,
+            decoration: TextDecoration.underline,
+            decorationColor: ZirenTokens.textMuted,
+          ),
+        ),
+      ),
     );
   }
 }

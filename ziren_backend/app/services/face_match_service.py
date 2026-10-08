@@ -120,6 +120,27 @@ _MODEL_PATH = _MODEL_DIR / "w600k_mbf.onnx"
 #: in one column looking comparable.
 MODEL_NAME = "buffalo_s/w600k_mbf"
 
+#: The handset's crop alignment this server scores. Version 1 - every app build
+#: before 2026-10-08 - put the eyes and mouth corners on the template MIRRORED
+#: (it read ML Kit's `leftEye` as the eye on the right of the photo; on a real
+#: phone it is on the left). A similarity fit cannot map a mirrored point set,
+#: so its "aligned face" was the whole photograph shrunk to 112 px with the
+#: face a dot in it - and, per the detection-gate note above, this model scores
+#: any two such non-faces as a match. Measured on the phone with public-domain
+#: portraits: Biden against Harris 0.83 before, 0.10 after; Biden against
+#: another photo of Biden 0.67-0.97 after. A version-1 client is answered
+#: "unavailable" (an administrator compares by eye) rather than scored.
+ALIGN_VERSION = 2
+
+#: What a score made from a correctly aligned crop is stored under, so the
+#: verdicts version-1 clients wrote are told apart from these ones.
+SCORED_MODEL = f"{MODEL_NAME}@align{ALIGN_VERSION}"
+
+
+def trusted_model(model: str | None) -> bool:
+    """A stored verdict was scored from correctly aligned crops."""
+    return model == SCORED_MODEL
+
 # ── Input contract ───────────────────────────────────────────
 
 FACE_SIZE = 112
@@ -284,6 +305,8 @@ def compare(id_face_rgb_b64: str, selfie_face_rgb_b64: str) -> dict:
         "threshold_match": MATCH_AT,
         "threshold_no_match": NO_MATCH_BELOW,
     }
+
+    base = {**base, "model": SCORED_MODEL}
 
     if not is_available():
         return {
